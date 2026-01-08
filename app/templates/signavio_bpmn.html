@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block title %}Signavio BPMN Creator - BSH DSCP AI{% endblock %}
+
+{% block page_name %}BPMN Generator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}">
+
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | BPMN Journey</p>
+        <h1>Capture and generate Signavio-ready BPMN</h1>
+        <p class="lede">Follow the guided steps to collect inputs, decisions, and participants. Export a BPMN file instantly for Signavio or downstream tools.</p>
+    </div>
+</section>
+
+<div class="container signavio-container">
+    <div class="bpmn-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Flow setup</p>
+                <h2 class="builder-title">Signavio BPMN Builder</h2>
+            </div>
+            <div class="builder-actions">
+                <button class="btn btn-ghost" type="button" id="infoBtn">Guide</button>
+                <button class="btn btn-secondary" type="button" id="editBtn">Reset</button>
+            </div>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step step-active" data-step="1"><span class="step-number">1</span><span class="step-label">Context</span></div>
+            <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Structure</span></div>
+            <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Triggers</span></div>
+            <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Flow</span></div>
+            <div class="step" data-step="5"><span class="step-number">5</span><span class="step-label">Delays</span></div>
+            <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Rules</span></div>
+            <div class="step" data-step="7"><span class="step-number">7</span><span class="step-label">Review</span></div>
+        </div>
+
+        <div class="form-container">
+            <!-- Step 1: Process Context -->
+            <div class="form-step active" id="step-1">
+                <h3>Process Context</h3>
+                <p>Define the identity of the process.</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="processName">Process Name *</label>
+                        <input type="text" id="processName" name="processName" placeholder="e.g., Order to Cash" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="poolName">Pool / Department Name *</label>
+                        <input type="text" id="poolName" name="poolName" placeholder="e.g., Sales Department" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Structure (Lanes) -->
+            <div class="form-step" id="step-2">
+                <h3>Structure & Participants</h3>
+                <p>Who is involved in this process?</p>
+                <div class="form-group">
+                    <label>Participants (Lanes) *</label>
+                    <div id="lanesContainer" class="lanes-container">
+                        <!-- Initial lane -->
+                        <div class="lane-item">
+                            <div class="lane-input-group">
+                                <input type="text" class="lane-input" placeholder="e.g., Sales Rep" required>
+                                <button type="button" class="btn-icon btn-remove-lane" title="Remove lane">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-icon btn-add-sublane" title="Add sub-lane">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                    Sub
+                                </button>
+                            </div>
+                            <div class="sublanes-container"></div>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-add-lane" id="addLaneBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        Add Lane
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Triggers -->
+            <div class="form-step" id="step-3">
+                <h3>Start Triggers</h3>
+                <p>How does the process begin? Mention the lane(s) for each start event. Multiple starts are OK.</p>
+                <div class="form-group">
+                    <label for="startTriggers">What are the reasons your process is started? *</label>
+                    <textarea id="startTriggers" name="startTriggers" placeholder="e.g., Sales Rep lane — Customer email (Message); Scheduler lane — Every Friday 5 PM (Timer); Portal lane — User clicks Start (Manual)" rows="4" required></textarea>
+                </div>
+            </div>
+
+            <!-- Step 4: Flow & Activities -->
+            <div class="form-step" id="step-4">
+                <h3>Flow & Activities</h3>
+                <p>Describe the tasks and logic.</p>
+                <div class="form-group">
+                    <label for="processActivities">
+                        What are the process task activities? 
+                        <span class="info-icon" data-tooltip="Explain in detail.&#10;• Mention conditions (e.g., 'If approved, then...').&#10;• Specify who is responsible for each task.">i</span>
+                    </label>
+                    <textarea id="processActivities" name="processActivities" placeholder="Describe the steps in order. Example: The Sales Rep receives the order. If the amount is > $1000, the Manager must approve it. Otherwise, the system auto-approves..." rows="8" required></textarea>
+                </div>
+            </div>
+
+            <!-- Step 5: Delays & Intermediates -->
+            <div class="form-step" id="step-5">
+                <h3>Delays & Intermediate Events</h3>
+                <p>Are there any waiting periods or dependencies (messages, timers, systems, or documents)?</p>
+                <div class="form-group">
+                    <label for="intermediateEvents">Any reasons any tasks need to be waited? (Optional)</label>
+                    <textarea id="intermediateEvents" name="intermediateEvents" placeholder="e.g., Wait for payment confirmation; Wait 2 days for shipping; Wait for ERP delivery note; Wait for invoice PDF upload; Wait for DB update" rows="4"></textarea>
+                </div>
+            </div>
+
+            <!-- Step 6: Rules (Optional) -->
+            <div class="form-step" id="step-6">
+                <h3>Business Rules (Optional)</h3>
+                <p>Any specific constraints?</p>
+                <div class="form-group">
+                    <label for="businessRules">Business Rules</label>
+                    <textarea id="businessRules" name="businessRules" placeholder="e.g., Orders over $5000 require VP approval..." rows="3"></textarea>
+                </div>
+            </div>
+
+            <!-- Step 7: Review & Generate -->
+            <div class="form-step" id="step-7">
+                <h3>Review & Generate</h3>
+                <p>Use the guide, adjust inputs, and rerun review before generating.</p>
+                
+                <div class="sample-review">
+                    <h4><span style="font-size: 1.2em;">✨</span> AI Analysis (Sample)</h4>
+                    <p>
+                        <strong>Summary:</strong> The process "Order to Cash" initiated by "Customer Order" involves 3 main participants. 
+                        The flow seems linear but contains a critical decision point regarding "Credit Check".
+                        <br><br>
+                        <strong>Suggestion:</strong> Consider adding an exception path for "Credit Check Failed" to ensure the process doesn't stall.
+                    </p>
+                </div>
+
+                <div class="cta-panel">
+                    <p>Want to optimize further? Modify inputs and jump back here to review again.</p>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="editBtnReview">Modify Inputs</button>
+                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">Review Again</button>
+                        <button type="button" class="btn btn-primary" id="generateBtn">Generate BPMN</button>
+                    </div>
+                    <div id="inlineOverrideContainer" class="inline-override">
+                        <textarea id="reviewOverride" name="reviewOverride" rows="4" placeholder="Add quick edits or notes (optional). Leave empty to use the form inputs."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-navigation">
+            <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
+            <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+        </div>
+    </div>
+</div>
+
+<div id="loadingSpinner" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Generating BPMN diagram...</p>
+</div>
+
+<!-- Info Modal -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close">&times;</span>
+            <h2 id="infoModalTitle">BPMN Context Guide</h2>
+        </div>
+        <div class="modal-body" id="infoModalContent">
+            <p>Click the Info button on any step to see specific guidance and examples.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/signavio_bpmn.js') }}"></script>
+{% endblock %}

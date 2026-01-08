@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block title %}Home - BSH DSCP{% endblock %}
+
+{% block page_name %}Home{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="eyebrow">Powered by Dia Brain</p>
+    <h1>Get Started with DSCP AI Applications</h1>
+    <button class="btn btn-ghost send-feedback" onclick="window.location.href='mailto:dsd9di@bosch.com'">Send Feedback</button>
+</div>
+
+<section class="apps" id="apps">
+    <div class="app-grid">
+        <article class="app-card active">
+            <div class="app-header">
+                <div class="app-icon" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="6" width="10" height="20" rx="2" fill="#ff5f00"/>
+                        <rect x="18" y="6" width="10" height="20" rx="2" fill="#0f172a" opacity="0.85"/>
+                        <path d="M10 10h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M10 16h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <a class="btn btn-primary btn-open" href="/signavio-bpmn">Open</a>
+            </div>
+            <div class="app-body">
+                <h3>Signavio BPMN Builder</h3>
+                <p>Guided, multi-step capture for BSH processes with instant BPMN export.</p>
+                <div class="app-tags">
+                    <span class="tag tag-new">New</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="app-card active">
+            <div class="app-header">
+                <div class="app-icon" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="5" width="22" height="22" rx="3" fill="#1f2937"/>
+                        <path d="M11 16h10" stroke="#ff5f00" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M11 21h6" stroke="#ff5f00" stroke-width="2" stroke-linecap="round"/>
+                        <circle cx="12" cy="11" r="2" fill="#ff5f00"/>
+                    </svg>
+                </div>
+                <a class="btn btn-primary btn-open" href="/audit-check">Open</a>
+            </div>
+            <div class="app-body">
+                <h3>Audit Check</h3>
+                <p>Create audits with screenshots and validate documents.</p>
+                <div class="app-tags">
+                    <span class="tag tag-new">New</span>
+                </div>
+            </div>
+        </article>
+
+        <article class="app-card locked">
+            <div class="app-header">
+                <div class="app-icon" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="6" width="24" height="18" rx="3" fill="#0f172a"/>
+                        <path d="M8 19l5-5 4 4 3-3 4 4" stroke="#ff5f00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M8 11h16" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <span class="btn btn-locked">Coming soon</span>
+            </div>
+            <div class="app-body">
+                <h3>------------</h3>
+                <p>-------------------------------------------------------------------</p>
+                <div class="app-tags">
+                    <span class="tag tag-locked">Locked</span>
+                </div>
+            </div>
+        </article>
+
+        
+    </div>
+</section>
+{% endblock %}

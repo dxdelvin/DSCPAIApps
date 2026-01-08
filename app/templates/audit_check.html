@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Check - BSH DSCP AI{% endblock %}
+
+{% block page_name %}Audit Checker{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/audit_check.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container audit-container">
+    <div class="audit-builder">
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="creator">
+                <span class="tab-label">Audit Creator</span>
+            </button>
+            <button class="mode-tab" data-mode="checker">
+                <span class="tab-label">Audit Checker</span>
+            </button>
+        </div>
+
+        <!-- Content Container -->
+        <div class="audit-content">
+            <!-- Audit Creator Mode -->
+            <div class="mode-panel active" id="creator-mode">
+                <div class="builder-left">
+                    <div class="form-container">
+                        <h3>Create New Audit</h3>
+                        <p>Build a comprehensive audit document with screenshots and descriptions.</p>
+                        
+                        <div class="form-group">
+                            <label for="audit-title">Audit Title *</label>
+                            <input type="text" id="audit-title" placeholder="Enter audit title...">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="audit-description">Audit Description</label>
+                            <textarea id="audit-description" placeholder="Enter audit description..." rows="3"></textarea>
+                        </div>
+
+                        <!-- File Upload Section -->
+                        <div class="upload-section">
+                            <h4>Upload Screenshots (JPG/PNG Only)</h4>
+                            <div class="upload-area" id="upload-area">
+                                <div class="upload-placeholder">
+                                    <span class="upload-icon">🖼️</span>
+                                    <p>Drag & drop images here or click to select</p>
+                                    <p class="upload-hint">Supports JPG and PNG only</p>
+                                </div>
+                                <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png" hidden>
+                            </div>
+                        </div>
+
+                        <!-- Uploaded Files List -->
+                        <div class="files-list-section" id="files-list-section">
+                            <h4>Uploaded Images</h4>
+                            <div class="files-list" id="files-list"></div>
+                            <div class="form-group">
+                                <button class="btn btn-secondary btn-sm" id="add-more-files-btn">
+                                    <span>➕</span> Add More Images
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="generate-pdf-btn">
+                                <span class="btn-icon">📄</span>
+                                Generate PDF & Check
+                            </button>
+                            <button class="btn btn-ghost" id="reset-creator-btn">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="builder-right">
+                    <div class="results-container">
+                        <h3>Generated Document & Results</h3>
+                        
+                        <!-- Generated PDF Preview -->
+                        <div class="pdf-preview-section" id="pdf-preview-container">
+                            <div class="section-header">
+                                <h4>Generated Audit Document</h4>
+                                <button class="btn btn-secondary btn-sm" id="download-pdf-btn">
+                                    <span>⬇️</span> Download PDF
+                                </button>
+                            </div>
+                            <div class="pdf-content" id="pdf-content"></div>
+                        </div>
+
+                        <!-- Audit Check Results -->
+                        <div class="results-panel-section" id="results-panel-creator">
+                            <div class="section-header">
+                                <h4>Audit Check Results</h4>
+                                <div class="status-badge" id="status-badge"></div>
+                            </div>
+                            <div class="results-content" id="results-content-creator"></div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="empty-state" id="empty-state-creator">
+                            <span class="empty-icon">📊</span>
+                            <p>Your generated audit and results will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Audit Checker Mode -->
+            <div class="mode-panel" id="checker-mode">
+                <div class="builder-left">
+                    <div class="form-container">
+                        <h3>Check Audit Document</h3>
+                        <p>Upload a PDF document to validate and analyze it.</p>
+                        
+                        <!-- PDF Upload Section -->
+                        <div class="upload-section">
+                            <h4>Upload PDF Document</h4>
+                            <div class="upload-area" id="pdf-upload-area">
+                                <div class="upload-placeholder">
+                                    <span class="upload-icon">📄</span>
+                                    <p>Drag & drop PDF here or click to select</p>
+                                    <p class="upload-hint">Only PDF files are supported</p>
+                                </div>
+                                <input type="file" id="pdf-file-input" accept=".pdf" hidden>
+                            </div>
+                        </div>
+
+                        <!-- Selected File Info -->
+                        <div class="selected-file-info" id="selected-file-info">
+                            <div class="file-item">
+                                <span class="file-icon">📄</span>
+                                <div class="file-details">
+                                    <p class="file-name" id="selected-pdf-name"></p>
+                                    <p class="file-size" id="selected-pdf-size"></p>
+                                </div>
+                                <button class="btn-remove" id="remove-pdf-btn">✕</button>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="form-actions">
+                            <button class="btn btn-primary" id="check-pdf-btn" disabled>
+                                <span class="btn-icon">✓</span>
+                                Check Document
+                            </button>
+                            <button class="btn btn-ghost" id="reset-checker-btn">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="builder-right">
+                    <div class="results-container">
+                        <h3>Results & Analysis</h3>
+                        
+                        <!-- Check Results -->
+                        <div class="results-panel-section" id="results-panel-checker">
+                            <div class="section-header">
+                                <h4>Analysis Results</h4>
+                                <div class="status-badge" id="status-badge-checker"></div>
+                            </div>
+                            <div class="results-content" id="results-content-checker"></div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div class="empty-state" id="empty-state-checker">
+                            <span class="empty-icon">🔍</span>
+                            <p>Upload a PDF to see analysis results</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="{{ url_for('static', path='js/audit_check.js') }}"></script>
+{% endblock %}

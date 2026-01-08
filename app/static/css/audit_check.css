@@ -1,0 +1,761 @@
+/* ============================================
+   AUDIT CHECK - Styles (Consistent with BPMN)
+   ============================================ */
+
+/* Local variables for audit check page */
+:root {
+    --text-primary: var(--navy-900);
+    --text-secondary: var(--slate-700);
+}
+
+/* Audit Container */
+.audit-container {
+    padding: 0;
+}
+
+.audit-builder {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Mode Tabs */
+.mode-tabs {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1.5rem 2rem;
+    background: white;
+    border-bottom: 1px solid var(--border);
+    justify-content: center;
+}
+
+.mode-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border: none;
+    background: var(--bg);
+    color: var(--slate-700);
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.25s ease;
+    min-width: 180px;
+    position: relative;
+}
+
+.mode-tab:hover {
+    background: var(--brand-orange);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 95, 0, 0.25);
+}
+
+.mode-tab.active {
+    background: var(--brand-orange);
+    color: white;
+    box-shadow: 0 6px 16px rgba(255, 95, 0, 0.35);
+    font-weight: 700;
+}
+
+.mode-tab .tab-label {
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+/* Content Layout */
+.audit-content {
+    display: flex;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--bg);
+    flex: 1;
+}
+
+.mode-panel {
+    display: none;
+    gap: 2rem;
+    width: 100%;
+}
+
+.mode-panel.active,
+.mode-panel[style*="display: flex"] {
+    display: flex;
+}
+
+.builder-left,
+.builder-right {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Form Container */
+.form-container {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-container > p {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+    background: white;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.1);
+}
+
+/* Upload Section */
+.upload-section {
+    margin: 1.5rem 0;
+}
+
+.upload-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--text-primary);
+}
+
+.upload-area {
+    border: 2px dashed var(--brand-orange);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg);
+}
+
+.upload-area:hover {
+    border-color: var(--brand-orange-700);
+    background: rgba(255, 95, 0, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: var(--brand-orange-700);
+    background: rgba(255, 95, 0, 0.1);
+    transform: scale(1.02);
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.upload-placeholder p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.upload-hint {
+    font-size: 0.85rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 400 !important;
+    opacity: 0.8;
+}
+
+/* File Input */
+#file-input,
+#pdf-file-input {
+    display: none;
+}
+
+/* Files List */
+.files-list-section {
+    margin: 1.5rem 0;
+    padding: 1rem;
+    background: var(--surface-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+}
+
+.files-list-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--text-primary);
+}
+
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.file-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    position: relative;
+}
+
+.file-item-content {
+    flex: 1;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    min-width: 0;
+}
+
+.file-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95rem;
+}
+
+.file-size {
+    margin: 0.25rem 0 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.file-preview {
+    width: 60px;
+    height: 60px;
+    border-radius: 4px;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+}
+
+.description-input {
+    width: 100%;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.description-input:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 2px rgba(255, 95, 0, 0.1);
+}
+
+.btn-remove {
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+    font-weight: bold;
+}
+
+.btn-remove:hover {
+    background: #ff5252;
+    transform: scale(1.1);
+}
+
+/* Selected File Info */
+.selected-file-info {
+    padding: 1rem;
+    background: var(--surface-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.form-actions .btn {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* Results Container */
+.results-container {
+    background: white;
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.results-container h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+    color: var(--text-primary);
+}
+
+/* Section Headers */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.section-header h4 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.section-header .btn-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+}
+
+.btn-sm {
+    padding: 0.5rem 1rem !important;
+    font-size: 0.9rem !important;
+}
+
+/* PDF Preview Section */
+.pdf-preview-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: var(--surface-secondary);
+}
+
+.pdf-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.pdf-filename-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 2rem;
+    background: var(--surface-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+}
+
+.pdf-icon {
+    font-size: 3rem;
+}
+
+.pdf-file-details {
+    text-align: left;
+}
+
+.pdf-file-name {
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 1rem;
+    word-break: break-all;
+}
+
+.pdf-file-ready {
+    margin: 0.5rem 0 0;
+    font-size: 0.9rem;
+    color: var(--brand-orange);
+    font-weight: 500;
+}
+
+.pdf-content-item {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.pdf-content-item:last-child {
+    border-bottom: none;
+}
+
+.pdf-item-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--brand-orange);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 0.75rem;
+}
+
+.pdf-item-description {
+    color: var(--text-secondary);
+    margin-bottom: 1.5rem;
+    line-height: 1.6;
+    font-size: 0.95rem;
+}
+
+.pdf-item-description.file-description {
+    margin-bottom: 1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    padding: 0.75rem;
+    background: var(--surface-secondary);
+    border-left: 3px solid var(--brand-orange);
+    border-radius: 4px;
+}
+
+.pdf-item-image {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+    margin: 1.5rem 0;
+    border: 1px solid var(--border);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.pdf-separator {
+    height: 1px;
+    background: linear-gradient(to right, var(--border), transparent);
+    margin: 2rem 0;
+}
+
+/* Results Panel Section */
+.results-panel-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+}
+
+.results-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.result-item {
+    padding: 1rem;
+    background: var(--bg);
+    border-left: 4px solid var(--brand-orange);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.result-item:hover {
+    background: #eff1f5;
+}
+
+.result-item.success {
+    border-left-color: #4caf50;
+    background: rgba(76, 175, 80, 0.08);
+}
+
+.result-item.error {
+    border-left-color: #f44336;
+    background: rgba(244, 67, 54, 0.08);
+}
+
+.result-item.warning {
+    border-left-color: #ff9800;
+    background: rgba(255, 152, 0, 0.08);
+}
+
+.result-item.info {
+    border-left-color: var(--info);
+    background: rgba(37, 99, 235, 0.08);
+}
+
+.result-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.result-description {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Status Badge */
+.status-badge {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+}
+
+.status-badge.success {
+    background: #c8e6c9;
+    color: #2e7d32;
+}
+
+.status-badge.error {
+    background: #ffcdd2;
+    color: #c62828;
+}
+
+.status-badge.warning {
+    background: #ffe0b2;
+    color: #e65100;
+}
+
+.status-badge.info {
+    background: #bbdefb;
+    color: #1565c0;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-secondary);
+    text-align: center;
+    gap: 1rem;
+    padding: 2rem;
+    min-height: 300px;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    opacity: 0.4;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    color: var(--brand-orange);
+    font-weight: 600;
+    padding: 2rem;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid var(--border);
+    border-top: 3px solid var(--brand-orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Hidden Elements - Default Hidden State */
+#files-list-section,
+#pdf-preview-container,
+#results-panel-creator,
+#results-panel-checker,
+#selected-file-info {
+    display: none;
+}
+
+/* Mode Panels - Default State */
+.mode-panel {
+    display: none;
+}
+
+.mode-panel.active {
+    display: flex !important;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .audit-content {
+        gap: 1rem;
+    }
+
+    .builder-left,
+    .builder-right {
+        min-width: 300px;
+    }
+}
+
+@media (max-width: 992px) {
+    .audit-content {
+        flex-direction: column;
+    }
+
+    .builder-left,
+    .builder-right {
+        flex: 1;
+        min-width: auto;
+    }
+
+    .builder-head {
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .builder-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 768px) {
+    .audit-content {
+        padding: 1rem;
+    }
+
+    .form-container,
+    .results-container {
+        padding: 1.5rem;
+    }
+
+    .builder-hero {
+        padding: 2rem 1rem;
+    }
+
+    .builder-hero h1 {
+        font-size: 1.75rem;
+    }
+
+    .mode-tabs {
+        padding: 1rem;
+        flex-direction: column;
+    }
+
+    .mode-tab {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .form-actions .btn {
+        min-width: auto;
+    }
+}
+
+/* Scrollbar Styling */
+.pdf-content::-webkit-scrollbar,
+.results-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.pdf-content::-webkit-scrollbar-track,
+.results-content::-webkit-scrollbar-track {
+    background: var(--bg);
+}
+
+.pdf-content::-webkit-scrollbar-thumb,
+.results-content::-webkit-scrollbar-thumb {
+    background: var(--brand-orange);
+    border-radius: 4px;
+}
+
+.pdf-content::-webkit-scrollbar-thumb:hover,
+.results-content::-webkit-scrollbar-thumb:hover {
+    background: var(--brand-orange-700);
+}

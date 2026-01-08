@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BSH DSCP{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <header class="navbar">
+        <div class="navbar-shell">
+            <a class="brand" href="/">
+                <span class="brand-mark">BSH</span>
+                <span class="brand-text">
+                    <span class="brand-name">{% block page_name %}BSH DSCP{% endblock %}</span>
+                    <span class="brand-sub">Digital Supply Chain Planning</span>
+                </span>
+            </a>
+
+            <button class="changelog-bell" id="changelogBell" aria-label="View changelog">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 22h4"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <main class="page">
+        {% block content %}{% endblock %}
+    </main>
+
+    <div id="changelog" class="changelog-panel" hidden>
+        <div class="changelog-wrapper">
+            <div class="changelog-head">
+                <h2>Changelog / Updates</h2>
+                <button class="btn-close" type="button" id="closeChangelog">&times;</button>
+            </div>
+            <div class="changelog-content">
+                <div class="changelog-section">
+                    <h3 class="changelog-date">Jan 11th, 2026: <span class="badge-new">NEW</span></h3>
+                    <ul class="changelog-list">
+                        <li>AI Audit Check UI Released (Not Functional)</li>
+                        <li>Signavio BPMN Generator UI Released (Not Functional)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div id="toast-container" class="toast-container"></div>
+
+    <script src="{{ url_for('static', path='js/common.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
