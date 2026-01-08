@@ -171,13 +171,13 @@ class AuditCheckApp {
                                 validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
             
             if (!isValidType) {
-                showNotification(`File "${file.name}" is not supported. Only JPG and PNG are allowed.`, 'warning');
+                showToast(`File "${file.name}" is not supported. Only JPG and PNG are allowed.`, 'warning');
                 return;
             }
 
             // Check if file already exists
             if (this.creatorData.files.some(f => f.name === file.name && f.size === file.size)) {
-                showNotification(`File "${file.name}" already added`, 'warning');
+                showToast(`File "${file.name}" already added`, 'warning');
                 return;
             }
 
@@ -245,7 +245,7 @@ class AuditCheckApp {
             fileItem.querySelector('.btn-remove').addEventListener('click', () => {
                 this.creatorData.files.splice(index, 1);
                 this.renderFilesList();
-                showNotification('Image removed', 'info');
+                showToast('Image removed', 'info');
             });
 
             filesList.appendChild(fileItem);
@@ -254,12 +254,12 @@ class AuditCheckApp {
 
     async generatePdfAndCheck() {
         if (!this.creatorData.title.trim()) {
-            showNotification('Please enter an audit title', 'error');
+            showToast('Please enter an audit title', 'error');
             return;
         }
 
         if (this.creatorData.files.length === 0) {
-            showNotification('Please add at least one file', 'error');
+            showToast('Please add at least one file', 'error');
             return;
         }
 
@@ -281,11 +281,11 @@ class AuditCheckApp {
 
             btn.innerHTML = originalText;
             btn.disabled = false;
-            showNotification('PDF generated and audit check completed', 'success');
+            showToast('PDF generated and audit check completed', 'success');
 
         } catch (error) {
             console.error('Error generating PDF:', error);
-            showNotification('Error generating PDF', 'error');
+            showToast('Error generating PDF', 'error');
             document.getElementById('generate-pdf-btn').disabled = false;
         }
     }
@@ -472,13 +472,13 @@ class AuditCheckApp {
 
     downloadPdf() {
         if (!this.generatedPdf) {
-            showNotification('No PDF to download', 'error');
+            showToast('No PDF to download', 'error');
             return;
         }
 
         const filename = `${this.creatorData.title.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
         this.generatedPdf.save(filename);
-        showNotification('PDF downloaded successfully', 'success');
+        showToast('PDF downloaded successfully', 'success');
     }
 
     resetCreatorMode() {
@@ -496,7 +496,7 @@ class AuditCheckApp {
         document.getElementById('results-panel-creator').style.display = 'none';
         document.getElementById('empty-state-creator').style.display = 'flex';
 
-        showNotification('Creator mode reset', 'info');
+        showToast('Creator mode reset', 'info');
     }
 
     // ==================== CHECKER MODE ====================
@@ -507,7 +507,7 @@ class AuditCheckApp {
         const file = files[0];
 
         if (file.type !== 'application/pdf') {
-            showNotification('Please select a valid PDF file', 'error');
+            showToast('Please select a valid PDF file', 'error');
             return;
         }
 
@@ -543,7 +543,7 @@ class AuditCheckApp {
 
     async checkPdf() {
         if (!this.selectedPdf) {
-            showNotification('Please select a PDF file', 'error');
+            showToast('Please select a PDF file', 'error');
             return;
         }
 
@@ -561,11 +561,11 @@ class AuditCheckApp {
 
             btn.innerHTML = originalText;
             btn.disabled = false;
-            showNotification('PDF check completed', 'success');
+            showToast('PDF check completed', 'success');
 
         } catch (error) {
             console.error('Error checking PDF:', error);
-            showNotification('Error checking PDF', 'error');
+            showToast('Error checking PDF', 'error');
             document.getElementById('check-pdf-btn').disabled = false;
         }
     }
@@ -627,7 +627,7 @@ class AuditCheckApp {
 
     resetCheckerMode() {
         this.removePdf();
-        showNotification('Checker mode reset', 'info');
+        showToast('Checker mode reset', 'info');
     }
 
     // ==================== UTILITY METHODS ====================
@@ -649,74 +649,9 @@ class AuditCheckApp {
     }
 }
 
-// ==================== UTILITY FUNCTIONS ====================
-
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 1rem 1.5rem;
-        background: ${getNotificationColor(type)};
-        color: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        z-index: 9999;
-        max-width: 400px;
-        animation: slideIn 0.3s ease;
-        font-weight: 600;
-    `;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, 3000);
-}
-
-function getNotificationColor(type) {
-    const colors = {
-        success: '#4caf50',
-        error: '#f44336',
-        warning: '#ff9800',
-        info: '#2196f3'
-    };
-    return colors[type] || colors.info;
-}
-
 // ==================== INITIALIZATION ====================
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Add notification animations to CSS
-    const style = document.createElement('style');
-    style.textContent = `
-        @keyframes slideIn {
-            from {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOut {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(400px);
-                opacity: 0;
-            }
-        }
-    `;
-    document.head.appendChild(style);
-
     // Initialize app
     window.auditApp = new AuditCheckApp();
 });
