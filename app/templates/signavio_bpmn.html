@@ -38,8 +38,7 @@
             <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">Triggers</span></div>
             <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Flow</span></div>
             <div class="step" data-step="5"><span class="step-number">5</span><span class="step-label">Delays</span></div>
-            <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Rules</span></div>
-            <div class="step" data-step="7"><span class="step-number">7</span><span class="step-label">Review</span></div>
+            <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Review</span></div>
         </div>
 
         <div class="form-container">
@@ -118,6 +117,10 @@
                     </label>
                     <textarea id="processActivities" name="processActivities" placeholder="Describe the steps in order. Example: The Sales Rep receives the order. If the amount is > $1000, the Manager must approve it. Otherwise, the system auto-approves..." rows="8" required></textarea>
                 </div>
+                <div class="form-group">
+                    <label for="processEnding">How does the process end? *</label>
+                    <textarea id="processEnding" name="processEnding" placeholder="Describe the primary end state and any alternate endings. Example: Order shipped and invoice sent; Order canceled after credit check fails; Refund issued" rows="4" required></textarea>
+                </div>
             </div>
 
             <!-- Step 5: Delays & Intermediates -->
@@ -130,18 +133,8 @@
                 </div>
             </div>
 
-            <!-- Step 6: Rules (Optional) -->
+            <!-- Step 6: Review & Generate -->
             <div class="form-step" id="step-6">
-                <h3>Business Rules (Optional)</h3>
-                <p>Any specific constraints?</p>
-                <div class="form-group">
-                    <label for="businessRules">Business Rules</label>
-                    <textarea id="businessRules" name="businessRules" placeholder="e.g., Orders over $5000 require VP approval..." rows="3"></textarea>
-                </div>
-            </div>
-
-            <!-- Step 7: Review & Generate -->
-            <div class="form-step" id="step-7">
                 <h3>Review & Generate</h3>
                 <p>Use the guide, adjust inputs, and rerun review before generating.</p>
                 

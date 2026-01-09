@@ -3,7 +3,7 @@
  */
 
 let currentStep = 1;
-const totalSteps = 7;
+const totalSteps = 6; // Keep in sync with template step count
 const formData = {};
 let maxAccessibleStep = 1; // highest step allowed to jump to
 
@@ -22,7 +22,7 @@ function initializeFormHandlers() {
     const generateBtn = document.getElementById('generateBtn');
     if (generateBtn) generateBtn.addEventListener('click', generateBPMN);
     const reviewAgainBtn = document.getElementById('reviewAgainBtn');
-    if (reviewAgainBtn) reviewAgainBtn.addEventListener('click', () => goToStep(Math.min(maxAccessibleStep, 7)));
+    if (reviewAgainBtn) reviewAgainBtn.addEventListener('click', () => goToStep(Math.min(maxAccessibleStep, 6)));
 
     const editBtnReview = document.getElementById('editBtnReview');
     if (editBtnReview) editBtnReview.addEventListener('click', () => {
@@ -242,7 +242,7 @@ function loadCurrentStepData() {
     }
 
     // Special handling for inline override on Review step
-    if (currentStep === 7) {
+    if (currentStep === 6) {
         const overrideBox = document.getElementById('reviewOverride');
         if (overrideBox && formData.reviewOverride) overrideBox.value = formData.reviewOverride;
     }
@@ -496,14 +496,16 @@ function updateInfoModalContent() {
                     <li>Mention who is responsible for each task</li>
                     <li>Include conditions (e.g., "If X, then Y")</li>
                     <li>Note any parallel activities</li>
+                    <li><strong>End-of-process question:</strong> What happens after the process is completed?</li>
                 </ul>
                 <h4>Example:</h4>
                 <div class="modal-example">
                     1. R0P ingests demand plan and flags anomalies<br>
-                    2. GRP checks supply and proposes reallocations
-                    3. If stock-out risk > threshold, M0P triggers master-data validation; else continue
-                    4. P0P schedules production; Logistics Execution creates deliveries in parallel
-                    5. Finance posts billing once goods issue is confirmed
+                    2. GRP checks supply and proposes reallocations<br>
+                    3. If stock-out risk > threshold, M0P triggers master-data validation; else continue<br>
+                    4. P0P schedules production; Logistics Execution creates deliveries in parallel<br>
+                    5. Finance posts billing once goods issue is confirmed<br>
+                    <strong>End-of-process question:</strong> Customer receives order confirmation and tracking details.
                 </div>`
         },
         5: {
@@ -521,22 +523,7 @@ function updateInfoModalContent() {
                 </div>`
         },
         6: {
-            title: 'Step 6: Business Rules',
-            content: `<p>Define constraints and business logic.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li>Approval thresholds</li>
-                    <li>Validation rules</li>
-                    <li>Exception handling</li>
-                    <li>Compliance requirements</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    Orders over $5000 require manager approval, All orders must be fulfilled within 48 hours, Failed payments trigger automatic email notification, International orders require customs documentation
-                </div>`
-        },
-        7: {
-            title: 'Step 7: Review',
+            title: 'Step 6: Review',
             content: `<p>Review all your inputs before generating the BPMN.</p>
                 <h4>What to do:</h4>
                 <ul>
