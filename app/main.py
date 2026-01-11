@@ -20,7 +20,3 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 # Routers
 app.include_router(web.router)
 
-
-@app.get("/healthz")
-async def healthz():
-    return {"status": "ok"}
