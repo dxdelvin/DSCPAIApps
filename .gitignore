@@ -81,3 +81,5 @@ build/
 .pytest_cache/
 .coverage
 htmlcov/
+*.vsidx
+.vs/DSCPAIApps/v17/.wsuo
