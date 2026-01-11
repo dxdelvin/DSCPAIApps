@@ -351,7 +351,10 @@ function goToStep(stepNum) {
     currentStep = stepNum;
     updateStepIndicator();
     updateFormNavigation();
-    if (currentStep === totalSteps) populateReviewSummary();
+    if (currentStep === totalSteps) {
+        populateReviewSummary();
+        fetchBrainAnalysis();
+    }
     document.querySelector('.form-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -391,18 +394,78 @@ function populateReviewSummary() {
     // Summary list intentionally removed in this version.
 }
 
+async function fetchBrainAnalysis() {
+    const statusEl = document.getElementById('analysisStatus');
+    const contentEl = document.getElementById('analysisContent');
+    if (statusEl) statusEl.textContent = 'Fetching...';
+    if (contentEl) contentEl.textContent = '';
+
+    try {
+        const response = await fetch('/api/make-bpmn-analysis', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== 'success') {
+            if (statusEl) statusEl.textContent = 'Not Authenticated';
+            if (contentEl) contentEl.textContent = '';
+            return;
+        }
+
+        if (statusEl) statusEl.textContent = 'Complete';
+        if (contentEl) contentEl.textContent = result.analysis || 'No analysis returned.';
+    } catch (error) {
+        if (statusEl) statusEl.textContent = 'Not Authenticated';
+        if (contentEl) contentEl.textContent = '';
+    }
+}
+
 async function generateBPMN() {
     const loadingSpinner = document.getElementById('loadingSpinner');
     if (loadingSpinner) loadingSpinner.style.display = 'flex';
+    
     try {
-        showToast('Generating BPMN diagram...', 'info', 4000);
-        await new Promise((resolve) => setTimeout(resolve, 1200));
-        await downloadFakeBPMN();
-        showToast('BPMN generated and downloaded.', 'success');
-        setTimeout(resetForm, 800);
+        showToast('Consulting BRAIN for BPMN generation...', 'info');
+        
+        const response = await fetch('/api/generate-bpmn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData) // formData gathered from the 8-step process
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            // Displays the "API Not Active" error and details in the toast
+            const detail = sanitizeDetail(result.detail);
+            showToast(`${result.message}: ${detail}`, 'error', 5000);
+            return;
+        }
+
+        // 1. Create a Blob from the extracted XML string
+        const blob = new Blob([result.xml], { type: 'application/xml' });
+        
+        // 2. Create a temporary URL for the Blob
+        const url = URL.createObjectURL(blob);
+        
+        // 3. Create a hidden link and click it to trigger the download
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = result.filename; // Uses the safe filename from the backend
+        document.body.appendChild(link);
+        link.click();
+        
+        // 4. Cleanup
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        showToast('BPMN generated and downloaded successfully.', 'success');
+        
     } catch (error) {
-        console.error('Error generating BPMN:', error);
-        showToast('Failed to generate BPMN. Please try again.', 'error');
+        showToast('Connection failed. Please check if the server is running.', 'error');
     } finally {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
     }
@@ -439,6 +502,12 @@ function downloadFakeBPMN() {
 function escapeXml(str) {
     if (!str) return '';
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+}
+
+function sanitizeDetail(detail) {
+    if (!detail) return '';
+    const trimmed = detail.trim();
+    return trimmed.startsWith('Auth Error') ? 'Auth Error' : trimmed;
 }
 
 function updateInfoModalContent() {

@@ -17,6 +17,7 @@ class AuditCheckApp {
     init() {
         this.setupEventListeners();
         this.setupDragAndDrop();
+        this.switchMode(this.currentMode);
     }
 
     setupEventListeners() {
@@ -151,8 +152,11 @@ class AuditCheckApp {
         });
 
         // Update panel visibility
-        document.getElementById('creator-mode').style.display = mode === 'creator' ? 'flex' : 'none';
-        document.getElementById('checker-mode').style.display = mode === 'checker' ? 'flex' : 'none';
+        document.querySelectorAll('.mode-panel').forEach(panel => {
+            const isActive = panel.id === `${mode}-mode`;
+            panel.classList.toggle('active', isActive);
+            panel.style.display = isActive ? 'flex' : 'none';
+        });
     }
 
     // ==================== CREATOR MODE ====================
@@ -276,8 +280,8 @@ class AuditCheckApp {
             // Display preview
             this.displayPdfPreview();
 
-            // Simulate audit check (in production, this would call backend)
-            await this.simulateAuditCheck();
+            // Send generated PDF to Audit Brain
+            await this.runCreatorAuditCheck(pdfDoc);
 
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -412,7 +416,7 @@ class AuditCheckApp {
         `;
     }
 
-    async simulateAuditCheck() {
+    async runCreatorAuditCheck(pdfDoc) {
         const resultsPanel = document.getElementById('results-panel-creator');
         const emptyState = document.getElementById('empty-state-creator');
         const statusBadge = document.getElementById('status-badge');
@@ -420,54 +424,47 @@ class AuditCheckApp {
 
         resultsPanel.style.display = 'block';
         emptyState.style.display = 'none';
+        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Checking with Audit Brain...</div>';
+        statusBadge.className = 'status-badge info';
+        statusBadge.textContent = 'Checking...';
 
-        // Simulate processing
-        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Processing audit...</div>';
+        try {
+            const filename = `${this.creatorData.title.replace(/\s+/g, '_') || 'audit'}_${Date.now()}.pdf`;
+            const pdfBlob = pdfDoc.output('blob');
+            const formData = new FormData();
+            formData.append('file', pdfBlob, filename);
 
-        // Simulate delay
-        await new Promise(resolve => setTimeout(resolve, 2000));
+            const response = await fetch('/api/audit-doc-check', {
+                method: 'POST',
+                body: formData
+            });
 
-        // Generate mock results
-        const results = [
-            {
-                type: 'success',
-                title: 'Document Structure',
-                description: 'Audit document structure is valid and complete.'
-            },
-            {
-                type: 'success',
-                title: 'File Count',
-                description: `All ${this.creatorData.files.length} files processed successfully.`
-            },
-            {
-                type: 'info',
-                title: 'Metadata',
-                description: `Total document size: ${this.formatFileSize(this.calculateTotalSize())}`
-            },
-            {
-                type: 'success',
-                title: 'Content Validation',
-                description: 'All content passes basic validation checks.'
+            const result = await response.json();
+
+            if (!response.ok || result.status !== 'success') {
+                statusBadge.className = 'status-badge error';
+                statusBadge.textContent = 'Not Authenticated';
+                resultsContent.innerHTML = '';
+                const detail = sanitizeDetail(result.detail);
+                showToast(detail || 'Audit Brain error', 'error');
+                return;
             }
-        ];
 
-        // Display results
-        resultsContent.innerHTML = '';
-        results.forEach(result => {
+            resultsContent.innerHTML = '';
             const resultItem = document.createElement('div');
-            resultItem.className = `result-item ${result.type}`;
-            resultItem.innerHTML = `
-                <div class="result-title">
-                    ${result.type === 'success' ? '✓' : 'ℹ'} ${result.title}
-                </div>
-                <p class="result-description">${result.description}</p>
-            `;
+            resultItem.className = 'result-item info';
+            resultItem.textContent = result.analysis || 'No analysis returned.';
             resultsContent.appendChild(resultItem);
-        });
 
-        // Update status badge
-        statusBadge.className = 'status-badge success';
-        statusBadge.textContent = 'Passed ✓';
+            statusBadge.className = 'status-badge success';
+            statusBadge.textContent = 'Completed';
+        } catch (error) {
+            console.error('Error sending PDF to Audit Brain:', error);
+            statusBadge.className = 'status-badge error';
+            statusBadge.textContent = 'Not Authenticated';
+            resultsContent.innerHTML = '';
+            showToast('Error sending PDF to Audit Brain', 'error');
+        }
     }
 
     downloadPdf() {
@@ -552,25 +549,54 @@ class AuditCheckApp {
             const originalText = btn.innerHTML;
             btn.innerHTML = '<span class="spinner"></span> Checking...';
             btn.disabled = true;
+            this.displayCheckLoading();
 
-            // Simulate file reading and processing
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const formData = new FormData();
+            formData.append('file', this.selectedPdf.file);
 
-            // Display results
-            this.displayCheckResults();
+            const response = await fetch('/api/audit-doc-check', {
+                method: 'POST',
+                body: formData
+            });
 
+            const result = await response.json();
+
+            if (!response.ok || result.status !== 'success') {
+                this.displayCheckError('Not Authenticated');
+                const detail = sanitizeDetail(result.detail);
+                showToast(detail || 'Audit Brain error', 'error');
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            this.displayCheckResults(result.analysis);
             btn.innerHTML = originalText;
             btn.disabled = false;
             showToast('PDF check completed', 'success');
 
         } catch (error) {
             console.error('Error checking PDF:', error);
+            this.displayCheckError('Not Authenticated');
             showToast('Error checking PDF', 'error');
             document.getElementById('check-pdf-btn').disabled = false;
         }
     }
 
-    displayCheckResults() {
+    displayCheckLoading() {
+        const emptyState = document.getElementById('empty-state-checker');
+        const resultsPanel = document.getElementById('results-panel-checker');
+        const statusBadge = document.getElementById('status-badge-checker');
+        const resultsContent = document.getElementById('results-content-checker');
+
+        emptyState.style.display = 'none';
+        resultsPanel.style.display = 'flex';
+        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Checking with Audit Brain...</div>';
+        statusBadge.className = 'status-badge info';
+        statusBadge.textContent = 'Checking...';
+    }
+
+    displayCheckResults(analysisText) {
         const emptyState = document.getElementById('empty-state-checker');
         const resultsPanel = document.getElementById('results-panel-checker');
         const statusBadge = document.getElementById('status-badge-checker');
@@ -579,50 +605,27 @@ class AuditCheckApp {
         emptyState.style.display = 'none';
         resultsPanel.style.display = 'flex';
 
-        // Generate mock check results
-        const results = [
-            {
-                type: 'success',
-                title: 'PDF Format',
-                description: 'PDF file format is valid and readable.'
-            },
-            {
-                type: 'success',
-                title: 'File Integrity',
-                description: 'No corruption detected in the document.'
-            },
-            {
-                type: 'info',
-                title: 'Document Info',
-                description: `File: ${this.selectedPdf.name} | Size: ${this.formatFileSize(this.selectedPdf.size)}`
-            },
-            {
-                type: 'success',
-                title: 'Compatibility',
-                description: 'Document is compatible with standard PDF readers.'
-            },
-            {
-                type: 'success',
-                title: 'Security Scan',
-                description: 'No security threats detected.'
-            }
-        ];
-
         resultsContent.innerHTML = '';
-        results.forEach(result => {
-            const resultItem = document.createElement('div');
-            resultItem.className = `result-item ${result.type}`;
-            resultItem.innerHTML = `
-                <div class="result-title">
-                    ${result.type === 'success' ? '✓' : 'ℹ'} ${result.title}
-                </div>
-                <p class="result-description">${result.description}</p>
-            `;
-            resultsContent.appendChild(resultItem);
-        });
+        const resultItem = document.createElement('div');
+        resultItem.className = 'result-item info';
+        resultItem.textContent = analysisText || 'No analysis returned.';
+        resultsContent.appendChild(resultItem);
 
         statusBadge.className = 'status-badge success';
-        statusBadge.textContent = 'Passed ✓';
+        statusBadge.textContent = 'Completed';
+    }
+
+    displayCheckError(message) {
+        const emptyState = document.getElementById('empty-state-checker');
+        const resultsPanel = document.getElementById('results-panel-checker');
+        const statusBadge = document.getElementById('status-badge-checker');
+        const resultsContent = document.getElementById('results-content-checker');
+
+        emptyState.style.display = 'none';
+        resultsPanel.style.display = 'flex';
+        statusBadge.className = 'status-badge error';
+        statusBadge.textContent = message || 'Error';
+        resultsContent.innerHTML = '';
     }
 
     resetCheckerMode() {
@@ -647,6 +650,12 @@ class AuditCheckApp {
     calculateTotalSize() {
         return this.creatorData.files.reduce((total, file) => total + file.size, 0);
     }
+}
+
+function sanitizeDetail(detail) {
+    if (!detail) return '';
+    const trimmed = detail.trim();
+    return trimmed.startsWith('Auth Error') ? 'Auth Error' : trimmed;
 }
 
 // ==================== INITIALIZATION ====================

@@ -138,14 +138,12 @@
                 <h3>Review & Generate</h3>
                 <p>Use the guide, adjust inputs, and rerun review before generating.</p>
                 
-                <div class="sample-review">
-                    <h4><span style="font-size: 1.2em;">✨</span> AI Analysis (Sample)</h4>
-                    <p>
-                        <strong>Summary:</strong> The process "Order to Cash" initiated by "Customer Order" involves 3 main participants. 
-                        The flow seems linear but contains a critical decision point regarding "Credit Check".
-                        <br><br>
-                        <strong>Suggestion:</strong> Consider adding an exception path for "Credit Check Failed" to ensure the process doesn't stall.
-                    </p>
+                <div class="analysis-panel">
+                    <div class="analysis-header">
+                        <h4>AI Analysis</h4>
+                        <span id="analysisStatus" class="analysis-status">Ready</span>
+                    </div>
+                    <div id="analysisContent" class="analysis-content">Run review to fetch Brain understanding.</div>
                 </div>
 
                 <div class="cta-panel">

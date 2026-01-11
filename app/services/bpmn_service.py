@@ -1,56 +1,111 @@
-from datetime import datetime
-from typing import Dict, Tuple
+import httpx
+import os
+import re
+from typing import Optional
+from fastapi import HTTPException
+from app.services.brain_auth import get_brain_access_token
 
 
-def generate_fake_bpmn(payload: Dict) -> Tuple[bytes, str]:
-    """Build a simple BPMN XML payload and filename."""
-    process_name = payload.get("processName") or "bpmn_diagram"
-    safe_name = "_".join(process_name.split())
-    filename = f"{safe_name}.xml"
+def _extract_xml(text: str) -> str:
+    """Extract BPMN XML from the AI response, tolerant to bpmn/bpmn2 prefixes."""
+    pattern = r"(<\?xml.*?<bpmn2?:definitions.*?</bpmn2?:definitions>)"
+    match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
+    if match:
+        return match.group(1).strip()
 
-    description = payload.get("processDescription", "")
-    start_event = payload.get("startEvent", "Start")
-    end_event = payload.get("endEvent", "End")
-    activities = payload.get("mainActivities", "")
+    secondary_pattern = r"(<bpmn2?:definitions.*?</bpmn2?:definitions>)"
+    secondary_match = re.search(secondary_pattern, text, re.DOTALL | re.IGNORECASE)
+    if secondary_match:
+        return secondary_match.group(1).strip()
 
-    activities_xml = "".join(
-        f"        <bpmn2:task id=\"Task_{idx}\" name=\"{_escape_xml(activity.strip())}\"/>\n"
-        for idx, activity in enumerate(activities.split(","), start=1)
-        if activity.strip()
-    )
-
-    xml = f"""<?xml version=\"1.0\" encoding=\"UTF-8\"?>
-<bpmn2:definitions xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"
-    xmlns:bpmn2=\"http://www.omg.org/spec/BPMN/20100524/MODEL\"
-    xmlns:bpmndi=\"http://www.omg.org/spec/BPMN/20100524/DI\"
-    xmlns:dc=\"http://www.omg.org/spec/DD/20100524/DC\"
-    xmlns:di=\"http://www.omg.org/spec/DD/20100524/DI\"
-    id=\"sample_bpmn\"
-    targetNamespace=\"http://example.com/bpmn\"
-    xsi:schemaLocation=\"http://www.omg.org/spec/BPMN/20100524/MODEL http://www.omg.org/spec/BPMN/20100524/BPMN20.xsd\">
-
-    <bpmn2:process id=\"Process_1\" isExecutable=\"false\">
-        <bpmn2:documentation>{_escape_xml(description)}</bpmn2:documentation>
-        <bpmn2:startEvent id=\"Event_1\" name=\"{_escape_xml(start_event)}\"/>
-        {activities_xml or ''}
-        <bpmn2:endEvent id=\"Event_End\" name=\"{_escape_xml(end_event)}\"/>
-    </bpmn2:process>
-
-    <bpmndi:BPMNDiagram id=\"BPMNDiagram_1\">
-        <bpmndi:BPMNPlane id=\"BPMNPlane_1\" bpmnElement=\"Process_1\"/>
-    </bpmndi:BPMNDiagram>
-</bpmn2:definitions>
-"""
-
-    stamped = f"<!-- Generated {datetime.utcnow().isoformat()}Z -->\n" + xml
-    return stamped.encode(), filename
+    return text.strip()
 
 
-def _escape_xml(value: str) -> str:
+def _require_env(value: str, name: str) -> str:
+    if not value:
+        raise HTTPException(status_code=500, detail=f"Missing configuration: {name}")
+    return value
+
+
+async def call_brain_chat(brain_id: str, prompt: str, *, use_gpt_knowledge: bool = True, chat_history_id: Optional[str] = None):
+    """Call DIA Brain retrieval-augmented chat with the provided Brain (knowledgeBaseId)."""
+    base_url = os.getenv("BRAIN_API_BASE_URL")
+    _require_env(base_url, "BRAIN_API_BASE_URL")
+    _require_env(brain_id, "knowledgeBaseId")
+
+    token = await get_brain_access_token()
+
+    url = f"{base_url}/chat/retrieval-augmented"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        # Bosch Brain guidance: use PostmanRuntime to avoid auth errors
+        "User-Agent": "PostmanRuntime/7.37.3",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "prompt": prompt,
+        "knowledgeBaseId": brain_id,
+        "useGptKnowledge": use_gpt_knowledge,
+    }
+    if chat_history_id:
+        payload["chatHistoryId"] = chat_history_id
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=60.0)
+            response.raise_for_status()
+            return {"result": response.json().get("result", "")}
+        except httpx.HTTPStatusError as e:
+            return {
+                "error": True,
+                "message": "API Not Active",
+                "detail": f"Status {e.response.status_code}: {e.response.text}"
+            }
+        except httpx.RequestError as e:
+            return {
+                "error": True,
+                "message": "API Not Active",
+                "detail": f"Connection error: {e}"
+            }
+
+
+def _build_bpmn_prompt(data: dict) -> str:
+    """Structure the BPMN generation prompt to keep responses concise and XML-only."""
     return (
-        value.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
+        "You are a BPMN 2.0 assistant. "
+        "Generate a Signavio-compatible BPMN 2.0 XML. "
+        "Use the inputs as structured context and respond with ONLY the XML. "
+        "Do not include markdown, code fences, or commentary.\n\n"
+        f"Process Name: {data.get('processName', '')}\n"
+        f"Pool: {data.get('poolName', '')}\n"
+        f"Participants (lanes): {data.get('participants', '')}\n"
+        f"Sublanes: {data.get('subLanes', '')}\n"
+        f"Start Triggers: {data.get('startTriggers', '')}\n"
+        f"Activities: {data.get('processActivities', '')}\n"
+        f"End State: {data.get('processEnding', '')}\n"
+        f"Intermediate/Delays: {data.get('intermediateEvents', '')}\n"
+        f"Overrides/Notes: {data.get('reviewOverride', '')}\n"
+        "Ensure the XML starts with the XML declaration and contains a single <bpmn:definitions> block."
     )
+
+
+async def get_signavio_bpmn_xml(data: dict):
+    """Orchestrate prompt building, Brain call, and XML extraction for BPMN generation."""
+    prompt = _build_bpmn_prompt(data)
+    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    response = await call_brain_chat(brain_id, prompt, use_gpt_knowledge=True)
+
+    if response.get("error"):
+        return response
+
+    raw_text = response.get("result", "")
+    extracted_xml = _extract_xml(raw_text)
+
+    if "<bpmn" not in extracted_xml.lower():
+        return {
+            "error": True,
+            "message": "Invalid BPMN response",
+            "detail": "Brain response did not contain BPMN XML."
+        }
+
+    return {"result": extracted_xml}

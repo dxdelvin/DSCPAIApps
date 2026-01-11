@@ -127,6 +127,44 @@
         margin: 0;
     }
 
+    .analysis-panel {
+        background: #f8fbff;
+        border: 1px solid #dbeafe;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 16px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+    }
+
+    .analysis-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .analysis-header h4 {
+        margin: 0;
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .analysis-status {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        background: #e0f2fe;
+        color: #0369a1;
+        border: 1px solid #bae6fd;
+    }
+
+    .analysis-content {
+        color: #0f172a;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+
     /* Info Modal Improvements - Slide-in Panel */
     .modal {
         display: none;
