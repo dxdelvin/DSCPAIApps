@@ -83,3 +83,7 @@ build/
 htmlcov/
 *.vsidx
 .vs/DSCPAIApps/v17/.wsuo
+/.vs
+.vs/DSCPAIApps/v17/DocumentLayout.backup.json
+.vs/DSCPAIApps/v17/DocumentLayout.json
+.vs/VSWorkspaceState.json
