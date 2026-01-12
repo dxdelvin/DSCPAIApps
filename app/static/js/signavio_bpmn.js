@@ -1,9 +1,6 @@
-/**
- * Signavio BPMN Creator logic
- */
 
 let currentStep = 1;
-const totalSteps = 6; // Keep in sync with template step count
+const totalSteps = 6; 
 const formData = {};
 let maxAccessibleStep = 1; // highest step allowed to jump to
 
@@ -352,7 +349,6 @@ function goToStep(stepNum) {
     updateStepIndicator();
     updateFormNavigation();
     if (currentStep === totalSteps) {
-        populateReviewSummary();
         fetchBrainAnalysis();
     }
     document.querySelector('.form-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -390,9 +386,6 @@ function updateFormNavigation() {
     }
 }
 
-function populateReviewSummary() {
-    // Summary list intentionally removed in this version.
-}
 
 async function fetchBrainAnalysis() {
     const statusEl = document.getElementById('analysisStatus');

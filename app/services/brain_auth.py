@@ -12,7 +12,7 @@ async def get_brain_access_token():
     data = {
         "client_id": client_id,
         "client_secret": client_secret,
-        "scope": "api://dia-brain/.default", # Standard scope for Brain [cite: 186]
+        "scope": "api://dia-brain/.default",
         "grant_type": "client_credentials"
     }
     
@@ -22,5 +22,5 @@ async def get_brain_access_token():
             response.raise_for_status()
             return response.json().get("access_token")
         except httpx.HTTPStatusError as e:
-            # Captures authentication failures (e.g., Client ID not whitelisted) 
+            print(f"Auth Error: {e.response.text}")
             raise HTTPException(status_code=e.response.status_code, detail=f"Auth Error: {e.response.text}")

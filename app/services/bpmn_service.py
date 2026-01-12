@@ -7,7 +7,7 @@ from app.services.brain_auth import get_brain_access_token
 
 
 def _extract_xml(text: str) -> str:
-    """Extract BPMN XML from the AI response, tolerant to bpmn/bpmn2 prefixes."""
+    """Extract BPMN XML from the AI response"""
     pattern = r"(<\?xml.*?<bpmn2?:definitions.*?</bpmn2?:definitions>)"
     match = re.search(pattern, text, re.DOTALL | re.IGNORECASE)
     if match:
@@ -20,7 +20,7 @@ def _extract_xml(text: str) -> str:
 
     return text.strip()
 
-
+# to check if the env files are working or not! Just DEBUG in UI
 def _require_env(value: str, name: str) -> str:
     if not value:
         raise HTTPException(status_code=500, detail=f"Missing configuration: {name}")
@@ -38,7 +38,6 @@ async def call_brain_chat(brain_id: str, prompt: str, *, use_gpt_knowledge: bool
     url = f"{base_url}/chat/retrieval-augmented"
     headers = {
         "Authorization": f"Bearer {token}",
-        # Bosch Brain guidance: use PostmanRuntime to avoid auth errors
         "User-Agent": "PostmanRuntime/7.37.3",
         "Content-Type": "application/json"
     }
@@ -72,28 +71,25 @@ async def call_brain_chat(brain_id: str, prompt: str, *, use_gpt_knowledge: bool
 def _build_bpmn_prompt(data: dict) -> str:
     """Structure the BPMN generation prompt to keep responses concise and XML-only."""
     return (
-        "You are a BPMN 2.0 assistant. "
-        "Generate a Signavio-compatible BPMN 2.0 XML. "
-        "Use the inputs as structured context and respond with ONLY the XML. "
-        "Do not include markdown, code fences, or commentary.\n\n"
+        "You are a expert BPMN 2.0 assistant. "
+        "Generate a Signavio-compatible BPMN 2.0 XML. for my following process"
         f"Process Name: {data.get('processName', '')}\n"
         f"Pool: {data.get('poolName', '')}\n"
         f"Participants (lanes): {data.get('participants', '')}\n"
         f"Sublanes: {data.get('subLanes', '')}\n"
         f"Start Triggers: {data.get('startTriggers', '')}\n"
-        f"Activities: {data.get('processActivities', '')}\n"
+        f"Activities and Process Steps: {data.get('processActivities', '')}\n"
         f"End State: {data.get('processEnding', '')}\n"
         f"Intermediate/Delays: {data.get('intermediateEvents', '')}\n"
         f"Overrides/Notes: {data.get('reviewOverride', '')}\n"
-        "Ensure the XML starts with the XML declaration and contains a single <bpmn:definitions> block."
     )
 
+#Main Function to get the BPMN file!
 
 async def get_signavio_bpmn_xml(data: dict):
-    """Orchestrate prompt building, Brain call, and XML extraction for BPMN generation."""
     prompt = _build_bpmn_prompt(data)
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
-    response = await call_brain_chat(brain_id, prompt, use_gpt_knowledge=True)
+    response = await call_brain_chat(brain_id, prompt, use_gpt_knowledge=False)
 
     if response.get("error"):
         return response
