@@ -11,6 +11,7 @@ class AuditCheckApp {
             files: []
         };
         this.selectedPdf = null;
+        this.chatHistoryId = null; // Track audit chat session
         this.init();
     }
 
@@ -424,9 +425,9 @@ class AuditCheckApp {
 
         resultsPanel.style.display = 'block';
         emptyState.style.display = 'none';
-        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Checking with Audit Brain...</div>';
+        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Analyzing with Audit Brain...</div>';
         statusBadge.className = 'status-badge info';
-        statusBadge.textContent = 'Checking...';
+        statusBadge.textContent = 'Analyzing...';
 
         try {
             const filename = `${this.creatorData.title.replace(/\s+/g, '_') || 'audit'}_${Date.now()}.pdf`;
@@ -443,28 +444,176 @@ class AuditCheckApp {
 
             if (!response.ok || result.status !== 'success') {
                 statusBadge.className = 'status-badge error';
-                statusBadge.textContent = 'Not Authenticated';
-                resultsContent.innerHTML = '';
+                statusBadge.textContent = 'Error';
+                resultsContent.innerHTML = `<div class="result-item error">Failed to analyze document. ${result.detail || ''}</div>`;
                 const detail = sanitizeDetail(result.detail);
                 showToast(detail || 'Audit Brain error', 'error');
                 return;
             }
 
-            resultsContent.innerHTML = '';
-            const resultItem = document.createElement('div');
-            resultItem.className = 'result-item info';
-            resultItem.textContent = result.analysis || 'No analysis returned.';
-            resultsContent.appendChild(resultItem);
+            // Store chat history for follow-up questions
+            this.chatHistoryId = result.chatHistoryId;
+            
+            // Format and display results
+            resultsContent.innerHTML = this.formatAnalysisResult(result.analysis);
+            
+            // Add chat interface for follow-up
+            this.addChatInterface(resultsContent, 'creator');
 
             statusBadge.className = 'status-badge success';
-            statusBadge.textContent = 'Completed';
+            statusBadge.textContent = 'Complete';
         } catch (error) {
             console.error('Error sending PDF to Audit Brain:', error);
             statusBadge.className = 'status-badge error';
-            statusBadge.textContent = 'Not Authenticated';
-            resultsContent.innerHTML = '';
+            statusBadge.textContent = 'Error';
+            resultsContent.innerHTML = '<div class="result-item error">Connection failed. Please try again.</div>';
             showToast('Error sending PDF to Audit Brain', 'error');
         }
+    }
+    
+    formatAnalysisResult(text) {
+        if (!text) return '<div class="result-item">No analysis available.</div>';
+        
+        // Convert markdown-style formatting to HTML
+        let formatted = text
+            // Headers
+            .replace(/^## (.+)$/gm, '<h4 class="result-heading">$1</h4>')
+            .replace(/^### (.+)$/gm, '<h5 class="result-subheading">$1</h5>')
+            // Bold text
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            // Tables (basic support)
+            .replace(/\|(.+)\|/g, (match) => {
+                const cells = match.split('|').filter(c => c.trim());
+                if (cells.every(c => c.trim().match(/^[-]+$/))) {
+                    return ''; // Skip separator rows
+                }
+                return `<tr>${cells.map(c => `<td>${c.trim()}</td>`).join('')}</tr>`;
+            })
+            // Bullet points
+            .replace(/^- (.+)$/gm, '<li>$1</li>')
+            // Numbered lists
+            .replace(/^\d+\. (.+)$/gm, '<li class="numbered">$1</li>')
+            // Line breaks
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        
+        // Wrap consecutive <li> elements in <ul>
+        formatted = formatted.replace(/(<li[^>]*>.*?<\/li>)+/gs, (match) => {
+            const isNumbered = match.includes('class="numbered"');
+            const tag = isNumbered ? 'ol' : 'ul';
+            return `<${tag} class="result-list">${match}</${tag}>`;
+        });
+        
+        // Wrap <tr> elements in <table>
+        formatted = formatted.replace(/(<tr>.*?<\/tr>)+/gs, (match) => {
+            return `<table class="result-table">${match}</table>`;
+        });
+        
+        return `<div class="result-formatted">${formatted}</div>`;
+    }
+    
+    addChatInterface(container, mode) {
+        const chatHtml = `
+            <div class="audit-chat-section">
+                <div class="chat-divider">
+                    <span>💬 Ask Follow-up Questions</span>
+                </div>
+                <div class="audit-chat-messages" id="audit-chat-messages-${mode}"></div>
+                <div class="audit-chat-input-container">
+                    <input type="text" 
+                           id="audit-chat-input-${mode}" 
+                           class="audit-chat-input" 
+                           placeholder="Ask a question about the analysis..."
+                           onkeypress="if(event.key==='Enter') window.auditApp.sendAuditChatMessage('${mode}')">
+                    <button class="btn btn-primary btn-sm" onclick="window.auditApp.sendAuditChatMessage('${mode}')">
+                        Send
+                    </button>
+                </div>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', chatHtml);
+    }
+    
+    async sendAuditChatMessage(mode) {
+        const input = document.getElementById(`audit-chat-input-${mode}`);
+        const messagesContainer = document.getElementById(`audit-chat-messages-${mode}`);
+        const message = input?.value?.trim();
+        
+        if (!message || !this.chatHistoryId) {
+            showToast('Please enter a message', 'warning');
+            return;
+        }
+        
+        // Add user message to chat
+        messagesContainer.insertAdjacentHTML('beforeend', `
+            <div class="audit-chat-message user-message">
+                <span class="message-label">You:</span>
+                <span class="message-text">${this.escapeHtml(message)}</span>
+            </div>
+        `);
+        
+        input.value = '';
+        input.disabled = true;
+        
+        // Add loading indicator
+        messagesContainer.insertAdjacentHTML('beforeend', `
+            <div class="audit-chat-message assistant-loading" id="audit-loading-${mode}">
+                <span class="spinner"></span> Thinking...
+            </div>
+        `);
+        
+        try {
+            const formData = new FormData();
+            formData.append('chatHistoryId', this.chatHistoryId);
+            formData.append('message', message);
+            
+            const response = await fetch('/api/audit-chat', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            // Remove loading indicator
+            document.getElementById(`audit-loading-${mode}`)?.remove();
+            
+            if (!response.ok || result.status !== 'success') {
+                messagesContainer.insertAdjacentHTML('beforeend', `
+                    <div class="audit-chat-message assistant-message error">
+                        <span class="message-label">AI:</span>
+                        <span class="message-text">Sorry, I encountered an error. Please try again.</span>
+                    </div>
+                `);
+            } else {
+                messagesContainer.insertAdjacentHTML('beforeend', `
+                    <div class="audit-chat-message assistant-message">
+                        <span class="message-label">AI:</span>
+                        <div class="message-text">${this.formatAnalysisResult(result.response)}</div>
+                    </div>
+                `);
+            }
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            
+        } catch (error) {
+            document.getElementById(`audit-loading-${mode}`)?.remove();
+            messagesContainer.insertAdjacentHTML('beforeend', `
+                <div class="audit-chat-message assistant-message error">
+                    <span class="message-label">AI:</span>
+                    <span class="message-text">Connection failed. Please try again.</span>
+                </div>
+            `);
+        } finally {
+            input.disabled = false;
+            input.focus();
+        }
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     downloadPdf() {
@@ -485,6 +634,7 @@ class AuditCheckApp {
             files: []
         };
         this.generatedPdf = null;
+        this.chatHistoryId = null;
 
         document.getElementById('audit-title').value = '';
         document.getElementById('audit-description').value = '';
@@ -562,7 +712,7 @@ class AuditCheckApp {
             const result = await response.json();
 
             if (!response.ok || result.status !== 'success') {
-                this.displayCheckError('Not Authenticated');
+                this.displayCheckError('Error');
                 const detail = sanitizeDetail(result.detail);
                 showToast(detail || 'Audit Brain error', 'error');
                 btn.innerHTML = originalText;
@@ -570,10 +720,10 @@ class AuditCheckApp {
                 return;
             }
 
-            this.displayCheckResults(result.analysis);
+            this.displayCheckResults(result.analysis, result.chatHistoryId);
             btn.innerHTML = originalText;
             btn.disabled = false;
-            showToast('PDF check completed', 'success');
+            showToast('PDF analysis completed', 'success');
 
         } catch (error) {
             console.error('Error checking PDF:', error);
@@ -596,7 +746,7 @@ class AuditCheckApp {
         statusBadge.textContent = 'Checking...';
     }
 
-    displayCheckResults(analysisText) {
+    displayCheckResults(analysisText, chatHistoryId) {
         const emptyState = document.getElementById('empty-state-checker');
         const resultsPanel = document.getElementById('results-panel-checker');
         const statusBadge = document.getElementById('status-badge-checker');
@@ -605,14 +755,17 @@ class AuditCheckApp {
         emptyState.style.display = 'none';
         resultsPanel.style.display = 'flex';
 
-        resultsContent.innerHTML = '';
-        const resultItem = document.createElement('div');
-        resultItem.className = 'result-item info';
-        resultItem.textContent = analysisText || 'No analysis returned.';
-        resultsContent.appendChild(resultItem);
+        // Store chat history for follow-up
+        this.chatHistoryId = chatHistoryId;
+        
+        // Format and display results
+        resultsContent.innerHTML = this.formatAnalysisResult(analysisText || 'No analysis returned.');
+        
+        // Add chat interface for follow-up
+        this.addChatInterface(resultsContent, 'checker');
 
         statusBadge.className = 'status-badge success';
-        statusBadge.textContent = 'Completed';
+        statusBadge.textContent = 'Complete';
     }
 
     displayCheckError(message) {
@@ -630,6 +783,7 @@ class AuditCheckApp {
 
     resetCheckerMode() {
         this.removePdf();
+        this.chatHistoryId = null;
         showToast('Checker mode reset', 'info');
     }
 

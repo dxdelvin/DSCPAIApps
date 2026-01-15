@@ -136,7 +136,7 @@
             <!-- Step 6: Review & Generate -->
             <div class="form-step" id="step-6">
                 <h3>Review & Generate</h3>
-                <p>Use the guide, adjust inputs, and rerun review before generating.</p>
+                <p>Review the AI analysis, refine with follow-up messages, then generate your BPMN.</p>
                 
                 <div class="analysis-panel">
                     <div class="analysis-header">
@@ -146,11 +146,36 @@
                     <div id="analysisContent" class="analysis-content">Run review to fetch Brain understanding.</div>
                 </div>
 
+                <!-- Chat Interface for Follow-up Messages -->
+                <div class="chat-panel">
+                    <div class="chat-header">
+                        <h4>💬 Refine Your Process</h4>
+                        <p class="chat-hint">Ask questions or request changes to the analysis</p>
+                    </div>
+                    <div id="chatMessagesContainer" class="chat-messages-container"></div>
+                    <div class="chat-input-container">
+                        <textarea 
+                            id="chatInput" 
+                            class="chat-input" 
+                            placeholder="e.g., 'Add a review step before shipping' or 'What if the order is rejected?'"
+                            rows="2"
+                            disabled
+                        ></textarea>
+                        <button type="button" class="btn btn-primary btn-send" id="sendChatBtn" disabled onclick="sendChatMessage()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                            Send
+                        </button>
+                    </div>
+                </div>
+
                 <div class="cta-panel">
-                    <p>Want to optimize further? Modify inputs and jump back here to review again.</p>
+                    <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="editBtnReview">Modify Inputs</button>
-                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">Review Again</button>
+                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">New Analysis</button>
                         <button type="button" class="btn btn-primary" id="generateBtn">Generate BPMN</button>
                     </div>
                     <div id="inlineOverrideContainer" class="inline-override">
