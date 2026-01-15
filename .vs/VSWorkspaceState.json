@@ -2,8 +2,13 @@
   "ExpandedNodes": [
     "",
     "\\app",
+    "\\app\\routers",
+    "\\app\\services",
+    "\\app\\static",
+    "\\app\\static\\css",
+    "\\app\\static\\js",
     "\\app\\templates"
   ],
-  "SelectedNode": "\\README.md",
+  "SelectedNode": "\\main.py",
   "PreviewInSolutionExplorer": false
 }

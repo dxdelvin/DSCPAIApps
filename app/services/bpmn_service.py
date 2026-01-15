@@ -29,6 +29,10 @@ def _require_env(value: str, name: str) -> str:
 
 async def call_brain_chat(brain_id: str, prompt: str, *, use_gpt_knowledge: bool = True, chat_history_id: Optional[str] = None):
     """Call DIA Brain retrieval-augmented chat with the provided Brain (knowledgeBaseId)."""
+    proxy_url = "http://rb-proxy-de.bosch.com:8080"
+    os.environ["HTTP_PROXY"] = proxy_url
+    os.environ["HTTPS_PROXY"] = proxy_url
+
     base_url = os.getenv("BRAIN_API_BASE_URL")
     _require_env(base_url, "BRAIN_API_BASE_URL")
     _require_env(brain_id, "knowledgeBaseId")
@@ -49,7 +53,7 @@ async def call_brain_chat(brain_id: str, prompt: str, *, use_gpt_knowledge: bool
     if chat_history_id:
         payload["chatHistoryId"] = chat_history_id
 
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(verify=False, trust_env=True) as client:
         try:
             response = await client.post(url, json=payload, headers=headers, timeout=60.0)
             response.raise_for_status()
@@ -87,7 +91,7 @@ def _build_bpmn_prompt(data: dict) -> str:
 #Main Function to get the BPMN file!
 
 async def get_signavio_bpmn_xml(data: dict):
-    prompt = _build_bpmn_prompt(data)
+    prompt = _build_bpmn_prompt(data) + " Give the BPMN/XML Code"
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
     response = await call_brain_chat(brain_id, prompt, use_gpt_knowledge=False)
 
@@ -95,6 +99,11 @@ async def get_signavio_bpmn_xml(data: dict):
         return response
 
     raw_text = response.get("result", "")
+    print("\n" + "="*50)
+    print("DEBUG: RAW BRAIN RESPONSE")
+    print("="*50)
+    print(raw_text)
+    print("="*50 + "\n")
     extracted_xml = _extract_xml(raw_text)
 
     if "<bpmn" not in extracted_xml.lower():
