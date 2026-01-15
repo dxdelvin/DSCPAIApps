@@ -275,6 +275,20 @@ async def audit_doc_check(file: UploadFile = File(...)):
             },
         )
 
+    # Create a chat history first - workflow endpoint requires this
+    chat_result = await create_chat_history(brain_id)
+    if chat_result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": chat_result.get("message", "Failed to start audit session"),
+                "detail": chat_result.get("detail", "Could not create chat history."),
+            },
+        )
+
+    chat_history_id = chat_result.get("chatHistoryId")
+
     # Upload the file as an attachment
     upload_result = await upload_attachments(brain_id, [file])
     if upload_result.get("error"):
@@ -307,6 +321,7 @@ async def audit_doc_check(file: UploadFile = File(...)):
     response = await call_brain_workflow_chat(
         brain_id, 
         prompt,
+        chat_history_id=chat_history_id,
         attachment_ids=attachment_ids
     )
 
@@ -323,7 +338,7 @@ async def audit_doc_check(file: UploadFile = File(...)):
     return {
         "status": "success", 
         "analysis": response.get("result"),
-        "chatHistoryId": response.get("chatHistoryId")
+        "chatHistoryId": chat_history_id
     }
 
 

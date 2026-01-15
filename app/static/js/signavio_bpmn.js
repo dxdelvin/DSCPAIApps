@@ -430,32 +430,106 @@ async function fetchBrainAnalysis() {
 function formatAnalysisResponse(text) {
     if (!text) return '<div class="analysis-empty"><p>No analysis available.</p></div>';
     
-    // Clean markdown-to-HTML conversion for Brain's formatted output
-    let formatted = text
-        // Headers (## and ###)
-        .replace(/^## (.+)$/gm, '<h4 class="analysis-heading">$1</h4>')
-        .replace(/^### (.+)$/gm, '<h5 class="analysis-subheading">$1</h5>')
-        // Bold text
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        // Bullet points (preserve line)
-        .replace(/^- (.+)$/gm, '<li>$1</li>')
-        // Numbered lists
-        .replace(/^\d+\. (.+)$/gm, '<li class="numbered">$1</li>')
-        // Preserve structure with double newlines as paragraph breaks
-        .split('\n\n')
-        .map(para => para.trim())
-        .filter(para => para.length > 0)
-        .join('</p><p>');
+    // Split by double newlines to preserve paragraph structure
+    const sections = text.split('\n\n').map(s => s.trim()).filter(s => s.length > 0);
     
-    // Wrap consecutive <li> elements in proper list tags
-    formatted = formatted.replace(/(<li[^>]*>.*?<\/li>)+/gs, (match) => {
-        const isNumbered = match.includes('class="numbered"');
-        const tag = isNumbered ? 'ol' : 'ul';
-        return `<${tag} class="analysis-list">${match}</${tag}>`;
+    let html = '<div class="analysis-formatted">';
+    
+    sections.forEach(section => {
+        // Check if section starts with markdown headers
+        const h2Match = section.match(/^## (.+)$/m);
+        const h3Match = section.match(/^### (.+)$/m);
+        
+        if (h2Match) {
+            // Main heading
+            const heading = h2Match[1];
+            const content = section.replace(/^## .+\n?/, '').trim();
+            html += `<div class="analysis-section">`;
+            html += `<h2 class="analysis-main-heading">➤ ${heading}</h2>`;
+            if (content) {
+                html += formatContent(content);
+            }
+            html += `</div>`;
+        } else if (h3Match) {
+            // Subheading
+            const heading = h3Match[1];
+            const content = section.replace(/^### .+\n?/, '').trim();
+            html += `<div class="analysis-subsection">`;
+            html += `<h3 class="analysis-subheading">⬥ ${heading}</h3>`;
+            if (content) {
+                html += formatContent(content);
+            }
+            html += `</div>`;
+        } else {
+            // Regular content paragraph
+            html += formatContent(section);
+        }
     });
     
-    // Wrap content
-    return `<div class="analysis-formatted"><p>${formatted}</p></div>`;
+    html += '</div>';
+    return html;
+}
+
+function formatContent(content) {
+    if (!content) return '';
+    
+    // Check if content has list items
+    const lines = content.split('\n').map(l => l.trim());
+    const hasLists = lines.some(l => /^[-*•]\s/.test(l) || /^\d+\.\s/.test(l));
+    
+    if (hasLists) {
+        // Process as list
+        let html = '';
+        let currentList = null;
+        let listType = null;
+        
+        lines.forEach(line => {
+            if (/^[-*•]\s/.test(line)) {
+                const item = line.replace(/^[-*•]\s/, '').trim();
+                if (currentList !== 'ul') {
+                    if (currentList) html += '</ul>';
+                    html += '<ul class="analysis-list">';
+                    currentList = 'ul';
+                    listType = 'ul';
+                }
+                html += `<li>${escapeBoldAndItalics(item)}</li>`;
+            } else if (/^\d+\.\s/.test(line)) {
+                const item = line.replace(/^\d+\.\s/, '').trim();
+                if (currentList !== 'ol') {
+                    if (currentList) html += currentList === 'ul' ? '</ul>' : '</ol>';
+                    html += '<ol class="analysis-list">';
+                    currentList = 'ol';
+                    listType = 'ol';
+                }
+                html += `<li>${escapeBoldAndItalics(item)}</li>`;
+            } else if (line.length > 0) {
+                if (currentList) {
+                    html += currentList === 'ul' ? '</ul>' : '</ol>';
+                    currentList = null;
+                }
+                html += `<p class="analysis-paragraph">${escapeBoldAndItalics(line)}</p>`;
+            }
+        });
+        
+        if (currentList) {
+            html += currentList === 'ul' ? '</ul>' : '</ol>';
+        }
+        
+        return html;
+    } else {
+        // Simple paragraph with formatting
+        return `<p class="analysis-paragraph">${escapeBoldAndItalics(content)}</p>`;
+    }
+}
+
+function escapeBoldAndItalics(text) {
+    // Convert markdown bold **text** to <strong>
+    text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Convert markdown italic *text* to <em>
+    text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Convert markdown code `text` to <code>
+    text = text.replace(/`(.+?)`/g, '<code>$1</code>');
+    return text;
 }
 
 async function generateBPMN() {
