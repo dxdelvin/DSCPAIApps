@@ -59,7 +59,6 @@ async def create_chat_history(brain_id: str) -> dict:
             response.raise_for_status()
             # The API returns the chat history ID as a string
             chat_history_id = response.text.strip().strip('"')
-            print(f"DEBUG: Created chat history: {chat_history_id}")
             return {"chatHistoryId": chat_history_id}
         except httpx.HTTPStatusError as e:
             return {
@@ -110,7 +109,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
             )
             response.raise_for_status()
             attachment_ids = response.json()
-            print(f"DEBUG: Uploaded attachments, got IDs: {attachment_ids}")
+            print(f"DEBUG UPLOAD: Response status {response.status_code}, attachment_ids type: {type(attachment_ids)}, value: {attachment_ids}")
             return {"attachmentIds": attachment_ids}
         except httpx.HTTPStatusError as e:
             return {
@@ -218,8 +217,6 @@ async def call_brain_workflow_chat(
         payload["attachmentIds"] = attachment_ids
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
-
-    print(f"DEBUG: Calling workflow with payload: {payload}")
 
     async with httpx.AsyncClient(verify=False, trust_env=True) as client:
         try:

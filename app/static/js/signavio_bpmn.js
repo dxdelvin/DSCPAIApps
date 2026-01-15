@@ -24,12 +24,18 @@ function initializeFormHandlers() {
 
     const editBtnReview = document.getElementById('editBtnReview');
     if (editBtnReview) editBtnReview.addEventListener('click', () => {
-        toggleInlineOverride(true);
+        // Scroll to top of page
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        // Go back to step 1 to edit inputs
+        goToStep(1);
     });
 
     // Reset buttons
     const editBtn = document.getElementById('editBtn');
-    if (editBtn) editBtn.addEventListener('click', () => resetForm());
+    if (editBtn) editBtn.addEventListener('click', () => {
+        goToStep(1);
+        resetForm();
+    });
     
     const inlineOverride = document.getElementById('inlineOverrideContainer');
     if (inlineOverride) inlineOverride.addEventListener('click', (e) => e.stopPropagation());

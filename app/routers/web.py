@@ -288,6 +288,16 @@ async def audit_doc_check(file: UploadFile = File(...)):
         )
 
     chat_history_id = chat_result.get("chatHistoryId")
+    
+    if not chat_history_id:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Failed to create chat session",
+                "detail": "Chat history ID is empty or null.",
+            },
+        )
 
     # Upload the file as an attachment
     upload_result = await upload_attachments(brain_id, [file])
