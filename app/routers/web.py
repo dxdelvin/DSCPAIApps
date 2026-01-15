@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.core.config import TEMPLATES_DIR
 from app.services.bpmn_service import (
     call_brain_chat, 
+    call_brain_workflow_chat,
     get_signavio_bpmn_xml, 
     create_chat_history,
     upload_attachments,
@@ -301,12 +302,23 @@ async def audit_doc_check(file: UploadFile = File(...)):
         )
 
     attachment_ids = upload_result.get("attachmentIds", [])
+    
+    # Validate that we got attachment IDs
+    if not attachment_ids or len(attachment_ids) == 0:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Attachment upload failed",
+                "detail": "No attachment IDs returned from upload.",
+            },
+        )
 
     # Simple prompt - Brain agent handles the audit workflow
     prompt = f"Please check and analyze this audit document: {file.filename}"
 
-    # Call the brain with the attachment - agent handles the rest
-    response = await call_brain_chat(
+    # Use workflow endpoint for audit with attachments
+    response = await call_brain_workflow_chat(
         brain_id, 
         prompt,
         chat_history_id=chat_history_id,
@@ -363,8 +375,10 @@ async def audit_chat(
                 },
             )
         attachment_ids = upload_result.get("attachmentIds", [])
+        if not attachment_ids:
+            attachment_ids = None
 
-    response = await call_brain_chat(
+    response = await call_brain_workflow_chat(
         brain_id,
         message,
         chat_history_id=chatHistoryId,

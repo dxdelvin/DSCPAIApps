@@ -391,13 +391,12 @@ function updateFormNavigation() {
 async function fetchBrainAnalysis() {
     const statusEl = document.getElementById('analysisStatus');
     const contentEl = document.getElementById('analysisContent');
-    const chatContainer = document.getElementById('chatMessagesContainer');
     
-    if (statusEl) statusEl.textContent = 'Fetching...';
+    if (statusEl) statusEl.textContent = 'Analyzing...';
     if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Analyzing your process...</div>';
 
     try {
-        // Use new session-based endpoint
+        // Use session-based endpoint for analysis
         const response = await fetch('/api/bpmn/start-session', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -407,157 +406,56 @@ async function fetchBrainAnalysis() {
         const result = await response.json();
 
         if (!response.ok || result.status !== 'success') {
-            if (statusEl) statusEl.textContent = 'Not Authenticated';
-            if (contentEl) contentEl.innerHTML = '<p class="analysis-error">Failed to connect to AI. Please try again.</p>';
+            if (statusEl) statusEl.textContent = 'Error';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Failed to connect to AI Brain</p><p class="error-detail">Please check your configuration and try again.</p></div>';
             return;
         }
 
-        // Store the chat history ID for follow-up messages
+        // Store the chat history ID for BPMN generation context
         chatHistoryId = result.chatHistoryId;
         
-        if (statusEl) statusEl.textContent = 'Complete';
+        if (statusEl) statusEl.textContent = '✓ Complete';
         if (contentEl) {
-            // Format the analysis with markdown-style rendering
+            // Format and display the analysis nicely
             contentEl.innerHTML = formatAnalysisResponse(result.analysis || 'No analysis returned.');
         }
         
-        // Clear chat container and add initial message
-        if (chatContainer) {
-            chatContainer.innerHTML = '';
-            addChatMessage('assistant', result.analysis || 'No analysis returned.');
-        }
-        
-        // Enable chat input
-        const chatInput = document.getElementById('chatInput');
-        const sendBtn = document.getElementById('sendChatBtn');
-        if (chatInput) chatInput.disabled = false;
-        if (sendBtn) sendBtn.disabled = false;
-        
     } catch (error) {
-        if (statusEl) statusEl.textContent = 'Not Authenticated';
-        if (contentEl) contentEl.innerHTML = '<p class="analysis-error">Connection failed. Please check your network.</p>';
+        console.error('Analysis error:', error);
+        if (statusEl) statusEl.textContent = 'Error';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
     }
 }
 
 function formatAnalysisResponse(text) {
-    if (!text) return '<p>No analysis available.</p>';
+    if (!text) return '<div class="analysis-empty"><p>No analysis available.</p></div>';
     
-    // Simple markdown-to-HTML conversion for Brain's formatted output
+    // Clean markdown-to-HTML conversion for Brain's formatted output
     let formatted = text
-        // Headers
+        // Headers (## and ###)
         .replace(/^## (.+)$/gm, '<h4 class="analysis-heading">$1</h4>')
         .replace(/^### (.+)$/gm, '<h5 class="analysis-subheading">$1</h5>')
         // Bold text
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        // Bullet points
+        // Bullet points (preserve line)
         .replace(/^- (.+)$/gm, '<li>$1</li>')
         // Numbered lists
         .replace(/^\d+\. (.+)$/gm, '<li class="numbered">$1</li>')
-        // Line breaks for paragraphs
-        .replace(/\n\n/g, '</p><p>')
-        .replace(/\n/g, '<br>');
+        // Preserve structure with double newlines as paragraph breaks
+        .split('\n\n')
+        .map(para => para.trim())
+        .filter(para => para.length > 0)
+        .join('</p><p>');
     
-    // Wrap consecutive <li> elements in <ul>
+    // Wrap consecutive <li> elements in proper list tags
     formatted = formatted.replace(/(<li[^>]*>.*?<\/li>)+/gs, (match) => {
         const isNumbered = match.includes('class="numbered"');
         const tag = isNumbered ? 'ol' : 'ul';
         return `<${tag} class="analysis-list">${match}</${tag}>`;
     });
     
-    return `<div class="analysis-formatted">${formatted}</div>`;
-}
-
-function addChatMessage(role, content) {
-    const chatContainer = document.getElementById('chatMessagesContainer');
-    if (!chatContainer) return;
-    
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `chat-message chat-message-${role}`;
-    
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'chat-message-label';
-    labelSpan.textContent = role === 'user' ? 'You' : 'AI Assistant';
-    
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'chat-message-content';
-    contentDiv.innerHTML = role === 'assistant' ? formatAnalysisResponse(content) : escapeHtml(content);
-    
-    messageDiv.appendChild(labelSpan);
-    messageDiv.appendChild(contentDiv);
-    chatContainer.appendChild(messageDiv);
-    
-    // Scroll to bottom
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-async function sendChatMessage() {
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendChatBtn');
-    const message = chatInput?.value?.trim();
-    
-    if (!message || !chatHistoryId) {
-        showToast('Please enter a message', 'warning');
-        return;
-    }
-    
-    // Disable input while sending
-    if (chatInput) chatInput.disabled = true;
-    if (sendBtn) sendBtn.disabled = true;
-    
-    // Add user message to chat
-    addChatMessage('user', message);
-    chatInput.value = '';
-    
-    // Show loading indicator
-    const loadingDiv = document.createElement('div');
-    loadingDiv.className = 'chat-message chat-message-assistant chat-loading';
-    loadingDiv.innerHTML = '<span class="spinner"></span> Thinking...';
-    const chatContainer = document.getElementById('chatMessagesContainer');
-    if (chatContainer) chatContainer.appendChild(loadingDiv);
-    
-    try {
-        const response = await fetch('/api/bpmn/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chatHistoryId: chatHistoryId,
-                message: message,
-                formData: formData
-            })
-        });
-        
-        const result = await response.json();
-        
-        // Remove loading indicator
-        loadingDiv.remove();
-        
-        if (!response.ok || result.status !== 'success') {
-            addChatMessage('assistant', 'Sorry, I encountered an error. Please try again.');
-            showToast('Failed to send message', 'error');
-        } else {
-            addChatMessage('assistant', result.response || 'No response received.');
-            
-            // Update the main analysis panel as well
-            const contentEl = document.getElementById('analysisContent');
-            if (contentEl) {
-                contentEl.innerHTML = formatAnalysisResponse(result.response);
-            }
-        }
-    } catch (error) {
-        loadingDiv.remove();
-        addChatMessage('assistant', 'Connection failed. Please try again.');
-        showToast('Connection error', 'error');
-    } finally {
-        if (chatInput) chatInput.disabled = false;
-        if (sendBtn) sendBtn.disabled = false;
-        chatInput?.focus();
-    }
+    // Wrap content
+    return `<div class="analysis-formatted"><p>${formatted}</p></div>`;
 }
 
 async function generateBPMN() {
@@ -766,22 +664,21 @@ function resetForm() {
         input.classList.remove('error'); 
     });
     
-    // Clear chat messages
-    const chatContainer = document.getElementById('chatMessagesContainer');
-    if (chatContainer) chatContainer.innerHTML = '';
-    
     // Reset analysis panel
     const analysisContent = document.getElementById('analysisContent');
-    if (analysisContent) analysisContent.innerHTML = 'Run review to fetch Brain understanding.';
+    if (analysisContent) {
+        analysisContent.innerHTML = `
+            <div class="analysis-placeholder">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <p>Click "Refresh Analysis" to get AI insights about your process</p>
+            </div>
+        `;
+    }
     
     const analysisStatus = document.getElementById('analysisStatus');
     if (analysisStatus) analysisStatus.textContent = 'Ready';
-    
-    // Disable chat input until new session
-    const chatInput = document.getElementById('chatInput');
-    const sendBtn = document.getElementById('sendChatBtn');
-    if (chatInput) chatInput.disabled = true;
-    if (sendBtn) sendBtn.disabled = true;
     
     // Reset to step 1
     maxAccessibleStep = 1;
