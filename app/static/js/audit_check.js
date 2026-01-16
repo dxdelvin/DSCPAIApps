@@ -11,7 +11,7 @@ class AuditCheckApp {
             files: []
         };
         this.selectedPdf = null;
-        this.chatHistoryId = null; // Track audit chat session
+        this.chatHistoryId = null; // Deprecated: no follow-up chat in audit
         this.init();
     }
 
@@ -451,14 +451,9 @@ class AuditCheckApp {
                 return;
             }
 
-            // Store chat history for follow-up questions
-            this.chatHistoryId = result.chatHistoryId;
-            
-            // Format and display results
+            // Format and display results only (no follow-up chat)
+            this.chatHistoryId = null;
             resultsContent.innerHTML = this.formatAnalysisResult(result.analysis);
-            
-            // Add chat interface for follow-up
-            this.addChatInterface(resultsContent, 'creator');
 
             statusBadge.className = 'status-badge success';
             statusBadge.textContent = 'Complete';
@@ -512,109 +507,7 @@ class AuditCheckApp {
         return `<div class="result-formatted">${formatted}</div>`;
     }
     
-    addChatInterface(container, mode) {
-        const chatHtml = `
-            <div class="audit-chat-section">
-                <div class="chat-divider">
-                    <span>💬 Ask Follow-up Questions</span>
-                </div>
-                <div class="audit-chat-messages" id="audit-chat-messages-${mode}"></div>
-                <div class="audit-chat-input-container">
-                    <input type="text" 
-                           id="audit-chat-input-${mode}" 
-                           class="audit-chat-input" 
-                           placeholder="Ask a question about the analysis..."
-                           onkeypress="if(event.key==='Enter') window.auditApp.sendAuditChatMessage('${mode}')">
-                    <button class="btn btn-primary btn-sm" onclick="window.auditApp.sendAuditChatMessage('${mode}')">
-                        Send
-                    </button>
-                </div>
-            </div>
-        `;
-        container.insertAdjacentHTML('beforeend', chatHtml);
-    }
-    
-    async sendAuditChatMessage(mode) {
-        const input = document.getElementById(`audit-chat-input-${mode}`);
-        const messagesContainer = document.getElementById(`audit-chat-messages-${mode}`);
-        const message = input?.value?.trim();
-        
-        if (!message || !this.chatHistoryId) {
-            showToast('Please enter a message', 'warning');
-            return;
-        }
-        
-        // Add user message to chat
-        messagesContainer.insertAdjacentHTML('beforeend', `
-            <div class="audit-chat-message user-message">
-                <span class="message-label">You:</span>
-                <span class="message-text">${this.escapeHtml(message)}</span>
-            </div>
-        `);
-        
-        input.value = '';
-        input.disabled = true;
-        
-        // Add loading indicator
-        messagesContainer.insertAdjacentHTML('beforeend', `
-            <div class="audit-chat-message assistant-loading" id="audit-loading-${mode}">
-                <span class="spinner"></span> Thinking...
-            </div>
-        `);
-        
-        try {
-            const formData = new FormData();
-            formData.append('chatHistoryId', this.chatHistoryId);
-            formData.append('message', message);
-            
-            const response = await fetch('/api/audit-chat', {
-                method: 'POST',
-                body: formData
-            });
-            
-            const result = await response.json();
-            
-            // Remove loading indicator
-            document.getElementById(`audit-loading-${mode}`)?.remove();
-            
-            if (!response.ok || result.status !== 'success') {
-                messagesContainer.insertAdjacentHTML('beforeend', `
-                    <div class="audit-chat-message assistant-message error">
-                        <span class="message-label">AI:</span>
-                        <span class="message-text">Sorry, I encountered an error. Please try again.</span>
-                    </div>
-                `);
-            } else {
-                messagesContainer.insertAdjacentHTML('beforeend', `
-                    <div class="audit-chat-message assistant-message">
-                        <span class="message-label">AI:</span>
-                        <div class="message-text">${this.formatAnalysisResult(result.response)}</div>
-                    </div>
-                `);
-            }
-            
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-        } catch (error) {
-            document.getElementById(`audit-loading-${mode}`)?.remove();
-            messagesContainer.insertAdjacentHTML('beforeend', `
-                <div class="audit-chat-message assistant-message error">
-                    <span class="message-label">AI:</span>
-                    <span class="message-text">Connection failed. Please try again.</span>
-                </div>
-            `);
-        } finally {
-            input.disabled = false;
-            input.focus();
-        }
-    }
-    
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
+    // Follow-up chat UI removed for audit; no chat interface rendered
 
     downloadPdf() {
         if (!this.generatedPdf) {
@@ -755,14 +648,9 @@ class AuditCheckApp {
         emptyState.style.display = 'none';
         resultsPanel.style.display = 'flex';
 
-        // Store chat history for follow-up
-        this.chatHistoryId = chatHistoryId;
-        
-        // Format and display results
+        // Display results only (no follow-up chat)
+        this.chatHistoryId = null;
         resultsContent.innerHTML = this.formatAnalysisResult(analysisText || 'No analysis returned.');
-        
-        // Add chat interface for follow-up
-        this.addChatInterface(resultsContent, 'checker');
 
         statusBadge.className = 'status-badge success';
         statusBadge.textContent = 'Complete';

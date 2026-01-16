@@ -334,6 +334,13 @@ Additional Notes: {data.get('reviewOverride', 'None')}"""
 ANALYSIS_BEHAVIOUR = "Provide a structured analysis of the BPMN process. Do NOT generate any XML or code. Format your response with clear sections using markdown headers."
 BPMN_GENERATE_BEHAVIOUR = "Generate complete Signavio-compatible BPMN 2.0 XML code for the process. Only provide the XML code, no explanations."
 
+# Audit behaviour: no follow-up questions. If no screenshots are present, clearly state
+# that the document cannot be audited.
+AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (
+    "Evaluate only the uploaded document. "
+    "If the document does not contain screenshots, explicitly state that it cannot be audited."
+)
+
 
 async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict:
     """Generate BPMN XML using the chat history context."""

@@ -16,7 +16,8 @@ from app.services.bpmn_service import (
     upload_attachments,
     _build_analysis_prompt,
     ANALYSIS_BEHAVIOUR,
-    BPMN_GENERATE_BEHAVIOUR
+    BPMN_GENERATE_BEHAVIOUR,
+    AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
 )
 
 router = APIRouter()
@@ -333,7 +334,8 @@ async def audit_doc_check(file: UploadFile = File(...)):
         brain_id, 
         prompt,
         chat_history_id=chat_history_id,
-        attachment_ids=attachment_ids
+        attachment_ids=attachment_ids,
+        custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
     )
 
     if response.get("error"):
@@ -393,7 +395,8 @@ async def audit_chat(
         brain_id,
         message,
         chat_history_id=chatHistoryId if chatHistoryId else None,
-        attachment_ids=attachment_ids
+        attachment_ids=attachment_ids,
+        custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
     )
 
     if response.get("error"):
