@@ -10,6 +10,7 @@ from app.core.config import TEMPLATES_DIR
 from app.services.bpmn_service import (
     call_brain_chat, 
     call_brain_workflow_chat,
+    call_brain_pure_llm_chat,
     get_signavio_bpmn_xml, 
     create_chat_history,
     upload_attachments,
@@ -327,8 +328,8 @@ async def audit_doc_check(file: UploadFile = File(...)):
     # Simple prompt - Brain agent handles the audit workflow
     prompt = f"Please check and analyze this audit document: {file.filename}"
 
-    # Use workflow endpoint for audit with attachments
-    response = await call_brain_workflow_chat(
+    # Use pure LLM endpoint for audit with attachments
+    response = await call_brain_pure_llm_chat(
         brain_id, 
         prompt,
         chat_history_id=chat_history_id,
@@ -388,7 +389,7 @@ async def audit_chat(
         if not attachment_ids or len(attachment_ids) == 0:
             attachment_ids = None
 
-    response = await call_brain_workflow_chat(
+    response = await call_brain_pure_llm_chat(
         brain_id,
         message,
         chat_history_id=chatHistoryId if chatHistoryId else None,

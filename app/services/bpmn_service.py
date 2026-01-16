@@ -184,6 +184,63 @@ async def call_brain_chat(
             }
 
 
+async def call_brain_pure_llm_chat(
+    brain_id: str,
+    prompt: str,
+    *,
+    chat_history_id: Optional[str] = None,
+    attachment_ids: Optional[List[str]] = None,
+    custom_behaviour: Optional[str] = None,
+) -> dict:
+    """Call DIA Brain pure LLM chat endpoint.
+
+    This endpoint does not use retrieval augmentation from the knowledge base
+    but can still maintain conversation via `chatHistoryId` and accept `attachmentIds`.
+
+    Returns dict with 'result', 'chatHistoryId', and optionally 'error' fields.
+    """
+    base_url = os.getenv("BRAIN_API_BASE_URL")
+    _require_env(base_url, "BRAIN_API_BASE_URL")
+    _require_env(brain_id, "knowledgeBaseId")
+
+    token = await get_brain_access_token()
+    _, headers = _get_proxy_and_headers(token)
+
+    url = f"{base_url}/chat/pure-llm"
+    payload = {
+        "prompt": prompt,
+        "knowledgeBaseId": brain_id,
+    }
+    if chat_history_id:
+        payload["chatHistoryId"] = chat_history_id
+    if attachment_ids and len(attachment_ids) > 0:
+        payload["attachmentIds"] = attachment_ids
+    if custom_behaviour:
+        payload["customMessageBehaviour"] = custom_behaviour
+
+    async with httpx.AsyncClient(verify=False, trust_env=True) as client:
+        try:
+            response = await client.post(url, json=payload, headers=headers, timeout=120.0)
+            response.raise_for_status()
+            data = response.json()
+            return {
+                "result": data.get("result", ""),
+                "chatHistoryId": data.get("chatHistoryId", chat_history_id),
+            }
+        except httpx.HTTPStatusError as e:
+            return {
+                "error": True,
+                "message": "API Not Active",
+                "detail": f"Status {e.response.status_code}: {e.response.text}",
+            }
+        except httpx.RequestError as e:
+            return {
+                "error": True,
+                "message": "API Not Active",
+                "detail": f"Connection error: {e}",
+            }
+
+
 async def call_brain_workflow_chat(
     brain_id: str,
     prompt: str,
