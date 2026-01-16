@@ -18,16 +18,31 @@ function initializeFormHandlers() {
     if (prevBtn) prevBtn.addEventListener('click', previousStep);
 
     const generateBtn = document.getElementById('generateBtn');
-    if (generateBtn) generateBtn.addEventListener('click', generateBPMN);
+    if (generateBtn) {
+        generateBtn.addEventListener('click', generateBPMN);
+        generateBtn.disabled = true; // disabled by default until analysis is complete
+    }
     const reviewAgainBtn = document.getElementById('reviewAgainBtn');
-    if (reviewAgainBtn) reviewAgainBtn.addEventListener('click', () => goToStep(Math.min(maxAccessibleStep, 6)));
+    if (reviewAgainBtn) reviewAgainBtn.addEventListener('click', refreshAnalysis);
 
     const editBtnReview = document.getElementById('editBtnReview');
     if (editBtnReview) editBtnReview.addEventListener('click', () => {
-        // Scroll to top of page
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        // Go back to step 1 to edit inputs
-        goToStep(1);
+        // Show inline override box to edit answers directly on review
+        toggleInlineOverride(true);
+        // Focus the override textarea and keep on Step 6
+        const overrideBox = document.getElementById('reviewOverride');
+        if (overrideBox) overrideBox.focus();
+        // Ensure we remain on the review step
+        if (currentStep !== 6) goToStep(6);
+    });
+
+    // Support alternative button id used in UI: "Modify Inputs"
+    const modifyInputsBtn = document.getElementById('modifyInputsBtn');
+    if (modifyInputsBtn) modifyInputsBtn.addEventListener('click', () => {
+        toggleInlineOverride(true);
+        const overrideBox = document.getElementById('reviewOverride');
+        if (overrideBox) overrideBox.focus();
+        if (currentStep !== 6) goToStep(6);
     });
 
     // Reset buttons
@@ -69,6 +84,9 @@ function initializeFormHandlers() {
             infoModal.style.display = 'none';
         }
     });
+
+    // Initialize button state based on current status (if any)
+    updateGenerateButtonState();
 
     document.querySelectorAll('.step').forEach((step) => {
         step.addEventListener('click', () => {
@@ -355,6 +373,9 @@ function goToStep(stepNum) {
     currentStep = stepNum;
     updateStepIndicator();
     updateFormNavigation();
+    if (currentStep === 6) {
+        updateGenerateButtonState();
+    }
     if (currentStep === totalSteps) {
         fetchBrainAnalysis();
     }
@@ -393,13 +414,25 @@ function updateFormNavigation() {
     }
 }
 
+function updateGenerateButtonState() {
+    const statusEl = document.getElementById('analysisStatus');
+    const generateBtn = document.getElementById('generateBtn');
+    if (!generateBtn) return;
+    const statusText = (statusEl?.textContent || '').toLowerCase();
+    // Enable only when status indicates completion
+    const isComplete = statusText.includes('complete') && !statusText.includes('error');
+    generateBtn.disabled = !isComplete;
+}
+
 
 async function fetchBrainAnalysis() {
     const statusEl = document.getElementById('analysisStatus');
     const contentEl = document.getElementById('analysisContent');
+    const generateBtn = document.getElementById('generateBtn');
     
     if (statusEl) statusEl.textContent = 'Analyzing...';
     if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Analyzing your process...</div>';
+    if (generateBtn) generateBtn.disabled = true;
 
     try {
         // Use session-based endpoint for analysis
@@ -414,6 +447,7 @@ async function fetchBrainAnalysis() {
         if (!response.ok || result.status !== 'success') {
             if (statusEl) statusEl.textContent = 'Error';
             if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Failed to connect to AI Brain</p><p class="error-detail">Please check your configuration and try again.</p></div>';
+            updateGenerateButtonState();
             return;
         }
 
@@ -425,11 +459,13 @@ async function fetchBrainAnalysis() {
             // Format and display the analysis nicely
             contentEl.innerHTML = formatAnalysisResponse(result.analysis || 'No analysis returned.');
         }
+        updateGenerateButtonState();
         
     } catch (error) {
         console.error('Analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
         if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        updateGenerateButtonState();
     }
 }
 
@@ -528,6 +564,66 @@ function formatContent(content) {
     }
 }
 
+async function refreshAnalysis() {
+    const statusEl = document.getElementById('analysisStatus');
+    const contentEl = document.getElementById('analysisContent');
+    const overrideBox = document.getElementById('reviewOverride');
+    const generateBtn = document.getElementById('generateBtn');
+
+    // Persist any inline override into formData
+    if (overrideBox) {
+        formData.reviewOverride = overrideBox.value || formData.reviewOverride || '';
+    }
+
+    if (statusEl) statusEl.textContent = 'Analyzing...';
+    if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Updating analysis…</div>';
+    if (generateBtn) generateBtn.disabled = true;
+
+    try {
+        // If no session yet, start one
+        if (!chatHistoryId) {
+            await fetchBrainAnalysis();
+            return;
+        }
+
+        const message = formData.reviewOverride && formData.reviewOverride.trim().length > 0
+            ? `Please update the analysis based on my edited details:\n\n${formData.reviewOverride}`
+            : 'Please refresh the analysis based on my current inputs.';
+
+        const response = await fetch('/api/bpmn/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chatHistoryId,
+                message,
+                formData
+            })
+        });
+
+        const result = await response.json();
+        if (!response.ok || result.status !== 'success') {
+            if (statusEl) statusEl.textContent = 'Error';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Failed to refresh analysis</p><p class="error-detail">Please check your configuration and try again.</p></div>';
+            updateGenerateButtonState();
+            return;
+        }
+
+        if (statusEl) statusEl.textContent = '✓ Complete';
+        if (contentEl) contentEl.innerHTML = formatAnalysisResponse(result.response || 'No analysis returned.');
+        updateGenerateButtonState();
+        // Clear Modify Inputs textbox on successful completion
+        if (overrideBox && (overrideBox.value || '').trim().length > 0) {
+            overrideBox.value = '';
+            formData.reviewOverride = '';
+        }
+    } catch (error) {
+        console.error('Refresh analysis error:', error);
+        if (statusEl) statusEl.textContent = 'Error';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        updateGenerateButtonState();
+    }
+}
+
 function escapeBoldAndItalics(text) {
     // Convert markdown bold **text** to <strong>
     text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
@@ -537,6 +633,17 @@ function escapeBoldAndItalics(text) {
     text = text.replace(/`(.+?)`/g, '<code>$1</code>');
     return text;
 }
+
+// Allow quick send with Ctrl+Enter inside the override box
+document.addEventListener('keydown', (e) => {
+    const overrideBox = document.getElementById('reviewOverride');
+    if (!overrideBox) return;
+    const isFocused = document.activeElement === overrideBox;
+    if (isFocused && e.ctrlKey && e.key === 'Enter') {
+        e.preventDefault();
+        refreshAnalysis();
+    }
+});
 
 async function generateBPMN() {
     const loadingSpinner = document.getElementById('loadingSpinner');
@@ -759,6 +866,8 @@ function resetForm() {
     
     const analysisStatus = document.getElementById('analysisStatus');
     if (analysisStatus) analysisStatus.textContent = 'Ready';
+    const generateBtn = document.getElementById('generateBtn');
+    if (generateBtn) generateBtn.disabled = true;
     
     // Reset to step 1
     maxAccessibleStep = 1;

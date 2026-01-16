@@ -449,11 +449,44 @@
 /* Override Container Styling */
 .inline-override {
     margin-top: 12px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    box-shadow: var(--shadow-soft);
 }
 
-.inline-override textarea {
+.override-label {
+    display: block;
+    font-weight: 600;
+    color: var(--navy-900);
+    margin-bottom: 8px;
+}
+
+.override-textarea {
     width: 100%;
-    min-height: 96px;
+    min-height: 110px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14px;
+    color: var(--slate-800);
+    background: #f9fafb;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.override-textarea:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+    background: #fff;
+}
+
+.override-hint {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--slate-600);
 }
 
 /* CTA Panel Styling */

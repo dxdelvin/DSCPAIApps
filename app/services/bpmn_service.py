@@ -336,7 +336,12 @@ Additional Notes: {data.get('reviewOverride', 'None')}"""
 
 # Custom behaviour instructions for the Brain
 ANALYSIS_BEHAVIOUR = "Provide a structured analysis of the BPMN process. Do NOT generate any XML or code. Format your response with clear sections using markdown headers."
-BPMN_GENERATE_BEHAVIOUR = "Generate complete Signavio-compatible BPMN 2.0 XML code for the process. Only provide the XML code, no explanations."
+BPMN_GENERATE_BEHAVIOUR = (
+    "Generate complete Signavio-compatible BPMN 2.0 XML code for the process. "
+    "Only provide the XML code, no explanations. "
+    "If any prior documentation conflicts with the user's provided details, ignore the documentation and follow the user's details. "
+    "If information is missing, make reasonable assumptions and still produce a complete, valid BPMN XML."
+)
 
 # Audit behaviour: no follow-up questions. If no screenshots are present, clearly state
 # that the document cannot be audited.
