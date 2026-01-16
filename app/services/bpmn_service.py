@@ -247,12 +247,14 @@ async def call_brain_workflow_chat(
     *,
     chat_history_id: Optional[str] = None,
     attachment_ids: Optional[List[str]] = None,
-    custom_behaviour: Optional[str] = None
+    custom_behaviour: Optional[str] = None,
+    workflow_id: Optional[str] = None,
 ) -> dict:
     """Call DIA Brain workflow chat endpoint (designed for attachments and complex workflows).
     
     Args:
         custom_behaviour: Optional custom message behaviour to modify agent response style.
+        workflow_id: Optional workflowId to route the request to a specific workflow.
     
     Returns dict with 'result', 'chatHistoryId', and optionally 'error' fields.
     """
@@ -274,6 +276,8 @@ async def call_brain_workflow_chat(
         payload["attachmentIds"] = attachment_ids
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
+    if workflow_id:
+        payload["workflowId"] = workflow_id
 
     async with httpx.AsyncClient(verify=False, trust_env=True) as client:
         try:
@@ -341,18 +345,22 @@ AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (
     "If the document does not contain screenshots, explicitly state that it cannot be audited."
 )
 
+# Workflow IDs for routing to specific Brain workflows
+SIGNAVIO_WORKFLOW_ID = "FA24GU3iEMCW"
+AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
+
 
 async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict:
     """Generate BPMN XML using the chat history context."""
     prompt = "Generate the BPMN XML for this process now." if chat_history_id else _build_bpmn_prompt(data)
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
     
-    response = await call_brain_chat(
-        brain_id, 
-        prompt, 
-        use_gpt_knowledge=False,
+    response = await call_brain_workflow_chat(
+        brain_id,
+        prompt,
         chat_history_id=chat_history_id,
-        custom_behaviour=BPMN_GENERATE_BEHAVIOUR
+        custom_behaviour=BPMN_GENERATE_BEHAVIOUR,
+        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):

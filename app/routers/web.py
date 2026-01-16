@@ -8,16 +8,16 @@ from pydantic import BaseModel
 
 from app.core.config import TEMPLATES_DIR
 from app.services.bpmn_service import (
-    call_brain_chat, 
     call_brain_workflow_chat,
-    call_brain_pure_llm_chat,
-    get_signavio_bpmn_xml, 
+    get_signavio_bpmn_xml,
     create_chat_history,
     upload_attachments,
     _build_analysis_prompt,
     ANALYSIS_BEHAVIOUR,
     BPMN_GENERATE_BEHAVIOUR,
     AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
+    SIGNAVIO_WORKFLOW_ID,
+    AUDIT_WORKFLOW_ID,
 )
 
 router = APIRouter()
@@ -104,12 +104,12 @@ async def start_bpmn_session(data: BPMNSessionRequest):
     prompt = _build_analysis_prompt(data.model_dump())
     
     # Get initial analysis using custom behaviour (no code)
-    response = await call_brain_chat(
-        brain_id, 
-        prompt, 
-        use_gpt_knowledge=False,
+    response = await call_brain_workflow_chat(
+        brain_id,
+        prompt,
         chat_history_id=chat_history_id,
-        custom_behaviour=ANALYSIS_BEHAVIOUR
+        custom_behaviour=ANALYSIS_BEHAVIOUR,
+        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -158,12 +158,12 @@ async def bpmn_chat(data: BPMNChatRequest):
     if data.formData:
         prompt = f"User request: {data.message}\n\nCurrent process context:\n{_build_analysis_prompt(data.formData)}"
 
-    response = await call_brain_chat(
-        brain_id, 
-        prompt, 
-        use_gpt_knowledge=False,
+    response = await call_brain_workflow_chat(
+        brain_id,
+        prompt,
         chat_history_id=data.chatHistoryId,
-        custom_behaviour=ANALYSIS_BEHAVIOUR
+        custom_behaviour=ANALYSIS_BEHAVIOUR,
+        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -226,11 +226,11 @@ async def make_bpmn_analysis(data: dict):
         )
 
     prompt = _build_analysis_prompt(data)
-    response = await call_brain_chat(
-        brain_id, 
-        prompt, 
-        use_gpt_knowledge=False,
-        custom_behaviour=ANALYSIS_BEHAVIOUR
+    response = await call_brain_workflow_chat(
+        brain_id,
+        prompt,
+        custom_behaviour=ANALYSIS_BEHAVIOUR,
+        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -329,13 +329,14 @@ async def audit_doc_check(file: UploadFile = File(...)):
     # Simple prompt - Brain agent handles the audit workflow
     prompt = f"Please check and analyze this audit document: {file.filename}"
 
-    # Use pure LLM endpoint for audit with attachments
-    response = await call_brain_pure_llm_chat(
-        brain_id, 
+    # Use workflow endpoint for audit with attachments
+    response = await call_brain_workflow_chat(
+        brain_id,
         prompt,
         chat_history_id=chat_history_id,
         attachment_ids=attachment_ids,
         custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
+        workflow_id=AUDIT_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -391,12 +392,13 @@ async def audit_chat(
         if not attachment_ids or len(attachment_ids) == 0:
             attachment_ids = None
 
-    response = await call_brain_pure_llm_chat(
+    response = await call_brain_workflow_chat(
         brain_id,
         message,
         chat_history_id=chatHistoryId if chatHistoryId else None,
         attachment_ids=attachment_ids,
         custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
+        workflow_id=AUDIT_WORKFLOW_ID,
     )
 
     if response.get("error"):
