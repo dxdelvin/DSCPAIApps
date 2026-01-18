@@ -350,9 +350,18 @@ AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (
     "If the document does not contain screenshots, explicitly state that it cannot be audited."
 )
 
+# BPMN Diagram Checker behaviour: analyze diagrams for errors and best practices
+BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
+    "You are a BPMN 2.0 expert. Analyze the uploaded BPMN diagram image/PDF carefully. "
+    "Identify structural errors, gateway issues, flow logic problems, naming issues, and best practice violations. "
+    "Provide a quality score from 0-100 and categorize findings as errors (critical), warnings, or suggestions. "
+    "Format your response with clear markdown sections. Do not ask follow-up questions."
+)
+
 # Workflow IDs for routing to specific Brain workflows
 SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
 AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
+BPMN_CHECKER_WORKFLOW_ID = "FA24GU3iEMCW"  # Uses same workflow as Signavio
 
 
 async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict:

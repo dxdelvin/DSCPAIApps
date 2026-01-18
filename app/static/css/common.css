@@ -472,3 +472,46 @@ textarea { resize: vertical; }
     .app-actions .btn { width: 100%; justify-content: center; }
 }
 
+/* Site Footer */
+.site-footer {
+    background: var(--navy-900);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 1rem 1.5rem;
+    text-align: center;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.footer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 95, 0, 0.15);
+    color: var(--brand-orange);
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: 1px solid rgba(255, 95, 0, 0.3);
+}
+
+.footer-text {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 480px) {
+    .footer-content {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+}
