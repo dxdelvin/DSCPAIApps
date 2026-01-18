@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}BPMN Diagram Checker - BSH DSCP AI{% endblock %}
+
+{% block page_name %}BPMN Diagram Checker{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/bpmn_checker.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | BPMN Validation</p>
+        <h1>BPMN Diagram Checker</h1>
+        <p class="lede">Upload your BPMN diagram as a PDF and get instant AI-powered feedback on mistakes, best practices, and logical flow.</p>
+    </div>
+</section>
+
+<div class="container checker-container">
+    <div class="checker-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Diagram Analysis</p>
+                <h2 class="builder-title">Upload & Validate BPMN</h2>
+            </div>
+            <div class="builder-actions">
+                <button class="btn btn-ghost" type="button" id="guideBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    Guide
+                </button>
+                <button class="btn btn-secondary" type="button" id="resetBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <div class="checker-content">
+            <!-- Left Panel: Upload -->
+            <div class="checker-left">
+                <div class="upload-panel">
+                    <h3>Upload BPMN Diagram</h3>
+                    <p>Upload a PDF or image of your BPMN diagram for analysis.</p>
+                    
+                    <!-- Upload Area -->
+                    <div class="upload-section">
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">
+                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                        <polyline points="14 2 14 8 20 8"/>
+                                        <line x1="12" y1="18" x2="12" y2="12"/>
+                                        <line x1="9" y1="15" x2="12" y2="12"/>
+                                        <line x1="15" y1="15" x2="12" y2="12"/>
+                                    </svg>
+                                </span>
+                                <p class="upload-text">Drag & drop your BPMN diagram here</p>
+                                <p class="upload-hint">or click to browse</p>
+                                <span class="upload-formats">PDF, JPG, JPEG, PNG • Max 20MB</span>
+                            </div>
+                            <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Selected File Info -->
+                    <div class="selected-file-section" id="selected-file-section" style="display: none;">
+                        <h4>Selected Document</h4>
+                        <div class="file-card">
+                            <div class="file-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                    <polyline points="14 2 14 8 20 8"/>
+                                    <line x1="16" y1="13" x2="8" y2="13"/>
+                                    <line x1="16" y1="17" x2="8" y2="17"/>
+                                </svg>
+                            </div>
+                            <div class="file-details">
+                                <p class="file-name" id="file-name">document.pdf</p>
+                                <p class="file-size" id="file-size">2.5 MB</p>
+                            </div>
+                            <button class="btn-remove" id="remove-file-btn" title="Remove file">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Context Input (Optional) -->
+                    <div class="context-section">
+                        <h4>Additional Context <span class="optional-tag">(Optional)</span></h4>
+                        <textarea id="context-input" placeholder="Provide any additional context about the process, e.g., 'This is an order fulfillment process for BSH appliances' or 'Focus on checking the decision gateways'" rows="3"></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="check-btn" disabled>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 12l2 2 4-4"/>
+                                <circle cx="12" cy="12" r="10"/>
+                            </svg>
+                            Check Diagram
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Results -->
+            <div class="checker-right">
+                <div class="results-panel">
+                    <div class="results-header">
+                        <h3>Analysis Results</h3>
+                        <div class="results-status" id="results-status"></div>
+                    </div>
+                    
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state">
+                        <div class="empty-icon">
+                            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                                <path d="M9 15l2 2 4-4"/>
+                            </svg>
+                        </div>
+                        <h4>Ready to Analyze</h4>
+                        <p>Upload a BPMN diagram PDF to get started. Our AI will check for errors, best practices, and logical consistency.</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state" style="display: none;">
+                        <div class="loading-spinner"></div>
+                        <h4>Analyzing your BPMN diagram...</h4>
+                        <p>This may take a moment while our AI reviews your diagram for errors and improvements.</p>
+                    </div>
+
+                    <!-- Results Content -->
+                    <div class="results-content" id="results-content" style="display: none;">
+                        <!-- Summary Score -->
+                        <div class="score-section" id="score-section">
+                            <div class="score-circle" id="score-circle">
+                                <span class="score-value" id="score-value">--</span>
+                            </div>
+                            <div class="score-details">
+                                <h4 id="score-label">Diagram Quality</h4>
+                                <p id="score-summary">Upload a diagram to see your score</p>
+                            </div>
+                        </div>
+
+                        <!-- Issues/Findings -->
+                        <div class="findings-section" id="findings-section">
+                            <div class="findings-header">
+                                <h4>Findings</h4>
+                                <div class="findings-filter">
+                                    <button class="filter-btn active" data-filter="all">All</button>
+                                    <button class="filter-btn" data-filter="error">Errors</button>
+                                    <button class="filter-btn" data-filter="warning">Warnings</button>
+                                    <button class="filter-btn" data-filter="info">Info</button>
+                                </div>
+                            </div>
+                            <div class="findings-list" id="findings-list">
+                                <!-- Findings will be rendered here -->
+                            </div>
+                        </div>
+
+                        <!-- AI Analysis -->
+                        <div class="analysis-section" id="analysis-section">
+                            <h4>Detailed Analysis</h4>
+                            <div class="analysis-content" id="analysis-content">
+                                <!-- AI analysis rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Guide Modal -->
+<div class="modal-overlay" id="guide-modal" style="display: none;">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>BPMN Diagram Checker Guide</h3>
+            <button class="modal-close" id="close-guide-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="guide-section">
+                <h4>📤 Upload Your Diagram</h4>
+                <p>Upload your BPMN diagram as a PDF or image (JPG, PNG) from tools like Signavio, Camunda, or Lucidchart. Make sure the diagram is clearly visible and not cropped.</p>
+            </div>
+            <div class="guide-section">
+                <h4>🔍 What Gets Checked</h4>
+                <ul>
+                    <li><strong>Structural Errors:</strong> Missing start/end events, disconnected elements</li>
+                    <li><strong>Gateway Issues:</strong> Improper use of XOR, AND, OR gateways</li>
+                    <li><strong>Naming Conventions:</strong> Unclear or missing task labels</li>
+                    <li><strong>Flow Logic:</strong> Deadlocks, infinite loops, unreachable paths</li>
+                    <li><strong>Best Practices:</strong> Signavio/BPMN 2.0 compliance</li>
+                </ul>
+            </div>
+            <div class="guide-section">
+                <h4>📊 Understanding Results</h4>
+                <p>Results are categorized as:</p>
+                <ul>
+                    <li><span class="tag tag-error">Errors</span> Critical issues that must be fixed</li>
+                    <li><span class="tag tag-warning">Warnings</span> Issues that should be reviewed</li>
+                    <li><span class="tag tag-info">Info</span> Suggestions for improvement</li>
+                </ul>
+            </div>
+            <div class="guide-section">
+                <h4>💡 Tips for Best Results</h4>
+                <ul>
+                    <li>Use high-quality exports (PDF or PNG) for better recognition</li>
+                    <li>Include the full diagram without cropping</li>
+                    <li>Add context about your process for more relevant feedback</li>
+                    <li>Ensure text labels are readable in the image</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/bpmn_checker.js') }}"></script>
+{% endblock %}
