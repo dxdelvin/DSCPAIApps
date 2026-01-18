@@ -55,11 +55,6 @@ class BPMNCheckerApp {
                 if (e.target === guideModal) guideModal.style.display = 'none';
             });
         }
-
-        // Filter buttons
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.filterFindings(e.target.dataset.filter));
-        });
     }
 
     setupDragAndDrop() {
@@ -216,100 +211,26 @@ class BPMNCheckerApp {
     displayResults(analysis) {
         this.showResultsState();
 
-        // Parse the analysis to extract findings and score
-        const parsed = this.parseAnalysis(analysis);
+        // Extract score from analysis
+        const score = this.extractScore(analysis);
 
         // Update score display
-        this.updateScoreDisplay(parsed.score);
+        this.updateScoreDisplay(score);
 
-        // Render findings
-        this.renderFindings(parsed.findings);
-
-        // Render detailed analysis
+        // Render the full analysis directly
         this.renderAnalysis(analysis);
     }
 
-    parseAnalysis(analysis) {
-        // Simple parsing to extract structured data from AI response
-        const findings = [];
-        let score = null;
-
-        // Try to extract a score if mentioned (e.g., "Score: 75/100" or "7/10")
-        const scoreMatch = analysis.match(/(?:score|rating)[:\s]*(\d+)\s*(?:\/\s*(\d+)|%)?/i);
+    extractScore(analysis) {
+        // Try to extract a score if mentioned (e.g., "Score: 75/100" or "Quality Score: 80/100")
+        const scoreMatch = analysis.match(/(?:score|quality\s*score)[:\s]*(\d+)\s*(?:\/\s*(\d+)|%)?/i);
         if (scoreMatch) {
             const value = parseInt(scoreMatch[1]);
             const max = scoreMatch[2] ? parseInt(scoreMatch[2]) : 100;
-            score = Math.round((value / max) * 100);
+            return Math.round((value / max) * 100);
         }
-
-        // Extract error patterns
-        const errorPatterns = [
-            /(?:error|critical|must fix)[:\s]*([^\n.]+)/gi,
-            /(?:❌|🔴)\s*([^\n]+)/g
-        ];
-
-        errorPatterns.forEach(pattern => {
-            let match;
-            while ((match = pattern.exec(analysis)) !== null) {
-                findings.push({
-                    type: 'error',
-                    title: 'Error',
-                    description: match[1].trim()
-                });
-            }
-        });
-
-        // Extract warning patterns
-        const warningPatterns = [
-            /(?:warning|should|consider)[:\s]*([^\n.]+)/gi,
-            /(?:⚠️|🟡)\s*([^\n]+)/g
-        ];
-
-        warningPatterns.forEach(pattern => {
-            let match;
-            while ((match = pattern.exec(analysis)) !== null) {
-                findings.push({
-                    type: 'warning',
-                    title: 'Warning',
-                    description: match[1].trim()
-                });
-            }
-        });
-
-        // Extract suggestion patterns
-        const infoPatterns = [
-            /(?:suggestion|tip|improvement|recommend)[:\s]*([^\n.]+)/gi,
-            /(?:💡|ℹ️)\s*([^\n]+)/g
-        ];
-
-        infoPatterns.forEach(pattern => {
-            let match;
-            while ((match = pattern.exec(analysis)) !== null) {
-                findings.push({
-                    type: 'info',
-                    title: 'Suggestion',
-                    description: match[1].trim()
-                });
-            }
-        });
-
-        // If no structured findings found, create a general info item
-        if (findings.length === 0) {
-            findings.push({
-                type: 'info',
-                title: 'Analysis Complete',
-                description: 'Review the detailed analysis below for findings and recommendations.'
-            });
-        }
-
-        // Estimate score if not found
-        if (score === null) {
-            const errorCount = findings.filter(f => f.type === 'error').length;
-            const warningCount = findings.filter(f => f.type === 'warning').length;
-            score = Math.max(0, 100 - (errorCount * 15) - (warningCount * 5));
-        }
-
-        return { score, findings };
+        // Default score if not found
+        return 75;
     }
 
     updateScoreDisplay(score) {
@@ -331,15 +252,15 @@ class BPMNCheckerApp {
         } else if (score >= 70) {
             scoreCircle.classList.add('good');
             scoreLabel.textContent = 'Good';
-            scoreSummary.textContent = 'Your diagram is well-structured with some minor improvements needed.';
+            scoreSummary.textContent = 'Your diagram is well-structured with some improvements suggested.';
         } else if (score >= 50) {
             scoreCircle.classList.add('fair');
             scoreLabel.textContent = 'Fair';
-            scoreSummary.textContent = 'Several issues found that should be addressed for better clarity.';
+            scoreSummary.textContent = 'Several issues found. Review the recommendations below.';
         } else {
             scoreCircle.classList.add('poor');
             scoreLabel.textContent = 'Needs Improvement';
-            scoreSummary.textContent = 'Multiple issues detected. Review the findings below.';
+            scoreSummary.textContent = 'Multiple issues detected. See solutions below.';
         }
 
         // Update the conic gradient
@@ -352,50 +273,13 @@ class BPMNCheckerApp {
         scoreCircle.style.background = `conic-gradient(${color} 0deg, ${color} ${degrees}deg, var(--border) ${degrees}deg)`;
     }
 
-    renderFindings(findings) {
-        const findingsList = document.getElementById('findings-list');
-        findingsList.innerHTML = '';
-
-        if (findings.length === 0) {
-            findingsList.innerHTML = `
-                <div class="finding-item success">
-                    <div class="finding-icon">✓</div>
-                    <div class="finding-content">
-                        <p class="finding-title">No Issues Found</p>
-                        <p class="finding-description">Your BPMN diagram appears to be well-structured!</p>
-                    </div>
-                </div>
-            `;
-            return;
-        }
-
-        findings.forEach(finding => {
-            const icon = {
-                error: '✕',
-                warning: '!',
-                info: 'i',
-                success: '✓'
-            }[finding.type] || 'i';
-
-            const item = document.createElement('div');
-            item.className = `finding-item ${finding.type}`;
-            item.dataset.type = finding.type;
-            item.innerHTML = `
-                <div class="finding-icon">${icon}</div>
-                <div class="finding-content">
-                    <p class="finding-title">${finding.title}</p>
-                    <p class="finding-description">${finding.description}</p>
-                </div>
-            `;
-            findingsList.appendChild(item);
-        });
-    }
-
     renderAnalysis(analysis) {
         const analysisContent = document.getElementById('analysis-content');
         
         // Convert markdown-like formatting to HTML
         let html = analysis
+            // Horizontal rules (---) - convert to styled divider
+            .replace(/^---+$/gm, '<hr class="finding-divider">')
             // Headers
             .replace(/^### (.*$)/gm, '<h3>$1</h3>')
             .replace(/^## (.*$)/gm, '<h2>$1</h2>')
@@ -413,28 +297,21 @@ class BPMNCheckerApp {
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br>');
 
-        // Wrap in paragraph if not already
+        // Wrap consecutive <li> elements in <ul>
+        html = html.replace(/(<li>.*?<\/li>(?:<br>)?)+/g, (match) => {
+            return '<ul>' + match.replace(/<br>/g, '') + '</ul>';
+        });
+
+        // Wrap in paragraph if not already starting with a tag
         if (!html.startsWith('<')) {
             html = '<p>' + html + '</p>';
         }
 
+        // Clean up empty paragraphs
+        html = html.replace(/<p><\/p>/g, '');
+        html = html.replace(/<p><br><\/p>/g, '');
+
         analysisContent.innerHTML = html;
-    }
-
-    filterFindings(filter) {
-        // Update button states
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.filter === filter);
-        });
-
-        // Filter findings
-        document.querySelectorAll('.finding-item').forEach(item => {
-            if (filter === 'all' || item.dataset.type === filter) {
-                item.style.display = 'flex';
-            } else {
-                item.style.display = 'none';
-            }
-        });
     }
 
     reset() {
@@ -451,9 +328,6 @@ class BPMNCheckerApp {
 
         // Reset results
         this.showEmptyState();
-
-        // Reset filter
-        this.filterFindings('all');
 
         showToast('Reset complete.', 'info');
     }

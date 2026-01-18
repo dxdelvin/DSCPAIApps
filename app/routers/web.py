@@ -515,36 +515,37 @@ async def bpmn_diagram_check(
             },
         )
 
-    # Build the analysis prompt with clear output format
-    prompt = f"""You are a BPMN 2.0 expert. Analyze the uploaded BPMN diagram and check for issues.
+    # Build the analysis prompt with actionable solutions
+    prompt = f"""You are a BPMN 2.0 expert. Carefully analyze the uploaded BPMN diagram image/PDF.
 
-## ANALYSIS CATEGORIES:
-1. **Structural Issues**: Missing start/end events, disconnected elements, improper pools/lanes
-2. **Gateway Problems**: Incorrect gateway usage (XOR, AND, OR), missing conditions, unbalanced splits/joins
-3. **Flow Logic**: Deadlocks, infinite loops, unreachable paths, dead ends
-4. **Naming Conventions**: Unclear or missing labels on tasks, events, gateways
-5. **Best Practices**: BPMN 2.0 compliance, proper symbol usage
-6. **Logical Consistency**: Does the process flow make sense?
+FIRST, describe what you see in the diagram - the process flow, elements, pools, lanes, gateways, tasks, events, etc.
 
-## REQUIRED OUTPUT FORMAT:
+THEN, identify any issues and provide actionable solutions.
 
-### Score: [X]/100
-(Provide a quality score from 0-100)
+## OUTPUT FORMAT:
 
-### ❌ Errors (Critical Issues)
-- List each critical error that MUST be fixed
-- Use format: **Issue Title**: Description of the problem
+### 📊 Diagram Overview
+Describe the BPMN diagram: What process does it represent? What are the main elements you can see?
 
-### ⚠️ Warnings (Should Review)
-- List issues that should be reviewed but aren't critical
-- Use format: **Issue Title**: Description of the problem
+### 🔍 Findings & Solutions
 
-### 💡 Suggestions (Improvements)
-- List recommendations for better clarity and best practices
-- Use format: **Suggestion Title**: Description of improvement
+For each issue found, use this format:
 
-### 📝 Summary
-Provide a brief overall assessment of the diagram quality and main areas for improvement.
+**Problem:** [Describe what is wrong or could be improved]
+**Solution:** [Provide a specific, actionable fix the user can implement]
+
+---
+
+(List all findings with problems and solutions separated by ---)
+
+### ✅ What's Done Well
+List any positive aspects of the diagram (good practices, clear labeling, proper structure, etc.)
+
+### 📝 Overall Assessment
+Provide a brief summary with:
+- Quality Score: X/100
+- Main strengths
+- Priority actions to take
 
 File being analyzed: {file.filename}"""
 

@@ -682,6 +682,33 @@
     font-size: 0.85em;
 }
 
+/* Problem/Solution styling */
+.analysis-content hr,
+.analysis-content .finding-divider {
+    border: none;
+    border-top: 1px dashed var(--border);
+    margin: 1.5rem 0;
+}
+
+/* Highlight Problem and Solution labels */
+.analysis-content p strong:first-child {
+    display: inline-block;
+}
+
+/* Problem styling when at start of content */
+.analysis-content strong:contains("Problem"),
+.analysis-content strong:contains("🔍"),
+.analysis-content strong:contains("❌") {
+    color: var(--danger);
+}
+
+/* Solution styling */
+.analysis-content strong:contains("Solution"),
+.analysis-content strong:contains("✅"),
+.analysis-content strong:contains("💡") {
+    color: var(--success);
+}
+
 /* Tags */
 .tag {
     display: inline-flex;

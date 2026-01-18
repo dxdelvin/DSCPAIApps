@@ -133,7 +133,7 @@
                             </svg>
                         </div>
                         <h4>Ready to Analyze</h4>
-                        <p>Upload a BPMN diagram PDF to get started. Our AI will check for errors, best practices, and logical consistency.</p>
+                        <p>Upload a BPMN diagram (PDF or image) to get started. Our AI will identify problems and provide actionable solutions.</p>
                     </div>
 
                     <!-- Loading State -->
@@ -156,25 +156,9 @@
                             </div>
                         </div>
 
-                        <!-- Issues/Findings -->
-                        <div class="findings-section" id="findings-section">
-                            <div class="findings-header">
-                                <h4>Findings</h4>
-                                <div class="findings-filter">
-                                    <button class="filter-btn active" data-filter="all">All</button>
-                                    <button class="filter-btn" data-filter="error">Errors</button>
-                                    <button class="filter-btn" data-filter="warning">Warnings</button>
-                                    <button class="filter-btn" data-filter="info">Info</button>
-                                </div>
-                            </div>
-                            <div class="findings-list" id="findings-list">
-                                <!-- Findings will be rendered here -->
-                            </div>
-                        </div>
-
                         <!-- AI Analysis -->
                         <div class="analysis-section" id="analysis-section">
-                            <h4>Detailed Analysis</h4>
+                            <h4>Findings & Solutions</h4>
                             <div class="analysis-content" id="analysis-content">
                                 <!-- AI analysis rendered here -->
                             </div>
@@ -210,12 +194,12 @@
             </div>
             <div class="guide-section">
                 <h4>📊 Understanding Results</h4>
-                <p>Results are categorized as:</p>
+                <p>For each issue found, you'll get:</p>
                 <ul>
-                    <li><span class="tag tag-error">Errors</span> Critical issues that must be fixed</li>
-                    <li><span class="tag tag-warning">Warnings</span> Issues that should be reviewed</li>
-                    <li><span class="tag tag-info">Info</span> Suggestions for improvement</li>
+                    <li><strong>Problem:</strong> Clear description of what's wrong</li>
+                    <li><strong>Solution:</strong> Actionable steps to fix the issue</li>
                 </ul>
+                <p style="margin-top: 0.5rem;">Plus an overall quality score and summary of what's done well.</p>
             </div>
             <div class="guide-section">
                 <h4>💡 Tips for Best Results</h4>
