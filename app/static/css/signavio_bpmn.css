@@ -1,20 +1,5 @@
 /* Signavio BPMN page styling aligned to common palette */
 
-.builder-hero {
-    max-width: 1200px;
-    margin: 0 auto 18px;
-    padding: 0 24px;
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    gap: 14px;
-}
-
-.builder-hero h1 { font-size: 28px; margin-bottom: 6px; }
-.builder-hero .lede { max-width: 780px; }
-
-.builder-hero .hero-pill { align-self: center; }
-
 .signavio-container { padding: 10px 0 0; }
 
 .bpmn-builder {

@@ -9,16 +9,30 @@
 {% endblock %}
 
 {% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | Audit & Validation</p>
+        <h1>Audit Checker</h1>
+        <p class="lede">Create audits with screenshots or validate PDF documents with AI-powered analysis.</p>
+    </div>
+</section>
+
 <div class="container audit-container">
     <div class="audit-builder">
-        <!-- Mode Tabs -->
-        <div class="mode-tabs">
-            <button class="mode-tab active" data-mode="creator">
-                <span class="tab-label">Audit Creator</span>
-            </button>
-            <button class="mode-tab" data-mode="checker">
-                <span class="tab-label">Audit Checker</span>
-            </button>
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Audit Tools</p>
+                <h2 class="builder-title">Select Mode</h2>
+            </div>
+            <!-- Mode Tabs -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="creator">
+                    <span class="tab-label">Create Audit</span>
+                </button>
+                <button class="mode-tab" data-mode="checker">
+                    <span class="tab-label">Check PDF</span>
+                </button>
+            </div>
         </div>
 
         <!-- Content Container -->
