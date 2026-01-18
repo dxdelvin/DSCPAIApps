@@ -1,26 +1,27 @@
 import os
-import base64
-from typing import Optional, List
+from typing import Optional
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
 from app.core.config import TEMPLATES_DIR
-from app.services.bpmn_service import (
-    call_brain_workflow_chat,
+
+# Import from organized service files
+from app.services.common_service import create_chat_history, call_brain_workflow_chat
+from app.services.signavio_service import (
     get_signavio_bpmn_xml,
-    create_chat_history,
-    upload_attachments,
-    _build_analysis_prompt,
+    build_analysis_prompt,
+    analyze_process,
+    continue_chat as signavio_continue_chat,
     ANALYSIS_BEHAVIOUR,
-    BPMN_GENERATE_BEHAVIOUR,
-    AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
-    BPMN_DIAGRAM_CHECK_BEHAVIOUR,
     SIGNAVIO_WORKFLOW_ID,
-    AUDIT_WORKFLOW_ID,
-    BPMN_CHECKER_WORKFLOW_ID,
 )
+from app.services.audit_service import (
+    check_audit_document,
+    continue_audit_chat,
+)
+from app.services.bpmn_checker_service import check_bpmn_diagram
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -106,17 +107,8 @@ async def start_bpmn_session(data: BPMNSessionRequest):
 
     chat_history_id = chat_result.get("chatHistoryId")
     
-    # Build the analysis prompt
-    prompt = _build_analysis_prompt(data.model_dump())
-    
-    # Get initial analysis using custom behaviour (no code)
-    response = await call_brain_workflow_chat(
-        brain_id,
-        prompt,
-        chat_history_id=chat_history_id,
-        custom_behaviour=ANALYSIS_BEHAVIOUR,
-        workflow_id=SIGNAVIO_WORKFLOW_ID,
-    )
+    # Get initial analysis using the signavio service
+    response = await analyze_process(data.model_dump(), chat_history_id)
 
     if response.get("error"):
         return JSONResponse(
@@ -159,18 +151,8 @@ async def bpmn_chat(data: BPMNChatRequest):
             },
         )
 
-    # Build context if form data is provided (for refinement requests)
-    prompt = data.message
-    if data.formData:
-        prompt = f"User request: {data.message}\n\nCurrent process context:\n{_build_analysis_prompt(data.formData)}"
-
-    response = await call_brain_workflow_chat(
-        brain_id,
-        prompt,
-        chat_history_id=data.chatHistoryId,
-        custom_behaviour=ANALYSIS_BEHAVIOUR,
-        workflow_id=SIGNAVIO_WORKFLOW_ID,
-    )
+    # Use the signavio service to continue the chat
+    response = await signavio_continue_chat(data.chatHistoryId, data.message, data.formData)
 
     if response.get("error"):
         return JSONResponse(
@@ -231,13 +213,7 @@ async def make_bpmn_analysis(data: dict):
             },
         )
 
-    prompt = _build_analysis_prompt(data)
-    response = await call_brain_workflow_chat(
-        brain_id,
-        prompt,
-        custom_behaviour=ANALYSIS_BEHAVIOUR,
-        workflow_id=SIGNAVIO_WORKFLOW_ID,
-    )
+    response = await analyze_process(data)
 
     if response.get("error"):
         return JSONResponse(
@@ -261,17 +237,6 @@ async def make_bpmn_analysis(data: dict):
 @router.post("/api/audit-doc-check")
 async def audit_doc_check(file: UploadFile = File(...)):
     """Send an uploaded audit PDF to the Audit Brain for analysis."""
-    brain_id = os.getenv("AUDIT_CHECK_BRAIN_ID")
-    if not brain_id:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "API Not Active",
-                "detail": "AUDIT_CHECK_BRAIN_ID is not configured.",
-            },
-        )
-
     # Validate file type
     if not file.content_type or not file.content_type.startswith('application/pdf'):
         return JSONResponse(
@@ -283,82 +248,23 @@ async def audit_doc_check(file: UploadFile = File(...)):
             },
         )
 
-    # Create a chat history first - workflow endpoint requires this
-    chat_result = await create_chat_history(brain_id)
-    if chat_result.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": chat_result.get("message", "Failed to start audit session"),
-                "detail": chat_result.get("detail", "Could not create chat history."),
-            },
-        )
-
-    chat_history_id = chat_result.get("chatHistoryId")
+    # Use the audit service
+    result = await check_audit_document(file)
     
-    if not chat_history_id:
+    if result.get("error"):
         return JSONResponse(
             status_code=500,
             content={
                 "status": "error",
-                "message": "Failed to create chat session",
-                "detail": "Chat history ID is empty or null.",
-            },
-        )
-
-    # Upload the file as an attachment
-    upload_result = await upload_attachments(brain_id, [file])
-    if upload_result.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": upload_result.get("message", "Failed to upload file"),
-                "detail": upload_result.get("detail", "Could not upload attachment."),
-            },
-        )
-
-    attachment_ids = upload_result.get("attachmentIds", [])
-    
-    # Validate that we got attachment IDs
-    if not attachment_ids or len(attachment_ids) == 0:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "Attachment upload failed",
-                "detail": "No attachment IDs returned from upload.",
-            },
-        )
-
-    # Simple prompt - Brain agent handles the audit workflow
-    prompt = f"Please check and analyze this audit document: {file.filename}"
-
-    # Use workflow endpoint for audit with attachments
-    response = await call_brain_workflow_chat(
-        brain_id,
-        prompt,
-        chat_history_id=chat_history_id,
-        attachment_ids=attachment_ids,
-        custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
-        workflow_id=AUDIT_WORKFLOW_ID,
-    )
-
-    if response.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "API Not Active",
-                "detail": response.get("detail", "Brain authentication failed."),
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Connection to Brain failed."),
             },
         )
 
     return {
         "status": "success", 
-        "analysis": response.get("result"),
-        "chatHistoryId": chat_history_id
+        "analysis": result.get("result"),
+        "chatHistoryId": result.get("chatHistoryId")
     }
 
 
@@ -369,50 +275,15 @@ async def audit_chat(
     file: Optional[UploadFile] = File(None)
 ):
     """Continue audit conversation with optional file attachment."""
-    brain_id = os.getenv("AUDIT_CHECK_BRAIN_ID")
-    if not brain_id:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "API Not Active",
-                "detail": "AUDIT_CHECK_BRAIN_ID is not configured.",
-            },
-        )
-
-    attachment_ids = None
-    
-    # Upload new file if provided
-    if file and file.filename:
-        upload_result = await upload_attachments(brain_id, [file])
-        if upload_result.get("error"):
-            return JSONResponse(
-                status_code=500,
-                content={
-                    "status": "error",
-                    "message": upload_result.get("message", "Failed to upload file"),
-                    "detail": upload_result.get("detail", "Could not upload attachment."),
-                },
-            )
-        attachment_ids = upload_result.get("attachmentIds", [])
-        if not attachment_ids or len(attachment_ids) == 0:
-            attachment_ids = None
-
-    response = await call_brain_workflow_chat(
-        brain_id,
-        message,
-        chat_history_id=chatHistoryId if chatHistoryId else None,
-        attachment_ids=attachment_ids,
-        custom_behaviour=AUDIT_NO_FOLLOWUPS_BEHAVIOUR,
-        workflow_id=AUDIT_WORKFLOW_ID,
-    )
+    # Use the audit service
+    response = await continue_audit_chat(chatHistoryId, message, file)
 
     if response.get("error"):
         return JSONResponse(
             status_code=500,
             content={
                 "status": "error",
-                "message": "API Not Active",
+                "message": response.get("message", "API Not Active"),
                 "detail": response.get("detail", "Brain authentication failed."),
             },
         )
@@ -432,150 +303,24 @@ async def bpmn_diagram_check(
     context: Optional[str] = Form(None)
 ):
     """Analyze a BPMN diagram (PDF or image) for errors, best practices, and logical flow."""
-    brain_id = os.getenv("BPMN_CHECKER_BRAIN_ID")
-    if not brain_id:
-        # Fallback to signavio brain if specific checker brain not configured
-        brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    # Use the BPMN checker service
+    result = await check_bpmn_diagram(file, context)
     
-    if not brain_id:
+    if result.get("error"):
+        status_code = 400 if result.get("message") == "Invalid file type" else 500
         return JSONResponse(
-            status_code=500,
+            status_code=status_code,
             content={
                 "status": "error",
-                "message": "API Not Active",
-                "detail": "BPMN_CHECKER_BRAIN_ID is not configured.",
-            },
-        )
-
-    # Validate file type - accept PDF and images
-    allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
-    allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-    
-    file_ext = os.path.splitext(file.filename)[1].lower() if file.filename else ''
-    is_valid = (
-        (file.content_type and file.content_type in allowed_types) or
-        file_ext in allowed_extensions
-    )
-    
-    if not is_valid:
-        return JSONResponse(
-            status_code=400,
-            content={
-                "status": "error",
-                "message": "Invalid file type",
-                "detail": "Please upload a PDF or image file (JPG, JPEG, PNG) containing your BPMN diagram.",
-            },
-        )
-
-    # Create a chat history
-    chat_result = await create_chat_history(brain_id)
-    if chat_result.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": chat_result.get("message", "Failed to start session"),
-                "detail": chat_result.get("detail", "Could not create chat history."),
-            },
-        )
-
-    chat_history_id = chat_result.get("chatHistoryId")
-    
-    if not chat_history_id:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "Failed to create chat session",
-                "detail": "Chat history ID is empty or null.",
-            },
-        )
-
-    # Upload the file as an attachment
-    upload_result = await upload_attachments(brain_id, [file])
-    if upload_result.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": upload_result.get("message", "Failed to upload file"),
-                "detail": upload_result.get("detail", "Could not upload attachment."),
-            },
-        )
-
-    attachment_ids = upload_result.get("attachmentIds", [])
-    
-    if not attachment_ids or len(attachment_ids) == 0:
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "Attachment upload failed",
-                "detail": "No attachment IDs returned from upload.",
-            },
-        )
-
-    # Build the analysis prompt with actionable solutions
-    prompt = f"""You are a BPMN 2.0 expert. Carefully analyze the uploaded BPMN diagram image/PDF.
-
-FIRST, describe what you see in the diagram - the process flow, elements, pools, lanes, gateways, tasks, events, etc.
-
-THEN, identify any issues and provide actionable solutions.
-
-## OUTPUT FORMAT:
-
-### 📊 Diagram Overview
-Describe the BPMN diagram: What process does it represent? What are the main elements you can see?
-
-### 🔍 Findings & Solutions
-
-For each issue found, use this format:
-
-**Problem:** [Describe what is wrong or could be improved]
-**Solution:** [Provide a specific, actionable fix the user can implement]
-
----
-
-(List all findings with problems and solutions separated by ---)
-
-### ✅ What's Done Well
-List any positive aspects of the diagram (good practices, clear labeling, proper structure, etc.)
-
-### 📝 Overall Assessment
-Provide a brief summary with:
-- Quality Score: X/100
-- Main strengths
-- Priority actions to take
-
-File being analyzed: {file.filename}"""
-
-    if context:
-        prompt += f"\n\nAdditional context from user: {context}"
-
-    # Call the Brain API
-    response = await call_brain_workflow_chat(
-        brain_id,
-        prompt,
-        chat_history_id=chat_history_id,
-        attachment_ids=attachment_ids,
-        custom_behaviour=BPMN_DIAGRAM_CHECK_BEHAVIOUR,
-        workflow_id=BPMN_CHECKER_WORKFLOW_ID,
-    )
-
-    if response.get("error"):
-        return JSONResponse(
-            status_code=500,
-            content={
-                "status": "error",
-                "message": "API Not Active",
-                "detail": response.get("detail", "Brain authentication failed."),
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Connection to Brain failed."),
             },
         )
 
     return {
         "status": "success",
-        "analysis": response.get("result"),
-        "chatHistoryId": chat_history_id
+        "analysis": result.get("result"),
+        "chatHistoryId": result.get("chatHistoryId")
     }
 
 
