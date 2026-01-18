@@ -351,13 +351,13 @@ AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (
 )
 
 # Workflow IDs for routing to specific Brain workflows
-SIGNAVIO_WORKFLOW_ID = "FA24GU3iEMCW"
+SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
 AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
 
 
 async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict:
     """Generate BPMN XML using the chat history context."""
-    prompt = "Generate the BPMN XML for this process now." if chat_history_id else _build_bpmn_prompt(data)
+    prompt = "DSCP SIR GO GENERATE the BPMN XML for this process now." if chat_history_id else _build_bpmn_prompt(data)
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
     
     response = await call_brain_workflow_chat(
@@ -372,11 +372,6 @@ async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict
         return response
 
     raw_text = response.get("result", "")
-    print("\n" + "="*50)
-    print("DEBUG: RAW BRAIN RESPONSE")
-    print("="*50)
-    print(raw_text)
-    print("="*50 + "\n")
     extracted_xml = _extract_xml(raw_text)
 
     if "<bpmn" not in extracted_xml.lower():
