@@ -361,8 +361,7 @@ BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
 # Workflow IDs for routing to specific Brain workflows
 SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
 AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
-BPMN_CHECKER_WORKFLOW_ID = "FA24GU3iEMCW"  # Uses same workflow as Signavio
-
+BPMN_CHECKER_WORKFLOW_ID = "BW10nzxLhlqO" 
 
 async def get_signavio_bpmn_xml(data: dict, chat_history_id: str = None) -> dict:
     """Generate BPMN XML using the chat history context."""
