@@ -84,6 +84,9 @@ class AuditCheckApp {
             });
         }
         
+        const pdfUploadArea = document.getElementById('pdf-upload-area');
+        const pdfFileInput = document.getElementById('pdf-file-input');
+        
         if (pdfUploadArea && pdfFileInput) {
             pdfUploadArea.addEventListener('click', () => {
                 pdfFileInput.click();
@@ -665,7 +668,6 @@ class AuditCheckApp {
         document.getElementById('selected-file-info').style.display = 'none';
         document.getElementById('pdf-file-input').value = '';
         document.getElementById('check-pdf-btn').disabled = true;
-        document.getElementById('pdf-preview-container-checker').style.display = 'none';
         document.getElementById('results-panel-checker').style.display = 'none';
         document.getElementById('empty-state-checker').style.display = 'flex';
     }
