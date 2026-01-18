@@ -6,10 +6,16 @@
 
 {% block content %}
 <div class="page-header">
-    <p class="eyebrow">Powered by Dia Brain</p>
-    <h1>Get Started with DSCP AI Applications</h1>
-    <button class="btn btn-ghost send-feedback" onclick="window.location.href='mailto:dsd9di@bosch.com?subject=DSCP%20AI%20App%20Feedback'">Send Feedback</button>
+    <h1><span class="subtitle">Get Started with</span>DSCP AI Apps</h1>
+    <p class="header-subtitle">Powered by Dia Brain</p>
 </div>
+
+<button class="floating-feedback-btn" onclick="window.location.href='mailto:dsd9di@bosch.com?subject=DSCP%20AI%20App%20Feedback'" aria-label="Send Feedback">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+    </svg>
+    <span>Feedback</span>
+</button>
 
 <section class="apps" id="apps">
     <div class="app-grid">
@@ -23,14 +29,14 @@
                         <path d="M10 16h12" stroke="white" stroke-width="2" stroke-linecap="round"/>
                     </svg>
                 </div>
-                <a class="btn btn-primary btn-open" href="/signavio-bpmn">Open</a>
+                <div class="app-tags">
+                    <span class="tag">Signavio</span>
+                </div>
             </div>
             <div class="app-body">
-                <h3>Signavio BPMN Builder</h3>
+                <h3>BPMN Builder</h3>
                 <p>Guided, multi-step capture for BSH processes with instant BPMN export.</p>
-                <div class="app-tags">
-                    <span class="tag tag-new">New</span>
-                </div>
+                <a class="btn btn-primary btn-open" href="/signavio-bpmn">Open App</a>
             </div>
         </article>
 
@@ -44,14 +50,15 @@
                         <circle cx="12" cy="11" r="2" fill="#ff5f00"/>
                     </svg>
                 </div>
-                <a class="btn btn-primary btn-open" href="/audit-check">Open</a>
+                <div class="app-tags">
+                    
+                    <span class="tag">SAP ID & Timestamp</span>
+                </div>
             </div>
             <div class="app-body">
                 <h3>Audit Check</h3>
                 <p>Create audits with screenshots and validate documents.</p>
-                <div class="app-tags">
-                    <span class="tag tag-new">New</span>
-                </div>
+                <a class="btn btn-primary btn-open" href="/audit-check">Open App</a>
             </div>
         </article>
 
@@ -64,14 +71,15 @@
                         <circle cx="24" cy="8" r="4" fill="#ff5f00"/>
                     </svg>
                 </div>
-                <a class="btn btn-primary btn-open" href="/bpmn-checker">Open</a>
+                <div class="app-tags">
+                <span class="tag tag-new">New</span>
+                    <span class="tag">Signavio</span>
+                </div>
             </div>
             <div class="app-body">
                 <h3>BPMN Diagram Checker</h3>
                 <p>Upload a BPMN diagram PDF to check for errors, best practices, and logical flow.</p>
-                <div class="app-tags">
-                    <span class="tag tag-new">New</span>
-                </div>
+                <a class="btn btn-primary btn-open" href="/bpmn-checker">Open App</a>
             </div>
         </article>
 

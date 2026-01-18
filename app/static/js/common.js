@@ -144,6 +144,82 @@ const DOM = {
     empty: (el) => { while (el && el.firstChild) el.removeChild(el.firstChild); }
 };
 
-document.addEventListener('DOMContentLoaded', () => {
-    // reserved for global init
-});
+/**
+ * Confirmation Modal - Reusable component for dangerous actions
+ * @param {string} title - Modal title
+ * @param {string} message - Confirmation message
+ * @param {function} onConfirm - Callback when user confirms
+ * @param {object} options - Additional options { icon, confirmText, cancelText }
+ */
+function showConfirmation(title, message, onConfirm, options = {}) {
+    const {
+        icon = '⚠️',
+        confirmText = 'Delete',
+        cancelText = 'Cancel'
+    } = options;
+
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('confirmation-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'confirmation-modal';
+        modal.className = 'confirmation-modal';
+        modal.innerHTML = `
+            <div class="confirmation-content">
+                <div class="confirmation-header">
+                    <span class="confirmation-icon"></span>
+                    <h2 class="confirmation-title"></h2>
+                </div>
+                <p class="confirmation-message"></p>
+                <div class="confirmation-actions">
+                    <button class="btn confirmation-btn-cancel" id="confirm-cancel">Cancel</button>
+                    <button class="btn confirmation-btn-confirm" id="confirm-ok">Delete</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeConfirmation();
+            }
+        });
+
+        // Close with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeConfirmation();
+            }
+        });
+    }
+
+    // Update content
+    modal.querySelector('.confirmation-icon').textContent = icon;
+    modal.querySelector('.confirmation-title').textContent = title;
+    modal.querySelector('.confirmation-message').textContent = message;
+    modal.querySelector('#confirm-ok').textContent = confirmText;
+    modal.querySelector('#confirm-cancel').textContent = cancelText;
+
+    // Set up handlers
+    modal.querySelector('#confirm-cancel').onclick = () => {
+        closeConfirmation();
+    };
+
+    modal.querySelector('#confirm-ok').onclick = () => {
+        closeConfirmation();
+        onConfirm();
+    };
+
+    // Show modal
+    modal.classList.add('active');
+    modal.querySelector('#confirm-cancel').focus();
+}
+
+function closeConfirmation() {
+    const modal = document.getElementById('confirmation-modal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+

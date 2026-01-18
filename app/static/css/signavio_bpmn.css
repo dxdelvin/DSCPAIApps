@@ -14,6 +14,32 @@
 .builder-title { margin: 0; }
 .builder-actions { display: flex; gap: 10px; }
 
+.btn-icon-help {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--slate-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-icon-help:hover {
+    background: #f8fafc;
+    border-color: var(--brand-orange);
+    color: var(--brand-orange);
+}
+
+.btn-icon-help svg {
+    stroke: currentColor;
+    stroke-width: 2;
+}
+
 .step-indicator {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
@@ -36,8 +62,43 @@
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 
-.form-navigation { display: flex; justify-content: space-between; margin-top: 14px; gap: 10px; }
-.form-navigation .btn { flex: 1; }
+.form-navigation { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+    margin-top: 14px; 
+    gap: 10px; 
+}
+
+.nav-left {
+    display: flex;
+    align-items: center;
+}
+
+.nav-right {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-right .btn {
+    flex: 1;
+    min-width: 120px;
+}
+
+.btn-reset-link {
+    font-size: 13px;
+    color: var(--slate-600);
+    border: none;
+    background: transparent;
+    padding: 8px 0;
+    text-decoration: underline;
+    text-decoration-color: var(--slate-300);
+}
+
+.btn-reset-link:hover {
+    color: var(--danger);
+    text-decoration-color: var(--danger);
+}
 
 .review-summary { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
 .review-item { padding-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -342,13 +403,14 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     font-size: 14px;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 
 .lane-input:focus, .sublane-input:focus {
     outline: none;
-    border-color: var(--brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.1);
+    border: 2px solid var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+    background-color: #fff;
 }
 
 .btn-icon {

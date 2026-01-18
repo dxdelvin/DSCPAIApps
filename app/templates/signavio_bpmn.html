@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Signavio BPMN Creator - BSH DSCP AI{% endblock %}
+{% block title %}BPMN Builder - BSH DSCP AI{% endblock %}
 
-{% block page_name %}BPMN Generator{% endblock %}
+{% block page_name %}BPMN Builder{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}">
@@ -13,7 +13,7 @@
 <section class="builder-hero">
     <div>
         <p class="eyebrow">BSH | BPMN Journey</p>
-        <h1>Signavio BPMN Builder</h1>
+        <h1>BPMN Builder</h1>
         <p class="lede">Follow guided steps to capture process inputs, decisions, and participants. Export BPMN instantly.</p>
     </div>
 </section>
@@ -23,11 +23,15 @@
         <div class="builder-head">
             <div>
                 <p class="eyebrow">Flow setup</p>
-                <h2 class="builder-title">Build Your Process</h2>
+                <h2 class="builder-title">BPMN Builder</h2>
             </div>
             <div class="builder-actions">
-                <button class="btn btn-ghost" type="button" id="infoBtn">Guide</button>
-                <button class="btn btn-secondary" type="button" id="editBtn">Reset</button>
+                <button class="btn btn-icon-help" type="button" id="infoBtn" title="View guide and tips">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4M12 8h.01"></path>
+                    </svg>
+                </button>
             </div>
         </div>
 
@@ -172,8 +176,13 @@
         </div>
 
         <div class="form-navigation">
-            <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
-            <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+            <div class="nav-left">
+                <button type="button" class="btn btn-ghost btn-reset-link" id="editBtn">Reset Form</button>
+            </div>
+            <div class="nav-right">
+                <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+            </div>
         </div>
     </div>
 </div>

@@ -48,8 +48,20 @@ function initializeFormHandlers() {
     // Reset buttons
     const editBtn = document.getElementById('editBtn');
     if (editBtn) editBtn.addEventListener('click', () => {
-        goToStep(1);
-        resetForm();
+        // Show confirmation dialog before resetting
+        showConfirmation(
+            'Clear All Data?',
+            'Are you sure you want to reset the form? This cannot be undone.',
+            () => {
+                goToStep(1);
+                resetForm();
+            },
+            {
+                icon: '⚠️',
+                confirmText: 'Clear Data',
+                cancelText: 'Cancel'
+            }
+        );
     });
     
     const inlineOverride = document.getElementById('inlineOverrideContainer');

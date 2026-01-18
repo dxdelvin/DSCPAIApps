@@ -26,12 +26,8 @@
             </div>
             <!-- Mode Tabs -->
             <div class="mode-tabs">
-                <button class="mode-tab active" data-mode="creator">
-                    <span class="tab-label">Create Audit</span>
-                </button>
-                <button class="mode-tab" data-mode="checker">
-                    <span class="tab-label">Check PDF</span>
-                </button>
+                <button class="mode-tab active" data-mode="creator">Create Audit</button>
+                <button class="mode-tab" data-mode="checker">Check Audit</button>
             </div>
         </div>
 
@@ -70,6 +66,7 @@
                         <!-- Uploaded Files List -->
                         <div class="files-list-section" id="files-list-section">
                             <h4>Uploaded Images</h4>
+                            <p class="reorder-hint">Drag images to reorder</p>
                             <div class="files-list" id="files-list"></div>
                             <div class="form-group">
                                 <button class="btn btn-secondary btn-sm" id="add-more-files-btn">
@@ -84,7 +81,7 @@
                                 <span class="btn-icon">📄</span>
                                 Generate PDF & Check
                             </button>
-                            <button class="btn btn-ghost" id="reset-creator-btn">Reset</button>
+                            <button class="btn btn-ghost-text" id="reset-creator-btn">Reset</button>
                         </div>
                     </div>
                 </div>
@@ -97,9 +94,7 @@
                         <div class="pdf-preview-section" id="pdf-preview-container">
                             <div class="section-header">
                                 <h4>Generated Audit Document</h4>
-                                <button class="btn btn-secondary btn-sm" id="download-pdf-btn">
-                                    <span>⬇️</span> Download PDF
-                                </button>
+                                <span class="pdf-status" id="pdf-status">Ready to download</span>
                             </div>
                             <div class="pdf-content" id="pdf-content"></div>
                         </div>
@@ -160,7 +155,7 @@
                                 <span class="btn-icon">✓</span>
                                 Check Document
                             </button>
-                            <button class="btn btn-ghost" id="reset-checker-btn">Reset</button>
+                            <button class="btn btn-ghost-text" id="reset-checker-btn">Reset</button>
                         </div>
                     </div>
                 </div>

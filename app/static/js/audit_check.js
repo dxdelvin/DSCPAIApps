@@ -58,7 +58,18 @@ class AuditCheckApp {
         }
 
         document.getElementById('generate-pdf-btn').addEventListener('click', () => this.generatePdfAndCheck());
-        document.getElementById('reset-creator-btn').addEventListener('click', () => this.resetCreatorMode());
+        document.getElementById('reset-creator-btn').addEventListener('click', () => {
+            showConfirmation(
+                'Clear All Data?',
+                'Are you sure you want to clear all images and data? This cannot be undone.',
+                () => this.resetCreatorMode(),
+                {
+                    icon: '⚠️',
+                    confirmText: 'Clear Data',
+                    cancelText: 'Cancel'
+                }
+            );
+        });
         
         const downloadBtn = document.getElementById('download-pdf-btn');
         if (downloadBtn) {
@@ -72,10 +83,6 @@ class AuditCheckApp {
                 document.getElementById('file-input').click();
             });
         }
-
-        // Checker Mode
-        const pdfUploadArea = document.getElementById('pdf-upload-area');
-        const pdfFileInput = document.getElementById('pdf-file-input');
         
         if (pdfUploadArea && pdfFileInput) {
             pdfUploadArea.addEventListener('click', () => {
@@ -97,7 +104,18 @@ class AuditCheckApp {
             removePdfBtn.addEventListener('click', () => this.removePdf());
         }
 
-        document.getElementById('reset-checker-btn').addEventListener('click', () => this.resetCheckerMode());
+        document.getElementById('reset-checker-btn').addEventListener('click', () => {
+            showConfirmation(
+                'Clear All Data?',
+                'Are you sure you want to clear the PDF and results? This cannot be undone.',
+                () => this.resetCheckerMode(),
+                {
+                    icon: '⚠️',
+                    confirmText: 'Clear Data',
+                    cancelText: 'Cancel'
+                }
+            );
+        });
 
         // Form inputs
         document.getElementById('audit-title').addEventListener('input', (e) => {
@@ -220,6 +238,8 @@ class AuditCheckApp {
         this.creatorData.files.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-item';
+            fileItem.draggable = true;
+            fileItem.dataset.index = index;
             
             const preview = this.isImage(file.type) 
                 ? `<img src="${file.data}" class="file-preview" alt="Preview">`
@@ -253,11 +273,71 @@ class AuditCheckApp {
                 showToast('Image removed', 'info');
             });
 
+            // Add drag and drop listeners
+            fileItem.addEventListener('dragstart', (e) => this.handleDragStart(e));
+            fileItem.addEventListener('dragend', (e) => this.handleDragEnd(e));
+            fileItem.addEventListener('dragover', (e) => this.handleDragOver(e));
+            fileItem.addEventListener('drop', (e) => this.handleDrop(e, index));
+            fileItem.addEventListener('dragleave', (e) => this.handleDragLeave(e));
+
             filesList.appendChild(fileItem);
         });
     }
 
+    handleDragStart(e) {
+        e.target.closest('.file-item').classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/html', e.target.innerHTML);
+    }
+
+    handleDragEnd(e) {
+        document.querySelectorAll('.file-item').forEach(item => {
+            item.classList.remove('dragging', 'drag-over');
+        });
+    }
+
+    handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        const fileItem = e.target.closest('.file-item');
+        if (fileItem && !fileItem.classList.contains('dragging')) {
+            fileItem.classList.add('drag-over');
+        }
+    }
+
+    handleDragLeave(e) {
+        e.target.closest('.file-item').classList.remove('drag-over');
+    }
+
+    handleDrop(e, targetIndex) {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const draggingItem = document.querySelector('.file-item.dragging');
+        if (!draggingItem) return;
+
+        const sourceIndex = parseInt(draggingItem.dataset.index);
+        
+        if (sourceIndex !== targetIndex) {
+            // Reorder the files array
+            const [draggedFile] = this.creatorData.files.splice(sourceIndex, 1);
+            this.creatorData.files.splice(targetIndex, 0, draggedFile);
+            this.renderFilesList();
+            showToast('Image reordered', 'info');
+        }
+
+        document.querySelectorAll('.file-item').forEach(item => {
+            item.classList.remove('drag-over');
+        });
+    }
+
     async generatePdfAndCheck() {
+        // Sync latest form values to state to avoid stale data
+        const titleInput = document.getElementById('audit-title');
+        const descInput = document.getElementById('audit-description');
+        if (titleInput) this.creatorData.title = titleInput.value || '';
+        if (descInput) this.creatorData.description = descInput.value || '';
+
         if (!this.creatorData.title.trim()) {
             showToast('Please enter an audit title', 'error');
             return;
@@ -407,14 +487,23 @@ class AuditCheckApp {
         // Show only the filename, no preview content
         const filename = `${this.creatorData.title.replace(/\s+/g, '_')}_${Date.now()}.pdf`;
         content.innerHTML = `
-            <div class="pdf-filename-info">
+            <div class="pdf-filename-info" id="pdf-download-box">
                 <span class="pdf-icon">📄</span>
                 <div class="pdf-file-details">
                     <p class="pdf-file-name">${filename}</p>
-                    <p class="pdf-file-ready">Ready to download</p>
+                    <p class="pdf-file-ready">Click to download</p>
                 </div>
             </div>
         `;
+        const statusEl = document.getElementById('pdf-status');
+        if (statusEl) statusEl.textContent = 'READY';
+        
+        // Make PDF box clickable to download
+        const pdfBox = content.querySelector('#pdf-download-box');
+        if (pdfBox) {
+            pdfBox.addEventListener('click', () => this.downloadPdf());
+            pdfBox.style.cursor = 'pointer';
+        }
     }
 
     async runCreatorAuditCheck(pdfDoc) {
