@@ -13,7 +13,7 @@ from app.services.common_service import (
 
 
 # BPMN Checker-specific constants
-BPMN_CHECKER_WORKFLOW_ID = "BW10nzxLhlqO"
+BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
 
 BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
     "You are a BPMN 2.0 expert. Analyze the uploaded BPMN diagram image/PDF carefully. "

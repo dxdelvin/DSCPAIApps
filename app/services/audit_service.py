@@ -12,7 +12,7 @@ from app.services.common_service import (
 )
 
 
-# Audit-specific constants
+# Audit-specific constants 
 AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
 
 AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (

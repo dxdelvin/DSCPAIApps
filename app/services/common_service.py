@@ -18,10 +18,8 @@ def _require_env(value: str, name: str) -> str:
 
 def _get_proxy_and_headers(token: str) -> Tuple[str, dict]:
     """Set up proxy and return common headers."""
-    proxy_url = "http://rb-proxy-de.bosch.com:8080"
-    os.environ["HTTP_PROXY"] = proxy_url
-    os.environ["HTTPS_PROXY"] = proxy_url
-    
+
+    proxy_url = None
     headers = {
         "Authorization": f"Bearer {token}",
         "User-Agent": "PostmanRuntime/7.37.3",
@@ -68,9 +66,6 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
     _require_env(brain_id, "knowledgeBaseId")
     
     token = await get_brain_access_token()
-    proxy_url = "http://rb-proxy-de.bosch.com:8080"
-    os.environ["HTTP_PROXY"] = proxy_url
-    os.environ["HTTPS_PROXY"] = proxy_url
     
     url = f"{base_url}/chat-attachments"
     headers = {

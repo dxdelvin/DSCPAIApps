@@ -4,9 +4,6 @@ from fastapi import HTTPException
 
 async def get_brain_access_token():
     """Fetches a Bearer token that expires after 2 hours."""
-    proxy_url = "http://rb-proxy-de.bosch.com:8080"
-    os.environ["HTTP_PROXY"] = proxy_url
-    os.environ["HTTPS_PROXY"] = proxy_url
 
     tenant_id = os.getenv("BRAIN_TENANT_ID")
     client_id = os.getenv("BRAIN_CLIENT_ID")
@@ -20,7 +17,7 @@ async def get_brain_access_token():
         "grant_type": "client_credentials"
     }
     
-    async with httpx.AsyncClient(verify=False, trust_env=True) as client:
+    async with httpx.AsyncClient(verify=False, trust_env=False) as client:
         try:
             response = await client.post(url, data=data)
             response.raise_for_status()
