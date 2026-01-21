@@ -31,7 +31,7 @@ async def get_brain_access_token():
     # Merge proxy headers with request (if any)
     request_kwargs = {
         "verify": False,
-        "trust_env": False
+        "trust_env": True
     }
     
     if proxies:
