@@ -5,3 +5,8 @@ python-multipart
 httpx
 pydantic
 python-dotenv
+
+# SAP BTP Connectivity
+cfenv
+sap-xssec
+requests

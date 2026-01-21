@@ -30,6 +30,8 @@ python main.py
 Or use Uvicorn directly:
 ```bash
 uvicorn main:app --reload
+
+USE_SAP_CONNECTIVITY=false python -m uvicorn app.main:app
 ```
 
 ### Access the Application
