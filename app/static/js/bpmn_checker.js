@@ -176,8 +176,9 @@ class BPMNCheckerApp {
 
             if (result.status === 'success') {
                 this.analysisResult = result.analysis;
+                this.analysisStructured = result.analysisStructured;
                 this.chatHistoryId = result.chatHistoryId;
-                this.displayResults(result.analysis);
+                this.displayResults(result.analysis, result.analysisStructured);
                 showToast('Diagram analysis complete!', 'success');
             } else {
                 this.showEmptyState();
@@ -208,17 +209,19 @@ class BPMNCheckerApp {
         document.getElementById('results-content').style.display = 'block';
     }
 
-    displayResults(analysis) {
+    displayResults(analysis, structured) {
         this.showResultsState();
 
-        // Extract score from analysis
-        const score = this.extractScore(analysis);
-
-        // Update score display
-        this.updateScoreDisplay(score);
-
-        // Render the full analysis directly
-        this.renderAnalysis(analysis);
+        if (structured && typeof structured === 'object') {
+            const score = typeof structured.qualityScore === 'number' ? structured.qualityScore : this.extractScore(analysis || '');
+            this.updateScoreDisplay(score);
+            this.renderStructured(structured);
+        } else {
+            // Fallback to text rendering
+            const score = this.extractScore(analysis || '');
+            this.updateScoreDisplay(score);
+            this.renderAnalysis(analysis || '');
+        }
     }
 
     extractScore(analysis) {
@@ -273,6 +276,122 @@ class BPMNCheckerApp {
         scoreCircle.style.background = `conic-gradient(${color} 0deg, ${color} ${degrees}deg, var(--border) ${degrees}deg)`;
     }
 
+    renderStructured(data) {
+        // Show structured sections, hide fallback analysis if not needed
+        const summarySection = document.getElementById('summary-section');
+        const prioritySection = document.getElementById('priority-section');
+        const issuesSection = document.getElementById('issues-section');
+        const analysisSection = document.getElementById('analysis-section');
+
+        // Populate summary badges
+        const counts = (data && data.counts) || { critical: 0, major: 0, minor: 0, suggestions: 0 };
+        const summaryBadges = document.getElementById('summary-badges');
+        const filters = document.getElementById('severity-filters');
+        summaryBadges.innerHTML = '';
+        filters.innerHTML = '';
+
+        const severities = [
+            { key: 'critical', label: 'Critical' },
+            { key: 'major', label: 'Major' },
+            { key: 'minor', label: 'Minor' },
+            { key: 'suggestions', label: 'Suggestions' }
+        ];
+
+        severities.forEach(({ key, label }) => {
+            const count = counts[key] || 0;
+            const badge = document.createElement('div');
+            badge.className = `summary-badge ${key}`;
+            badge.innerHTML = `<span>${label}</span><span class="count">${count}</span>`;
+            summaryBadges.appendChild(badge);
+
+            const btn = document.createElement('button');
+            btn.className = 'filter-btn';
+            btn.textContent = label;
+            btn.addEventListener('click', () => this.filterIssuesBySeverity(key === 'suggestions' ? 'suggestion' : key));
+            filters.appendChild(btn);
+        });
+
+        summarySection.style.display = 'block';
+
+        // Top priority fixes
+        const priorityList = document.getElementById('priority-list');
+        priorityList.innerHTML = '';
+        const fixes = Array.isArray(data.topPriorityFixes) ? data.topPriorityFixes.slice(0, 3) : [];
+        fixes.forEach(fix => {
+            const card = document.createElement('div');
+            card.className = 'priority-card';
+            card.innerHTML = `
+                <div class="priority-title">${this.escapeHtml(fix.title || '')}</div>
+                <div class="priority-why">${this.escapeHtml(fix.whyItMatters || '')}</div>
+                <div class="priority-fix"><strong>Fix:</strong> ${this.escapeHtml(fix.fix || '')}</div>
+                <div class="priority-validate"><strong>Validate:</strong> ${this.escapeHtml(fix.howToValidate || '')}</div>
+            `;
+            priorityList.appendChild(card);
+        });
+        prioritySection.style.display = fixes.length ? 'block' : 'none';
+
+        // Issues list
+        const issuesList = document.getElementById('issues-list');
+        issuesList.innerHTML = '';
+        const issues = Array.isArray(data.issues) ? data.issues : [];
+
+        // Group by severity order
+        const order = ['critical', 'major', 'minor', 'suggestion'];
+        issues.sort((a, b) => order.indexOf(a.severity || 'minor') - order.indexOf(b.severity || 'minor'));
+
+        issues.forEach(issue => {
+            const item = document.createElement('div');
+            const sev = (issue.severity || 'minor').toLowerCase();
+            const itemClass = sev === 'suggestion' ? 'info' : (sev === 'critical' ? 'error' : (sev === 'major' ? 'warning' : 'info'));
+            item.className = `finding-item ${itemClass}`;
+            const impacted = Array.isArray(issue.impactedElements) ? issue.impactedElements.join(', ') : '';
+            const tags = Array.isArray(issue.tags) ? issue.tags.map(t => `<span class="tag tag-info" style="margin-right:4px;">${this.escapeHtml(t)}</span>`).join(' ') : '';
+            item.innerHTML = `
+                <div class="finding-icon">!</div>
+                <div class="finding-content">
+                    <div class="finding-title">${this.escapeHtml(issue.title || '')}</div>
+                    <p class="finding-description">${this.escapeHtml(issue.description || '')}</p>
+                    ${impacted ? `<p class="finding-description"><strong>Elements:</strong> ${this.escapeHtml(impacted)}</p>` : ''}
+                    ${issue.recommendation ? `<p class="finding-description"><strong>Recommendation:</strong> ${this.escapeHtml(issue.recommendation)}</p>` : ''}
+                    ${issue.bestPracticeRef ? `<p class="finding-description"><strong>Best practice:</strong> ${this.escapeHtml(issue.bestPracticeRef)}</p>` : ''}
+                    ${tags}
+                </div>
+            `;
+            issuesList.appendChild(item);
+        });
+
+        issuesSection.style.display = issues.length ? 'block' : 'none';
+
+        // Use analysis-content area for overview/strengths if provided
+        const analysisContent = document.getElementById('analysis-content');
+        let overviewHtml = '';
+        if (data.diagramOverview) {
+            overviewHtml += `<h3>Diagram Overview</h3><p>${this.escapeHtml(data.diagramOverview)}</p>`;
+        }
+        if (Array.isArray(data.strengths) && data.strengths.length) {
+            overviewHtml += '<h3>What’s Done Well</h3><ul>' + data.strengths.map(s => `<li>${this.escapeHtml(s)}</li>`).join('') + '</ul>';
+        }
+        if (data.summary) {
+            overviewHtml += `<h3>Summary</h3><p>${this.escapeHtml(data.summary)}</p>`;
+        }
+        analysisContent.innerHTML = overviewHtml || '<p>No additional summary.</p>';
+    }
+
+    filterIssuesBySeverity(sev) {
+        const issuesList = document.getElementById('issues-list');
+        if (!issuesList) return;
+        const items = issuesList.querySelectorAll('.finding-item');
+        items.forEach(el => {
+            const isMatch = (
+                (sev === 'critical' && el.classList.contains('error')) ||
+                (sev === 'major' && el.classList.contains('warning')) ||
+                (sev === 'minor' && el.classList.contains('info')) ||
+                (sev === 'suggestion' && el.classList.contains('info'))
+            );
+            el.style.display = isMatch ? '' : 'none';
+        });
+    }
+
     renderAnalysis(analysis) {
         const analysisContent = document.getElementById('analysis-content');
         
@@ -312,6 +431,15 @@ class BPMNCheckerApp {
         html = html.replace(/<p><br><\/p>/g, '');
 
         analysisContent.innerHTML = html;
+    }
+
+    escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     reset() {

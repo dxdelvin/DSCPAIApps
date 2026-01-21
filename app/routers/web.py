@@ -320,7 +320,8 @@ async def bpmn_diagram_check(
     return {
         "status": "success",
         "analysis": result.get("result"),
-        "chatHistoryId": result.get("chatHistoryId")
+        "analysisStructured": result.get("structured"),
+        "chatHistoryId": result.get("chatHistoryId"),
     }
 
 
