@@ -213,6 +213,12 @@ class BPMNCheckerApp {
         this.showResultsState();
 
         if (structured && typeof structured === 'object') {
+            // Check if it's a valid BPMN diagram
+            if (structured.isBPMN === false) {
+                this.showNonBPMNError(structured.errorMessage || 'This does not appear to be a BPMN diagram.');
+                return;
+            }
+
             const score = typeof structured.qualityScore === 'number' ? structured.qualityScore : this.extractScore(analysis || '');
             this.updateScoreDisplay(score);
             this.renderStructured(structured);
@@ -222,6 +228,31 @@ class BPMNCheckerApp {
             this.updateScoreDisplay(score);
             this.renderAnalysis(analysis || '');
         }
+    }
+
+    showNonBPMNError(message) {
+        // Hide all structured sections
+        document.getElementById('summary-section').style.display = 'none';
+        document.getElementById('priority-section').style.display = 'none';
+        document.getElementById('issues-section').style.display = 'none';
+        document.getElementById('score-section').style.display = 'none';
+
+        // Show error in analysis section
+        const analysisSection = document.getElementById('analysis-section');
+        const analysisContent = document.getElementById('analysis-content');
+        analysisSection.style.display = 'block';
+        analysisContent.innerHTML = `
+            <div style="text-align: center; padding: 2rem;">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--danger)" stroke-width="1.5" style="margin-bottom: 1rem;">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <h3 style="color: var(--danger); margin: 0 0 0.5rem;">Not a BPMN Diagram</h3>
+                <p style="color: var(--text-secondary); margin: 0;">${this.escapeHtml(message)}</p>
+                <p style="color: var(--text-secondary); margin: 1rem 0 0; font-size: 0.9rem;">Please upload a valid BPMN 2.0 process diagram (PDF or image).</p>
+            </div>
+        `;
     }
 
     extractScore(analysis) {
@@ -283,31 +314,40 @@ class BPMNCheckerApp {
         const issuesSection = document.getElementById('issues-section');
         const analysisSection = document.getElementById('analysis-section');
 
-        // Populate summary badges
-        const counts = (data && data.counts) || { critical: 0, major: 0, minor: 0, suggestions: 0 };
+        // Normalize major to critical for backward compatibility
+        const counts = (data && data.counts) || { critical: 0, minor: 0, suggestions: 0 };
+        if (counts.major) {
+            counts.critical = (counts.critical || 0) + counts.major;
+        }
+
         const summaryBadges = document.getElementById('summary-badges');
         const filters = document.getElementById('severity-filters');
         summaryBadges.innerHTML = '';
         filters.innerHTML = '';
 
         const severities = [
-            { key: 'critical', label: 'Critical' },
-            { key: 'major', label: 'Major' },
-            { key: 'minor', label: 'Minor' },
-            { key: 'suggestions', label: 'Suggestions' }
+            { key: 'critical', label: 'Critical', cssClass: 'critical' },
+            { key: 'minor', label: 'Minor', cssClass: 'minor' },
+            { key: 'suggestions', label: 'Suggestions', cssClass: 'suggestion' }
         ];
 
-        severities.forEach(({ key, label }) => {
+        severities.forEach(({ key, label, cssClass }) => {
             const count = counts[key] || 0;
             const badge = document.createElement('div');
-            badge.className = `summary-badge ${key}`;
+            badge.className = `summary-badge ${cssClass}`;
             badge.innerHTML = `<span>${label}</span><span class="count">${count}</span>`;
             summaryBadges.appendChild(badge);
 
             const btn = document.createElement('button');
             btn.className = 'filter-btn';
             btn.textContent = label;
-            btn.addEventListener('click', () => this.filterIssuesBySeverity(key === 'suggestions' ? 'suggestion' : key));
+            btn.dataset.severity = key === 'suggestions' ? 'suggestion' : key;
+            btn.addEventListener('click', (e) => {
+                this.filterIssuesBySeverity(e.target.dataset.severity);
+                // Update active state
+                filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+            });
             filters.appendChild(btn);
         });
 
@@ -335,15 +375,21 @@ class BPMNCheckerApp {
         issuesList.innerHTML = '';
         const issues = Array.isArray(data.issues) ? data.issues : [];
 
-        // Group by severity order
-        const order = ['critical', 'major', 'minor', 'suggestion'];
+        // Normalize major → critical
+        issues.forEach(iss => {
+            if (iss.severity === 'major') iss.severity = 'critical';
+        });
+
+        // Group by severity order (3 tiers)
+        const order = ['critical', 'minor', 'suggestion'];
         issues.sort((a, b) => order.indexOf(a.severity || 'minor') - order.indexOf(b.severity || 'minor'));
 
         issues.forEach(issue => {
             const item = document.createElement('div');
             const sev = (issue.severity || 'minor').toLowerCase();
-            const itemClass = sev === 'suggestion' ? 'info' : (sev === 'critical' ? 'error' : (sev === 'major' ? 'warning' : 'info'));
+            const itemClass = sev === 'critical' ? 'error' : (sev === 'suggestion' ? 'info' : 'warning');
             item.className = `finding-item ${itemClass}`;
+            item.dataset.severity = sev;
             const impacted = Array.isArray(issue.impactedElements) ? issue.impactedElements.join(', ') : '';
             const tags = Array.isArray(issue.tags) ? issue.tags.map(t => `<span class="tag tag-info" style="margin-right:4px;">${this.escapeHtml(t)}</span>`).join(' ') : '';
             item.innerHTML = `
@@ -378,18 +424,40 @@ class BPMNCheckerApp {
     }
 
     filterIssuesBySeverity(sev) {
+        const issuesSection = document.getElementById('issues-section');
         const issuesList = document.getElementById('issues-list');
-        if (!issuesList) return;
+        if (!issuesList || !issuesSection) return;
+
+        // Scroll to issues section smoothly
+        issuesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
         const items = issuesList.querySelectorAll('.finding-item');
+        let visibleCount = 0;
+
         items.forEach(el => {
-            const isMatch = (
-                (sev === 'critical' && el.classList.contains('error')) ||
-                (sev === 'major' && el.classList.contains('warning')) ||
-                (sev === 'minor' && el.classList.contains('info')) ||
-                (sev === 'suggestion' && el.classList.contains('info'))
-            );
+            const itemSev = el.dataset.severity || '';
+            const isMatch = itemSev === sev;
             el.style.display = isMatch ? '' : 'none';
+            if (isMatch) {
+                visibleCount++;
+                el.classList.add('highlight');
+                setTimeout(() => el.classList.remove('highlight'), 1500);
+            }
         });
+
+        // Show friendly message if no matches
+        let msg = issuesList.querySelector('.filter-message');
+        if (!msg) {
+            msg = document.createElement('div');
+            msg.className = 'filter-message';
+            issuesList.prepend(msg);
+        }
+        if (visibleCount === 0) {
+            msg.textContent = `No ${sev} issues found.`;
+            msg.style.display = 'block';
+        } else {
+            msg.style.display = 'none';
+        }
     }
 
     renderAnalysis(analysis) {

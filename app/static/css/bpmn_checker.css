@@ -523,7 +523,7 @@
 /* Summary badges */
 .summary-badges {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.75rem;
     margin-bottom: 0.5rem;
 }
@@ -541,7 +541,6 @@
 
 .summary-badge .count { font-weight: 700; }
 .summary-badge.critical { border-left: 4px solid var(--danger); }
-.summary-badge.major { border-left: 4px solid var(--warning); }
 .summary-badge.minor { border-left: 4px solid var(--info); }
 .summary-badge.suggestion { border-left: 4px solid var(--success); }
 
@@ -573,6 +572,27 @@
 .finding-item.success {
     border-left-color: var(--success);
     background: rgba(31, 157, 85, 0.05);
+}
+
+.finding-item.highlight {
+    animation: highlightPulse 0.6s ease-in-out;
+}
+
+@keyframes highlightPulse {
+    0%, 100% { transform: scale(1); box-shadow: none; }
+    50% { transform: scale(1.02); box-shadow: 0 4px 12px rgba(255, 95, 0, 0.3); }
+}
+
+.filter-message {
+    padding: 1rem;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    font-style: italic;
+    background: var(--bg);
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    display: none;
 }
 
 /* Priority fixes */
