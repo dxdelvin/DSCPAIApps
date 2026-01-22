@@ -15,57 +15,28 @@ from app.services.common_service import (
 # BPMN Checker-specific constants
 BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
 
-BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
-    "You are a BPMN 2.0 expert. Analyze the uploaded BPMN diagram image/PDF carefully. "
-    "Identify structural errors, gateway issues, flow logic problems, naming issues, and best practice violations. "
-    "Provide a quality score from 0-100 and categorize findings as errors (critical), warnings, or suggestions. "
-    "Format your response with clear markdown sections. Do not ask follow-up questions."
-)
-
 
 def build_checker_prompt(filename: str, context: Optional[str] = None) -> str:
-    """Build the analysis prompt for BPMN diagram checking."""
-    prompt = f"""You are a BPMN 2.0 expert. Carefully analyze the uploaded BPMN diagram image/PDF.
-
-FIRST, describe what you see in the diagram - the process flow, elements, pools, lanes, gateways, tasks, events, etc.
-
-THEN, identify any issues and provide actionable solutions.
-
-## OUTPUT FORMAT:
-
-### 📊 Diagram Overview
-Describe the BPMN diagram: What process does it represent? What are the main elements you can see?
-
-### 🔍 Findings & Solutions
-
-For each issue found, use this format:
-
-**Problem:** [Describe what is wrong or could be improved]
-**Solution:** [Provide a specific, actionable fix the user can implement]
-
----
-
-(List all findings with problems and solutions separated by ---)
-
-### ✅ What's Done Well
-List any positive aspects of the diagram (good practices, clear labeling, proper structure, etc.)
-
-### 📝 Overall Assessment
-Provide a brief summary with:
-- Quality Score: X/100
-- Main strengths
-- Priority actions to take
-
-File being analyzed: {filename}"""
-
-    if context:
-        prompt += f"\n\nAdditional context from user: {context}"
+    """Build a simple analysis prompt - detailed instructions are in Brain workflow."""
+    prompt = f"Analyze this BPMN diagram: {filename}"
+    
+    if context and context.strip():
+        prompt += f" | Context: {context}"
     
     return prompt
 
 
 async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) -> dict:
     """Analyze a BPMN diagram for errors, best practices, and quality."""
+    
+    # Check if file is provided
+    if not file or not file.filename:
+        return {
+            "error": True,
+            "message": "No file uploaded",
+            "detail": "Please upload a BPMN diagram (PDF, JPG, or PNG) to analyze."
+        }
+    
     brain_id = os.getenv("BPMN_CHECKER_BRAIN_ID")
     
     # Fallback to signavio brain if specific checker brain not configured
@@ -75,8 +46,8 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
     if not brain_id:
         return {
             "error": True,
-            "message": "API Not Active",
-            "detail": "BPMN_CHECKER_BRAIN_ID is not configured."
+            "message": "Service unavailable",
+            "detail": "BPMN analysis service is not configured. Please contact support."
         }
 
     # Validate file type
@@ -92,39 +63,47 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
     if not is_valid:
         return {
             "error": True,
-            "message": "Invalid file type",
-            "detail": "Please upload a PDF or image file (JPG, JPEG, PNG) containing your BPMN diagram."
+            "message": "Unsupported file format",
+            "detail": f"'{file.filename}' is not supported. Please upload a PDF or image (JPG, PNG)."
         }
 
     # Create a chat history
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
-        return chat_result
+        return {
+            "error": True,
+            "message": "Connection failed",
+            "detail": "Unable to start analysis session. Please try again."
+        }
 
     chat_history_id = chat_result.get("chatHistoryId")
     
     if not chat_history_id:
         return {
             "error": True,
-            "message": "Failed to create chat session",
-            "detail": "Chat history ID is empty or null."
+            "message": "Session error",
+            "detail": "Failed to initialize analysis. Please try again."
         }
 
     # Upload the file as an attachment
     upload_result = await upload_attachments(brain_id, [file])
     if upload_result.get("error"):
-        return upload_result
+        return {
+            "error": True,
+            "message": "Upload failed",
+            "detail": "Could not process your file. Please ensure it's a valid image or PDF and try again."
+        }
 
     attachment_ids = upload_result.get("attachmentIds", [])
     
-    if not attachment_ids or len(attachment_ids) == 0:
+    if not attachment_ids:
         return {
             "error": True,
-            "message": "Attachment upload failed",
-            "detail": "No attachment IDs returned from upload."
+            "message": "Upload failed",
+            "detail": "File was not uploaded successfully. Please try again."
         }
 
-    # Build the analysis prompt
+    # Build the simple prompt (detailed instructions are in Brain workflow)
     prompt = build_checker_prompt(file.filename, context)
 
     # Call the Brain API
@@ -133,12 +112,15 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
         prompt,
         chat_history_id=chat_history_id,
         attachment_ids=attachment_ids,
-        custom_behaviour=BPMN_DIAGRAM_CHECK_BEHAVIOUR,
         workflow_id=BPMN_CHECKER_WORKFLOW_ID,
     )
 
     if response.get("error"):
-        return response
+        return {
+            "error": True,
+            "message": "Analysis failed",
+            "detail": "Unable to analyze the diagram. Please try again or upload a different file."
+        }
 
     return {
         "result": response.get("result", ""),
