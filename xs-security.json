@@ -1,0 +1,37 @@
+{
+  "xsappname": "dscp-ai-app",
+  "tenant-mode": "dedicated",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.Display",
+      "description": "User can view the application"
+    },
+    {
+      "name": "$XSAPPNAME.Admin",
+      "description": "User can perform administrative tasks"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "Viewer",
+      "description": "Standard User Role",
+      "scope-references": [
+        "$XSAPPNAME.Display"
+      ]
+    },
+    {
+      "name": "Administrator",
+      "description": "Admin Role",
+      "scope-references": [
+        "$XSAPPNAME.Display",
+        "$XSAPPNAME.Admin"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "token-validity": 3600,
+    "redirect-uris": [
+        "https://dscpaiapps-shy-dog-rb.cfapps.eu10.hana.ondemand.com/**"
+    ]
+  }
+}

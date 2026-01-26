@@ -66,7 +66,7 @@ def test_brain_api(access_token):
         'Accept': 'application/json'
     }
 
-    endpoint = f"{BASE_URL}/sharepoint-sites"
+    endpoint = f"{BASE_URL}/knowledge-bases"
     
     params = {
         'knowledgeBaseId': BRAIN_ID_TO_TEST

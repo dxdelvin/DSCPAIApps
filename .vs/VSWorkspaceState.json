@@ -2,13 +2,11 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\app\\routers",
-    "\\app\\services",
+    "\\approuter",
     "\\app\\static",
-    "\\app\\static\\css",
     "\\app\\static\\js",
     "\\app\\templates"
   ],
-  "SelectedNode": "\\app\\services\\bpmn_service.py",
+  "SelectedNode": "\\approuter",
   "PreviewInSolutionExplorer": false
 }

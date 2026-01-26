@@ -70,7 +70,7 @@ async def create_chat_history(brain_id: str) -> dict:
         except httpx.HTTPStatusError as e:
             return {
                 "error": True,
-                "message": "Failed to create chat history",
+                "message": "Failed to create chat history ",
                 "detail": f"Status {e.response.status_code}: {e.response.text}"
             }
         except httpx.RequestError as e:
