@@ -22,6 +22,7 @@ from app.services.audit_service import (
     continue_audit_chat,
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
+from app.services.auth_service import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
@@ -62,7 +63,14 @@ class BPMNGenerateRequest(BaseModel):
 # Page Routes 
 @router.get("/")
 async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    # Get current user info for welcome message
+    user_info = get_current_user(request)
+    username = user_info.get("user", "Guest")
+    
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "username": username,
+    })
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
