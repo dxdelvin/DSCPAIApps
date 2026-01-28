@@ -173,10 +173,39 @@ def validate_token(token: str) -> dict:
     
     try:
         security_context = xssec.create_security_context(token, uaa_service.credentials)
+        
+        # Get user info - use safe attribute access as method names may vary by version
+        user = None
+        email = None
+        scopes = []
+        
+        # Try to get logon name
+        if hasattr(security_context, 'get_logon_name'):
+            user = security_context.get_logon_name()
+        elif hasattr(security_context, 'getLogonName'):
+            user = security_context.getLogonName()
+        
+        # Try to get email
+        if hasattr(security_context, 'get_email'):
+            email = security_context.get_email()
+        elif hasattr(security_context, 'getEmail'):
+            email = security_context.getEmail()
+        
+        # Try to get scopes - different method names in different versions
+        if hasattr(security_context, 'get_granted_scopes'):
+            scopes = security_context.get_granted_scopes()
+        elif hasattr(security_context, 'getGrantedScopes'):
+            scopes = security_context.getGrantedScopes()
+        elif hasattr(security_context, 'scopes'):
+            scopes = security_context.scopes
+        else:
+            # Scopes not critical, just log and continue
+            print("Note: Could not retrieve scopes from security context")
+        
         return {
-            "user": security_context.get_logon_name(),
-            "email": security_context.get_email(),
-            "scopes": security_context.get_granted_scopes(),
+            "user": user or "Unknown",
+            "email": email or "",
+            "scopes": scopes or [],
         }
     except Exception as e:
         print(f"Token validation error: {e}")
