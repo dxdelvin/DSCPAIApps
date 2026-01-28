@@ -1,8 +1,8 @@
 import httpx
 import os
 from fastapi import HTTPException
-from app.core.config import USE_SAP_CONNECTIVITY
-from app.services.sap_connectivity_service import get_sap_connectivity
+from app.core.config import IS_PRODUCTION
+
 
 async def get_brain_access_token():
     """Fetches a Bearer token that expires after 2 hours."""
@@ -19,27 +19,14 @@ async def get_brain_access_token():
         "grant_type": "client_credentials"
     }
     
-    # Get SAP connectivity configuration if enabled
-    proxies = None
-    proxy_headers = {}
-    
-    if USE_SAP_CONNECTIVITY:
-        sap_conn = get_sap_connectivity()
-        proxies = sap_conn.get_connectivity_proxy()
-        proxy_headers = await sap_conn.get_proxy_headers()
-    
-    # Merge proxy headers with request (if any)
+    # trust_env: False in dev, True in prod
     request_kwargs = {
         "verify": False,
-        "trust_env": False
+        "trust_env": IS_PRODUCTION
     }
-    
-    if proxies:
-        request_kwargs["proxies"] = proxies
     
     async with httpx.AsyncClient(**request_kwargs) as client:
         try:
-            # Microsoft OAuth doesn't need proxy headers, but prepare for future use
             response = await client.post(url, data=data)
             response.raise_for_status()
             return response.json().get("access_token")

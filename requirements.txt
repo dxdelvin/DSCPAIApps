@@ -5,8 +5,9 @@ python-multipart
 httpx
 pydantic
 python-dotenv
+itsdangerous
 
-# SAP BTP Connectivity
+# SAP BTP XSUAA
 cfenv
 sap-xssec
 requests

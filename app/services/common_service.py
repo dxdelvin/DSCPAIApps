@@ -7,8 +7,7 @@ import os
 from typing import Optional, List, Tuple, Dict
 from fastapi import HTTPException, UploadFile
 from app.services.brain_auth import get_brain_access_token
-from app.core.config import USE_SAP_CONNECTIVITY, DESTINATION_NAME, BRAIN_API_BASE_URL
-from app.services.sap_connectivity_service import get_sap_connectivity
+from app.core.config import IS_PRODUCTION, BRAIN_API_BASE_URL
 
 
 def _require_env(value: str, name: str) -> str:
@@ -18,21 +17,9 @@ def _require_env(value: str, name: str) -> str:
     return value
 
 
-async def _get_sap_config() -> Tuple[Optional[str], Optional[Dict], Dict[str, str]]:
-    """Get SAP connectivity configuration (base_url, proxies, proxy_headers)."""
-    if USE_SAP_CONNECTIVITY:
-        sap_conn = get_sap_connectivity()
-        return await sap_conn.prepare_request_config(DESTINATION_NAME)
-    return None, None, {}
-
-
-async def _get_base_url_and_headers(token: str) -> Tuple[str, dict, Optional[Dict], Dict[str, str]]:
-    """Get base URL, headers, proxies, and SAP proxy headers."""
-    # Get SAP configuration if enabled
-    sap_base_url, proxies, sap_proxy_headers = await _get_sap_config()
-    
-    # Use SAP destination URL if available, otherwise use env variable
-    base_url = sap_base_url if sap_base_url else BRAIN_API_BASE_URL
+def _get_base_url_and_headers(token: str) -> Tuple[str, dict]:
+    """Get base URL and headers."""
+    base_url = BRAIN_API_BASE_URL
     
     # Build headers
     headers = {
@@ -41,10 +28,7 @@ async def _get_base_url_and_headers(token: str) -> Tuple[str, dict, Optional[Dic
         "Content-Type": "application/json"
     }
     
-    # Merge SAP proxy headers if available
-    headers.update(sap_proxy_headers)
-    
-    return base_url, headers, proxies, sap_proxy_headers
+    return base_url, headers
 
 
 async def create_chat_history(brain_id: str) -> dict:
@@ -52,14 +36,12 @@ async def create_chat_history(brain_id: str) -> dict:
     _require_env(brain_id, "knowledgeBaseId")
     
     token = await get_brain_access_token()
-    base_url, headers, proxies, _ = await _get_base_url_and_headers(token)
+    base_url, headers = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
     
     url = f"{base_url}/chat-histories/{brain_id}"
     
-    client_kwargs = {"verify": False, "trust_env": not USE_SAP_CONNECTIVITY}
-    if proxies:
-        client_kwargs["proxies"] = proxies
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -86,7 +68,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
     _require_env(brain_id, "knowledgeBaseId")
     
     token = await get_brain_access_token()
-    base_url, _, proxies, sap_proxy_headers = await _get_base_url_and_headers(token)
+    base_url, _ = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
     
     url = f"{base_url}/chat-attachments"
@@ -94,7 +76,6 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
         "Authorization": f"Bearer {token}",
         "User-Agent": "PostmanRuntime/7.37.3"
     }
-    headers.update(sap_proxy_headers)
     
     files_data = []
     for file in files:
@@ -102,9 +83,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
         files_data.append(("files", (file.filename, content, file.content_type)))
         await file.seek(0)
     
-    client_kwargs = {"verify": False, "trust_env": not USE_SAP_CONNECTIVITY}
-    if proxies:
-        client_kwargs["proxies"] = proxies
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -153,7 +132,7 @@ async def call_brain_workflow_chat(
     _require_env(brain_id, "knowledgeBaseId")
 
     token = await get_brain_access_token()
-    base_url, headers, proxies, _ = await _get_base_url_and_headers(token)
+    base_url, headers = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
 
     url = f"{base_url}/chat/workflow"
@@ -170,9 +149,7 @@ async def call_brain_workflow_chat(
     if workflow_id:
         payload["workflowId"] = workflow_id
 
-    client_kwargs = {"verify": False, "trust_env": not USE_SAP_CONNECTIVITY}
-    if proxies:
-        client_kwargs["proxies"] = proxies
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -213,7 +190,7 @@ async def call_brain_chat(
     _require_env(brain_id, "knowledgeBaseId")
 
     token = await get_brain_access_token()
-    base_url, headers, proxies, _ = await _get_base_url_and_headers(token)
+    base_url, headers = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
 
     url = f"{base_url}/chat/retrieval-augmented"
@@ -229,9 +206,7 @@ async def call_brain_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": not USE_SAP_CONNECTIVITY}
-    if proxies:
-        client_kwargs["proxies"] = proxies
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -274,7 +249,7 @@ async def call_brain_pure_llm_chat(
     _require_env(brain_id, "knowledgeBaseId")
 
     token = await get_brain_access_token()
-    base_url, headers, proxies, _ = await _get_base_url_and_headers(token)
+    base_url, headers = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
 
     url = f"{base_url}/chat/pure-llm"
@@ -289,9 +264,7 @@ async def call_brain_pure_llm_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": not USE_SAP_CONNECTIVITY}
-    if proxies:
-        client_kwargs["proxies"] = proxies
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
