@@ -43,7 +43,6 @@ def get_login_url(request: Request) -> str:
         "response_type": "code",
         "client_id": config["client_id"],
         "redirect_uri": callback_url,
-        "scope": f"{config['xsappname']}.Display",
     }
     
     return f"{config['auth_url']}?{urlencode(params)}"
