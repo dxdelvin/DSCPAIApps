@@ -6,24 +6,57 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(ROOT_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import APP_TITLE, STATIC_DIR
 from app.routers import web
 from app.services.auth_service import (
-    get_current_user,
     get_login_url,
     exchange_code_for_token,
     get_logout_url,
 )
 
+
+# ============== Auth Middleware Class ==============
+
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Check authentication for protected routes."""
+    
+    async def dispatch(self, request: Request, call_next):
+        # Public paths that don't require auth
+        public_paths = ["/login", "/auth/callback", "/logout", "/static", "/docs", "/openapi.json"]
+        
+        # Check if path is public
+        for path in public_paths:
+            if request.url.path.startswith(path):
+                return await call_next(request)
+        
+        # Check if running locally (bypass auth)
+        if not os.getenv("VCAP_SERVICES"):
+            return await call_next(request)
+        
+        # Check for valid session
+        token = request.session.get("access_token")
+        if not token:
+            # Not authenticated - redirect to login
+            return RedirectResponse(url="/login", status_code=302)
+        
+        # Proceed with request
+        return await call_next(request)
+
+
 app = FastAPI(title=APP_TITLE)
 
-# Session middleware for storing auth tokens (use a secure secret in production)
-SESSION_SECRET = os.getenv("SESSION_SECRET", "change-this-secret-in-production-use-strong-key")
+# Middleware order matters! Added in reverse order (last added = first to process)
+# 1. First add AuthMiddleware (will run AFTER SessionMiddleware)
+app.add_middleware(AuthMiddleware)
+
+# 2. Then add SessionMiddleware (will run FIRST, before AuthMiddleware)
+SESSION_SECRET = os.getenv("SESSION_SECRET")
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, max_age=3600)
 
 # Static assets (no auth required)
@@ -74,33 +107,6 @@ async def logout(request: Request):
     
     logout_url = get_logout_url()
     return RedirectResponse(url=logout_url, status_code=302)
-
-
-# ============== Auth Middleware ==============
-
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    """Check authentication for protected routes."""
-    # Public paths that don't require auth
-    public_paths = ["/login", "/auth/callback", "/logout", "/static", "/docs", "/openapi.json"]
-    
-    # Check if path is public
-    for path in public_paths:
-        if request.url.path.startswith(path):
-            return await call_next(request)
-    
-    # Check if running locally (bypass auth)
-    if not os.getenv("VCAP_SERVICES"):
-        return await call_next(request)
-    
-    # Check for valid session
-    token = request.session.get("access_token")
-    if not token:
-        # Not authenticated - redirect to login
-        return RedirectResponse(url="/login", status_code=302)
-    
-    # Proceed with request
-    return await call_next(request)
 
 
 # Routers
