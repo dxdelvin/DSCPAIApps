@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.core.config import APP_TITLE, STATIC_DIR
 from app.routers import web
@@ -42,40 +43,52 @@ async def startup_event():
     print("=" * 50)
 
 
-# ============== Session Middleware (MUST be added first) ==============
+# ============== Auth Middleware Class ==============
+class AuthMiddleware(BaseHTTPMiddleware):
+    """Check authentication for protected routes."""
+    
+    async def dispatch(self, request: Request, call_next):
+        # Public paths that don't require auth
+        public_paths = [
+            "/login", "/auth/callback", "/logout", 
+            "/static", "/docs", "/openapi.json",
+            "/health", "/debug/auth-status"
+        ]
+        
+        # Check if path is public
+        for path in public_paths:
+            if request.url.path.startswith(path):
+                return await call_next(request)
+        
+        # Check if running locally (bypass auth)
+        if not os.getenv("VCAP_SERVICES"):
+            return await call_next(request)
+        
+        # Check for valid session
+        token = request.session.get("access_token")
+        if not token:
+            # Not authenticated - redirect to login
+            print(f"Auth middleware: No token for path {request.url.path}, redirecting to login")
+            return RedirectResponse(url="/login", status_code=302)
+        
+        # Proceed with request
+        return await call_next(request)
+
+
+# ============== Middleware Stack ==============
+# IMPORTANT: Middleware is added in REVERSE order of execution
+# Last added = First to execute
+# We want: Request → Session → Auth → Route
+# So we add: Auth first, then Session
+
 SESSION_SECRET = os.getenv("SESSION_SECRET", "fallback-dev-secret-change-in-prod")
+
+# Add Auth middleware FIRST (will execute AFTER Session)
+app.add_middleware(AuthMiddleware)
+
+# Add Session middleware LAST (will execute FIRST)
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, max_age=3600)
 
-
-# ============== Auth Middleware (added after SessionMiddleware) ==============
-@app.middleware("http")
-async def auth_middleware(request: Request, call_next):
-    """Check authentication for protected routes."""
-    # Public paths that don't require auth
-    public_paths = [
-        "/login", "/auth/callback", "/logout", 
-        "/static", "/docs", "/openapi.json",
-        "/health", "/debug/auth-status"
-    ]
-    
-    # Check if path is public
-    for path in public_paths:
-        if request.url.path.startswith(path):
-            return await call_next(request)
-    
-    # Check if running locally (bypass auth)
-    if not os.getenv("VCAP_SERVICES"):
-        return await call_next(request)
-    
-    # Check for valid session - session is guaranteed to exist here
-    token = request.session.get("access_token")
-    if not token:
-        # Not authenticated - redirect to login
-        print(f"Auth middleware: No token for path {request.url.path}, redirecting to login")
-        return RedirectResponse(url="/login", status_code=302)
-    
-    # Proceed with request
-    return await call_next(request)
 
 # Static assets (no auth required)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
