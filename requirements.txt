@@ -6,6 +6,8 @@ httpx
 pydantic
 python-dotenv
 itsdangerous
+python-pptx
+Pillow
 
 # SAP BTP XSUAA
 cfenv

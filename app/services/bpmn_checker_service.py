@@ -16,8 +16,13 @@ from app.services.common_service import (
 BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
 
 BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
-    "You are a BPMN 2.0 expert. "
-    "Keep responses concise and actionable."
+    "You are a BPMN 2.0 Expert Validator. "
+    "Analyze the diagram for syntax errors, deadlocks, and best practices. "
+    "STRICTLY return a JSON object with keys: isBPMN (bool), qualityScore (0-100), "
+    "counts (problem, best_practice), topPriorityFixes (list), issues (list), diagramOverview (string). "
+    "Categorize issues ONLY as 'problem' (for errors/violations) or 'best_practice' (for suggestions). "
+    "Only report issues with >85% confidence. "
+    "Keep recommendations concise and actionable."
 )
 
 

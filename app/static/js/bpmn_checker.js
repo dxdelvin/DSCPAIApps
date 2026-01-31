@@ -314,10 +314,15 @@ class BPMNCheckerApp {
         const issuesSection = document.getElementById('issues-section');
         const analysisSection = document.getElementById('analysis-section');
 
-        // Normalize major to critical for backward compatibility
-        const counts = (data && data.counts) || { critical: 0, minor: 0, suggestions: 0 };
-        if (counts.major) {
-            counts.critical = (counts.critical || 0) + counts.major;
+        // Normalize counts for restricted categories: 'problem' and 'best_practice'
+        const counts = data.counts || {};
+        
+        // Map legacy/detailed severities to our two main buckets if AI returns them
+        if (counts.critical || counts.major || counts.minor) {
+            counts.problem = (counts.problem || 0) + (counts.critical || 0) + (counts.major || 0) + (counts.minor || 0);
+        }
+        if (counts.suggestions || counts.info) {
+             counts.best_practice = (counts.best_practice || 0) + (counts.suggestions || 0) + (counts.info || 0);
         }
 
         const summaryBadges = document.getElementById('summary-badges');
@@ -326,9 +331,8 @@ class BPMNCheckerApp {
         filters.innerHTML = '';
 
         const severities = [
-            { key: 'critical', label: 'Critical', cssClass: 'critical' },
-            { key: 'minor', label: 'Minor', cssClass: 'minor' },
-            { key: 'suggestions', label: 'Suggestions', cssClass: 'suggestion' }
+            { key: 'problem', label: 'Problems to Fix', cssClass: 'critical' },
+            { key: 'best_practice', label: 'Best Practices', cssClass: 'suggestion' }
         ];
 
         severities.forEach(({ key, label, cssClass }) => {
@@ -341,12 +345,19 @@ class BPMNCheckerApp {
             const btn = document.createElement('button');
             btn.className = 'filter-btn';
             btn.textContent = label;
-            btn.dataset.severity = key === 'suggestions' ? 'suggestion' : key;
+            btn.dataset.severity = key;
             btn.addEventListener('click', (e) => {
-                this.filterIssuesBySeverity(e.target.dataset.severity);
-                // Update active state
-                filters.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
+                // Toggle active state
+                const isActive = btn.classList.contains('active');
+                
+                if (isActive) {
+                    btn.classList.remove('active');
+                    this.filterIssuesBySeverity('all');
+                } else {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this.filterIssuesBySeverity(key);
+                }
             });
             filters.appendChild(btn);
         });
@@ -361,10 +372,17 @@ class BPMNCheckerApp {
             const card = document.createElement('div');
             card.className = 'priority-card';
             card.innerHTML = `
-                <div class="priority-title">${this.escapeHtml(fix.title || '')}</div>
-                <div class="priority-why">${this.escapeHtml(fix.whyItMatters || '')}</div>
-                <div class="priority-fix"><strong>Fix:</strong> ${this.escapeHtml(fix.fix || '')}</div>
-                <div class="priority-validate"><strong>Validate:</strong> ${this.escapeHtml(fix.howToValidate || '')}</div>
+                <div class="priority-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                </div>
+                <div class="priority-content">
+                    <h5>${this.escapeHtml(fix.title || 'Critical Fix')}</h5>
+                    <p>${this.escapeHtml(fix.recommendation || fix.description || 'Address this issue to improve validity.')}</p>
+                </div>
             `;
             priorityList.appendChild(card);
         });
@@ -375,36 +393,56 @@ class BPMNCheckerApp {
         issuesList.innerHTML = '';
         const issues = Array.isArray(data.issues) ? data.issues : [];
 
-        // Normalize major → critical
+        // Normalize severities in issues list
         issues.forEach(iss => {
-            if (iss.severity === 'major') iss.severity = 'critical';
+            const s = (iss.severity || '').toLowerCase();
+            if (['critical', 'major', 'minor'].includes(s)) iss.severity = 'problem';
+            if (['suggestion', 'suggestions', 'info', 'style'].includes(s)) iss.severity = 'best_practice';
+            // Default to problem if unknown but not 'best_practice' (safety)
+            if (iss.severity !== 'best_practice' && iss.severity !== 'problem') iss.severity = 'problem';
         });
 
-        // Group by severity order (3 tiers)
-        const order = ['critical', 'minor', 'suggestion'];
-        issues.sort((a, b) => order.indexOf(a.severity || 'minor') - order.indexOf(b.severity || 'minor'));
+        // Group by severity order
+        const order = ['problem', 'best_practice'];
+        issues.sort((a, b) => order.indexOf(a.severity) - order.indexOf(b.severity));
 
         issues.forEach(issue => {
             const item = document.createElement('div');
-            const sev = (issue.severity || 'minor').toLowerCase();
-            const itemClass = sev === 'critical' ? 'error' : (sev === 'suggestion' ? 'info' : 'warning');
-            item.className = `finding-item ${itemClass}`;
-            item.dataset.severity = sev;
-            const impacted = Array.isArray(issue.impactedElements) ? issue.impactedElements.join(', ') : '';
-            const tags = Array.isArray(issue.tags) ? issue.tags.map(t => `<span class="tag tag-info" style="margin-right:4px;">${this.escapeHtml(t)}</span>`).join(' ') : '';
+            item.className = 'finding-item';
+            
+            // Map our simplified severities to display styles (reusing existing CSS classes logic)
+            let severityClass = 'minor'; 
+            let severityLabel = 'Problem';
+            
+            if (issue.severity === 'problem') {
+                severityClass = 'critical';
+                severityLabel = 'Problem';
+            } else if (issue.severity === 'best_practice') {
+                severityClass = 'suggestion';
+                severityLabel = 'Best Practice';
+            }
+
+            item.dataset.severity = issue.severity; // 'problem' or 'best_practice'
+
             item.innerHTML = `
-                <div class="finding-icon">!</div>
-                <div class="finding-content">
-                    <div class="finding-title">${this.escapeHtml(issue.title || '')}</div>
-                    <p class="finding-description">${this.escapeHtml(issue.description || '')}</p>
-                    ${impacted ? `<p class="finding-description"><strong>Elements:</strong> ${this.escapeHtml(impacted)}</p>` : ''}
-                    ${issue.recommendation ? `<p class="finding-description"><strong>Recommendation:</strong> ${this.escapeHtml(issue.recommendation)}</p>` : ''}
-                    ${issue.bestPracticeRef ? `<p class="finding-description"><strong>Best practice:</strong> ${this.escapeHtml(issue.bestPracticeRef)}</p>` : ''}
-                    ${tags}
+                <div class="finding-header">
+                    <span class="finding-badge ${severityClass}">${severityLabel}</span>
+                    <h5 class="finding-title">${this.escapeHtml(issue.title)}</h5>
+                </div>
+                <p class="finding-desc">${this.escapeHtml(issue.description)}</p>
+                <div class="finding-fix">
+                    <strong>Solution:</strong> ${this.escapeHtml(issue.recommendation)}
                 </div>
             `;
             issuesList.appendChild(item);
         });
+
+        // Add filter empty state message
+        const filterMsg = document.createElement('div');
+        filterMsg.className = 'filter-message';
+        filterMsg.textContent = 'No issues found for this category.';
+        filterMsg.style.display = 'none';
+        issuesList.appendChild(filterMsg);
 
         issuesSection.style.display = issues.length ? 'block' : 'none';
 
@@ -412,13 +450,13 @@ class BPMNCheckerApp {
         const analysisContent = document.getElementById('analysis-content');
         let overviewHtml = '';
         if (data.diagramOverview) {
-            overviewHtml += `<h3>Diagram Overview</h3><p>${this.escapeHtml(data.diagramOverview)}</p>`;
+            overviewHtml += `<h3>Overview</h3><p>${this.escapeHtml(data.diagramOverview)}</p>`;
         }
         if (Array.isArray(data.strengths) && data.strengths.length) {
-            overviewHtml += '<h3>What’s Done Well</h3><ul>' + data.strengths.map(s => `<li>${this.escapeHtml(s)}</li>`).join('') + '</ul>';
+            overviewHtml += `<h3>Top Strengths</h3><ul>${data.strengths.map(s => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul>`;
         }
-        if (data.summary) {
-            overviewHtml += `<h3>Summary</h3><p>${this.escapeHtml(data.summary)}</p>`;
+        if (data.summary && !data.diagramOverview) {
+             overviewHtml += `<p>${this.escapeHtml(data.summary)}</p>`;
         }
         analysisContent.innerHTML = overviewHtml || '<p>No additional summary.</p>';
     }
@@ -436,12 +474,15 @@ class BPMNCheckerApp {
 
         items.forEach(el => {
             const itemSev = el.dataset.severity || '';
-            const isMatch = itemSev === sev;
+            const isMatch = (sev === 'all') || (itemSev === sev);
             el.style.display = isMatch ? '' : 'none';
             if (isMatch) {
                 visibleCount++;
-                el.classList.add('highlight');
-                setTimeout(() => el.classList.remove('highlight'), 1500);
+                // Flash effect for attention
+                if (sev !== 'all') {
+                    el.classList.add('highlight');
+                    setTimeout(() => el.classList.remove('highlight'), 1500);
+                }
             }
         });
 
@@ -450,10 +491,11 @@ class BPMNCheckerApp {
         if (!msg) {
             msg = document.createElement('div');
             msg.className = 'filter-message';
-            issuesList.prepend(msg);
+            issuesList.appendChild(msg);
         }
+        
         if (visibleCount === 0) {
-            msg.textContent = `No ${sev} issues found.`;
+            msg.textContent = (sev === 'all') ? 'No issues found.' : `No ${sev.replace('_', ' ')}s found.`;
             msg.style.display = 'block';
         } else {
             msg.style.display = 'none';
