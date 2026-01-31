@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}">
     {% block extra_css %}{% endblock %}
 </head>
-<body>
+<body{% if request.url_path == '/' %} class="home-page"{% endif %}>
     <header class="navbar">
         <div class="navbar-shell">
             <a class="brand" href="/">
@@ -18,9 +18,16 @@
                 </span>
             </a>
 
-            <button class="changelog-bell" id="changelogBell" aria-label="View changelog">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 22h4"/></svg>
-            </button>
+            <div class="navbar-actions">
+                <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
+                    <svg class="sun-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+                    <svg class="moon-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+                </button>
+                
+                <button class="changelog-bell" id="changelogBell" aria-label="View changelog">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 22h4"/></svg>
+                </button>
+            </div>
         </div>
     </header>
 
@@ -36,7 +43,16 @@
             </div>
             <div class="changelog-content">
             <div class="changelog-section">
-                <h3 class="changelog-date">Jan 30th, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v1.4.0</span></h3>
+                <h3 class="changelog-date">Jan 31st, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v2.0.0</span></h3>
+                <ul class="changelog-list">
+                    <li>Beta Version Launch!</li>
+                    <li>Dark Mode support added across the entire application.</li>
+                    <li>Changelog and Notification system updated.</li>
+                    <li>Added new hosting environment on SAP BTP Cloud Foundry.</li>
+                </ul>
+            </div>
+            <div class="changelog-section">
+                <h3 class="changelog-date">Jan 30th, 2026: <span class="badge-version">v1.4.0</span></h3>
                 <ul class="changelog-list">
                     <li>Implemented user authentication.</li>
                     <li>Fixed bugs in Apps.</li>
@@ -72,7 +88,7 @@
 
     <footer class="site-footer">
         <div class="footer-content">
-            <span class="footer-badge">🚧 Under Development</span>
+            <span class="footer-badge">🚧 Beta Version</span>
             <span class="footer-text">BSH Digital Supply Chain Planning • Powered by Dia Brain</span>
         </div>
     </footer>

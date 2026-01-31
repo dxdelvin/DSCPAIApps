@@ -96,7 +96,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
             )
             response.raise_for_status()
             attachment_ids = response.json()
-            print(f"DEBUG UPLOAD: Response status {response.status_code}, attachment_ids type: {type(attachment_ids)}, value: {attachment_ids}")
+            # print(f"DEBUG: Files uploaded successfully, IDs: {attachment_ids}")
             return {"attachmentIds": attachment_ids}
         except httpx.HTTPStatusError as e:
             return {

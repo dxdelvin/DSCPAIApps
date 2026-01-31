@@ -22,6 +22,7 @@ def _load_sap_libs():
             xssec = _xssec
             AppEnv = _AppEnv
         except ImportError as e:
+            # Simple print instead of full error logging
             print(f"Warning: SAP libraries not available: {e}")
             return False
     return True

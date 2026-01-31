@@ -1,32 +1,23 @@
 import os
 from typing import Optional
-from fastapi import APIRouter, Request, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import JSONResponse
-from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from app.core.config import TEMPLATES_DIR
-
 # Import from organized service files
-from app.services.common_service import create_chat_history, call_brain_workflow_chat
+from app.services.common_service import create_chat_history
 from app.services.signavio_service import (
     get_signavio_bpmn_xml,
-    build_analysis_prompt,
     analyze_process,
     continue_chat as signavio_continue_chat,
-    ANALYSIS_BEHAVIOUR,
-    SIGNAVIO_WORKFLOW_ID,
 )
 from app.services.audit_service import (
     check_audit_document,
     continue_audit_chat,
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
-from app.services.auth_service import get_current_user
 
 router = APIRouter()
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
 
 # Request models for better type safety
 class BPMNSessionRequest(BaseModel):
@@ -60,34 +51,9 @@ class BPMNGenerateRequest(BaseModel):
     reviewOverride: str = ""
 
 
-# Page Routes 
-@router.get("/")
-async def home(request: Request):
-    # Get current user info for welcome message
-    user_info = get_current_user(request)
-    username = user_info.get("user", "Guest")
-    
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "username": username,
-    })
-
-@router.get("/signavio-bpmn")
-async def signavio_bpmn(request: Request):
-    return templates.TemplateResponse("signavio_bpmn.html", {"request": request})
-
-@router.get("/audit-check")
-async def audit_check(request: Request):
-    return templates.TemplateResponse("audit_check.html", {"request": request})
-
-@router.get("/bpmn-checker")
-async def bpmn_checker(request: Request):
-    return templates.TemplateResponse("bpmn_checker.html", {"request": request})
-
-
 # ============== BPMN Chat Flow API Endpoints ==============
 
-@router.post("/api/bpmn/start-session")
+@router.post("/bpmn/start-session")
 async def start_bpmn_session(data: BPMNSessionRequest):
     """Start a new BPMN chat session: create chat history and get initial analysis."""
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
@@ -135,7 +101,7 @@ async def start_bpmn_session(data: BPMNSessionRequest):
     }
 
 
-@router.post("/api/bpmn/chat")
+@router.post("/bpmn/chat")
 async def bpmn_chat(data: BPMNChatRequest):
     """Continue the BPMN chat conversation with follow-up messages."""
     brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
@@ -179,7 +145,7 @@ async def bpmn_chat(data: BPMNChatRequest):
     }
 
 
-@router.post("/api/generate-bpmn")
+@router.post("/generate-bpmn")
 async def generate_bpmn(data: BPMNGenerateRequest):
     """Generate BPMN XML, optionally using existing chat history for context."""
     result = await get_signavio_bpmn_xml(
@@ -204,7 +170,7 @@ async def generate_bpmn(data: BPMNGenerateRequest):
 
 
 # Legacy endpoint for backward compatibility
-@router.post("/api/make-bpmn-analysis")
+@router.post("/make-bpmn-analysis")
 async def make_bpmn_analysis(data: dict):
     """Ask the Signavio Brain to summarize its understanding of the provided process inputs.
     
@@ -242,7 +208,7 @@ async def make_bpmn_analysis(data: dict):
 
 # ============== Audit API Endpoints ==============
 
-@router.post("/api/audit-doc-check")
+@router.post("/audit-doc-check")
 async def audit_doc_check(file: UploadFile = File(...)):
     """Send an uploaded audit PDF to the Audit Brain for analysis."""
     # Validate file type
@@ -276,7 +242,7 @@ async def audit_doc_check(file: UploadFile = File(...)):
     }
 
 
-@router.post("/api/audit-chat")
+@router.post("/audit-chat")
 async def audit_chat(
     chatHistoryId: str = Form(...),
     message: str = Form(...),
@@ -305,7 +271,7 @@ async def audit_chat(
 
 # ============== BPMN Diagram Checker API Endpoints ==============
 
-@router.post("/api/bpmn-diagram-check")
+@router.post("/bpmn-diagram-check")
 async def bpmn_diagram_check(
     file: UploadFile = File(...),
     context: Optional[str] = Form(None)
@@ -331,9 +297,3 @@ async def bpmn_diagram_check(
         "analysisStructured": result.get("structured"),
         "chatHistoryId": result.get("chatHistoryId"),
     }
-
-
-@router.get("/health")
-async def health_check():
-    """Service health check."""
-    return {"status": "healthy"}

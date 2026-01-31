@@ -11,9 +11,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+import os
+import sys
 
 from app.core.config import APP_TITLE, STATIC_DIR
-from app.routers import web
+from app.routers import pages, api
 from app.services.auth_service import (
     get_login_url,
     exchange_code_for_token,
@@ -29,7 +31,7 @@ app = FastAPI(title=APP_TITLE)
 # ============== Startup Event ==============
 @app.on_event("startup")
 async def startup_event():
-    """Log startup information and verify configuration."""
+    """Print startup information and verify configuration."""
     print("=" * 50)
     print(f"Starting {APP_TITLE}")
     print(f"VCAP_SERVICES present: {bool(os.getenv('VCAP_SERVICES'))}")
@@ -200,5 +202,7 @@ async def debug_auth_status(request: Request):
 
 
 # Routers
-app.include_router(web.router)
+app.include_router(pages.router)
+app.include_router(api.router, prefix="/api")
+
 

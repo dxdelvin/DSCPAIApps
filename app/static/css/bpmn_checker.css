@@ -11,6 +11,14 @@
     --score-poor: #ef4444;
 }
 
+/* Dark Mode Color Overrides */
+body.dark-mode {
+    --score-excellent: #34d399;
+    --score-good: #4ade80;
+    --score-fair: #fbbf24;
+    --score-poor: #f87171;
+}
+
 /* Container */
 .checker-container {
     padding: 0;
@@ -50,7 +58,7 @@
 
 /* Upload Panel */
 .upload-panel {
-    background: white;
+    background: var(--card);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--shadow-soft);
@@ -274,7 +282,7 @@
 
 /* Info Panel */
 .info-panel {
-    background: white;
+    background: var(--card);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--shadow-soft);
@@ -311,7 +319,7 @@
 
 /* Results Panel */
 .results-panel {
-    background: white;
+    background: var(--card);
     border-radius: 12px;
     padding: 1.5rem;
     box-shadow: var(--shadow-soft);
@@ -433,7 +441,7 @@
     position: absolute;
     width: 60px;
     height: 60px;
-    background: white;
+    background: var(--card);
     border-radius: 50%;
 }
 
@@ -494,7 +502,7 @@
 .filter-btn {
     padding: 0.4rem 0.75rem;
     border: 1px solid var(--border);
-    background: white;
+    background: var(--card);
     border-radius: 6px;
     font-size: 0.8rem;
     font-weight: 500;
@@ -572,6 +580,31 @@
 .finding-item.success {
     border-left-color: var(--success);
     background: rgba(31, 157, 85, 0.05);
+}
+
+/* Dark Mode Finding Items */
+body.dark-mode .finding-item {
+    background: var(--surface-secondary);
+}
+
+body.dark-mode .finding-item.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left-color: #f87171;
+}
+
+body.dark-mode .finding-item.warning {
+    background: rgba(251, 191, 36, 0.1);
+    border-left-color: #fbbf24;
+}
+
+body.dark-mode .finding-item.info {
+    background: rgba(59, 130, 246, 0.1);
+    border-left-color: #60a5fa;
+}
+
+body.dark-mode .finding-item.success {
+    background: rgba(34, 197, 94, 0.1);
+    border-left-color: #4ade80;
 }
 
 .finding-item.highlight {
@@ -782,7 +815,7 @@
 }
 
 .modal {
-    background: white;
+    background: var(--card);
     border-radius: 16px;
     max-width: 600px;
     width: 100%;
@@ -1050,7 +1083,7 @@
 }
 
 .priority-card {
-    background: white;
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: 10px;
     overflow: hidden;
@@ -1130,7 +1163,7 @@
 }
 
 .issue-card {
-    background: white;
+    background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 1rem;
@@ -1147,6 +1180,24 @@
 
 .issue-card.severity-suggestion {
     border-left-color: #3b82f6;
+}
+
+/* Dark Mode Issue Cards */
+body.dark-mode .issue-card {
+    background: var(--surface-secondary);
+    border-color: var(--border);
+}
+
+body.dark-mode .issue-card.severity-critical {
+    border-left-color: #f87171;
+}
+
+body.dark-mode .issue-card.severity-minor {
+    border-left-color: #fbbf24;
+}
+
+body.dark-mode .issue-card.severity-suggestion {
+    border-left-color: #60a5fa;
 }
 
 .issue-header {
@@ -1274,4 +1325,84 @@
 
 .strengths-list li::marker {
     color: #10b981;
+}
+
+/* Dark Mode Strengths Section */
+body.dark-mode .strengths-section {
+    background: rgba(52, 211, 153, 0.08);
+    border-color: rgba(52, 211, 153, 0.25);
+}
+
+body.dark-mode .strengths-list li {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .strengths-list li::marker {
+    color: #34d399;
+}
+
+/* Dark Mode Analysis Content */
+body.dark-mode .analysis-content {
+    background: var(--surface-secondary);
+}
+
+body.dark-mode .analysis-content code {
+    background: rgba(255, 95, 0, 0.15);
+    color: #fdba74;
+}
+
+/* Dark Mode Score Section */
+body.dark-mode .score-section {
+    background: var(--surface-secondary);
+}
+
+body.dark-mode .score-circle::before {
+    background: var(--card);
+}
+
+/* Dark Mode Priority Cards */
+body.dark-mode .priority-card {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+body.dark-mode .priority-header {
+    background: linear-gradient(135deg, var(--surface-secondary) 0%, rgba(255, 95, 0, 0.08) 100%);
+}
+
+body.dark-mode .fix-row {
+    background: rgba(52, 211, 153, 0.1);
+}
+
+/* Dark Mode Summary Badges */
+body.dark-mode .summary-badge {
+    background: var(--surface-secondary);
+    border-color: var(--border);
+}
+
+/* Dark Mode Filter Buttons */
+body.dark-mode .filter-btn {
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .filter-btn:hover {
+    border-color: var(--brand-orange);
+    color: var(--brand-orange);
+}
+
+body.dark-mode .filter-btn.active {
+    background: var(--brand-orange);
+    border-color: var(--brand-orange);
+    color: white;
+}
+
+/* Dark Mode Modal */
+body.dark-mode .modal {
+    background: var(--card);
+}
+
+body.dark-mode .modal-header {
+    border-bottom-color: var(--border);
 }

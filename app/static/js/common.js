@@ -2,11 +2,54 @@
  * Common functionality for BSH DSCP AI
  */
 
-// Changelog toggle functionality
 document.addEventListener('DOMContentLoaded', () => {
+    // Theme Toggle Functionality
+    const themeToggle = document.getElementById('themeToggle');
+    const sunIcon = document.querySelector('.sun-icon');
+    const moonIcon = document.querySelector('.moon-icon');
+    
+    // Check saved theme
+    const savedTheme = localStorage.getItem('dscp_theme') || 'light';
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        if (sunIcon) sunIcon.style.display = 'none';
+        if (moonIcon) moonIcon.style.display = 'block';
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            
+            // Toggle icons
+            if (sunIcon) sunIcon.style.display = isDark ? 'none' : 'block';
+            if (moonIcon) moonIcon.style.display = isDark ? 'block' : 'none';
+            
+            // Save preference
+            localStorage.setItem('dscp_theme', isDark ? 'dark' : 'light');
+        });
+    }
+
+    // Changelog toggle functionality
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
     const closeChangelog = document.getElementById('closeChangelog');
+    
+    // Grab the latest version from the first badge in the DOM
+    const latestVersionEl = document.querySelector('.badge-version');
+    const latestVersion = latestVersionEl ? latestVersionEl.textContent.trim() : 'v1.0.0';
+    const storageKey = 'dscp_last_seen_version';
+    
+    // Check for new version
+    const lastSeenVersion = localStorage.getItem(storageKey);
+    const hasUpdates = lastSeenVersion !== latestVersion;
+
+    // Show notification dot if updates exist
+    if (hasUpdates && changelogBell) {
+        const dot = document.createElement('div');
+        dot.className = 'badge-dot';
+        changelogBell.appendChild(dot);
+    }
 
     // Ensure modal is hidden on page load
     if (changelogPanel) {
@@ -20,6 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation();
             if (changelogPanel) {
                 changelogPanel.hidden = !changelogPanel.hidden;
+                
+                // If opening, mark as seen
+                if (!changelogPanel.hidden && hasUpdates) {
+                    localStorage.setItem(storageKey, latestVersion);
+                    const dot = changelogBell.querySelector('.badge-dot');
+                    if (dot) dot.remove();
+                }
             }
         });
     }
