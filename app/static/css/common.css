@@ -307,6 +307,141 @@ body.dark-mode select:focus {
     margin: 0;
 }
 
+/* Search Bar */
+.search-container {
+    max-width: 480px;
+    margin: 24px auto 0;
+}
+
+.search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    color: var(--slate-400);
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.search-input {
+    width: 100%;
+    padding: 14px 44px 14px 48px;
+    font-size: 15px;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    background: var(--card);
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+}
+
+.search-input::placeholder {
+    color: var(--slate-400);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 4px rgba(255, 95, 0, 0.1);
+}
+
+.search-input:focus + .search-icon,
+.search-box:focus-within .search-icon {
+    color: var(--brand-orange);
+}
+
+.search-clear {
+    position: absolute;
+    right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: var(--slate-100);
+    color: var(--slate-500);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.search-clear:hover {
+    background: var(--slate-300);
+    color: var(--slate-700);
+}
+
+body.dark-mode .search-clear {
+    background: var(--slate-100);
+    color: var(--slate-400);
+}
+
+body.dark-mode .search-clear:hover {
+    background: var(--border);
+    color: var(--text-primary);
+}
+
+body.dark-mode .search-input:focus {
+    box-shadow: 0 0 0 4px rgba(255, 95, 0, 0.2);
+}
+
+.search-results-info {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--slate-500);
+    text-align: center;
+}
+
+.search-results-info .highlight {
+    color: var(--brand-orange);
+    font-weight: 600;
+}
+
+/* App card hidden state for search */
+.app-card.search-hidden {
+    display: none !important;
+}
+
+.app-card .match-highlight {
+    background: rgba(255, 95, 0, 0.15);
+    color: var(--brand-orange);
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
+body.dark-mode .app-card .match-highlight {
+    background: rgba(255, 95, 0, 0.25);
+}
+
+/* No results message */
+.no-results {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--slate-500);
+}
+
+.no-results svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.no-results h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.no-results p {
+    font-size: 14px;
+}
+
 /* Floating Feedback Button */
 .floating-feedback-btn {
     position: fixed;

@@ -3,6 +3,9 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    // App Search Functionality
+    initAppSearch();
+    
     // Theme Toggle Functionality
     const themeToggle = document.getElementById('themeToggle');
     const sunIcon = document.querySelector('.sun-icon');
@@ -273,3 +276,193 @@ function closeConfirmation() {
     }
 }
 
+/**
+ * App Search Functionality
+ * Searches apps by name, tags, and description with priority ordering
+ */
+function initAppSearch() {
+    const searchInput = document.getElementById('appSearch');
+    const searchClear = document.getElementById('searchClear');
+    const searchResultsInfo = document.getElementById('searchResultsInfo');
+    const appGrid = document.querySelector('.app-grid');
+    
+    if (!searchInput || !appGrid) return;
+    
+    const appCards = Array.from(appGrid.querySelectorAll('.app-card'));
+    
+    // Store original content for each card
+    const originalData = appCards.map(card => {
+        const name = card.querySelector('h3')?.textContent || '';
+        const description = card.querySelector('.app-body p')?.textContent || '';
+        const tags = Array.from(card.querySelectorAll('.tag')).map(t => t.textContent.trim());
+        return {
+            card,
+            name,
+            description,
+            tags,
+            nameEl: card.querySelector('h3'),
+            descEl: card.querySelector('.app-body p'),
+            tagEls: card.querySelectorAll('.tag')
+        };
+    });
+    
+    let debounceTimer;
+    
+    searchInput.addEventListener('input', (e) => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => performSearch(e.target.value), 150);
+        
+        // Toggle clear button
+        searchClear.hidden = !e.target.value.trim();
+    });
+    
+    searchClear.addEventListener('click', () => {
+        searchInput.value = '';
+        searchClear.hidden = true;
+        performSearch('');
+        searchInput.focus();
+    });
+    
+    function performSearch(query) {
+        const searchTerm = query.toLowerCase().trim();
+        
+        // Reset all cards if empty search
+        if (!searchTerm) {
+            originalData.forEach(({ card, nameEl, descEl, tagEls, name, description, tags }) => {
+                card.classList.remove('search-hidden');
+                if (nameEl) nameEl.innerHTML = escapeHtml(name);
+                if (descEl) descEl.innerHTML = escapeHtml(description);
+                tagEls.forEach((el, i) => el.innerHTML = escapeHtml(tags[i]));
+            });
+            if (searchResultsInfo) searchResultsInfo.hidden = true;
+            removeNoResults();
+            return;
+        }
+        
+        // Score and filter cards
+        const scored = originalData.map(data => {
+            const { name, description, tags } = data;
+            let score = 0;
+            let matchType = null;
+            
+            // Priority 1: Name match (highest priority)
+            if (name.toLowerCase().includes(searchTerm)) {
+                score = 300;
+                matchType = 'name';
+            }
+            // Priority 2: Tag match
+            else if (tags.some(tag => tag.toLowerCase().includes(searchTerm))) {
+                score = 200;
+                matchType = 'tag';
+            }
+            // Priority 3: Description match
+            else if (description.toLowerCase().includes(searchTerm)) {
+                score = 100;
+                matchType = 'description';
+            }
+            
+            return { ...data, score, matchType };
+        });
+        
+        // Sort by score (descending)
+        scored.sort((a, b) => b.score - a.score);
+        
+        let visibleCount = 0;
+        
+        scored.forEach(({ card, nameEl, descEl, tagEls, name, description, tags, score, matchType }) => {
+            if (score === 0) {
+                card.classList.add('search-hidden');
+                // Reset content
+                if (nameEl) nameEl.innerHTML = escapeHtml(name);
+                if (descEl) descEl.innerHTML = escapeHtml(description);
+                tagEls.forEach((el, i) => el.innerHTML = escapeHtml(tags[i]));
+            } else {
+                card.classList.remove('search-hidden');
+                visibleCount++;
+                
+                // Highlight matches
+                if (matchType === 'name' && nameEl) {
+                    nameEl.innerHTML = highlightMatch(name, searchTerm);
+                } else if (nameEl) {
+                    nameEl.innerHTML = escapeHtml(name);
+                }
+                
+                if (matchType === 'tag') {
+                    tagEls.forEach((el, i) => {
+                        if (tags[i].toLowerCase().includes(searchTerm)) {
+                            el.innerHTML = highlightMatch(tags[i], searchTerm);
+                        } else {
+                            el.innerHTML = escapeHtml(tags[i]);
+                        }
+                    });
+                } else {
+                    tagEls.forEach((el, i) => el.innerHTML = escapeHtml(tags[i]));
+                }
+                
+                if (matchType === 'description' && descEl) {
+                    descEl.innerHTML = highlightMatch(description, searchTerm);
+                } else if (descEl) {
+                    descEl.innerHTML = escapeHtml(description);
+                }
+                
+                // Reorder in DOM
+                appGrid.appendChild(card);
+            }
+        });
+        
+        // Show results info
+        if (searchResultsInfo) {
+            if (visibleCount > 0) {
+                searchResultsInfo.innerHTML = `Found <span class="highlight">${visibleCount}</span> app${visibleCount !== 1 ? 's' : ''} matching "<span class="highlight">${escapeHtml(searchTerm)}</span>"`;
+                searchResultsInfo.hidden = false;
+            } else {
+                searchResultsInfo.hidden = true;
+            }
+        }
+        
+        // Show/hide no results message
+        if (visibleCount === 0) {
+            showNoResults(searchTerm);
+        } else {
+            removeNoResults();
+        }
+    }
+    
+    function highlightMatch(text, term) {
+        const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
+        return escapeHtml(text).replace(regex, '<span class="match-highlight">$1</span>');
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    function escapeRegex(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+    
+    function showNoResults(term) {
+        removeNoResults();
+        const noResults = document.createElement('div');
+        noResults.className = 'no-results';
+        noResults.id = 'noResultsMessage';
+        noResults.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <path d="m21 21-4.35-4.35"></path>
+                <path d="M8 8l6 6"></path>
+                <path d="M14 8l-6 6"></path>
+            </svg>
+            <h3>No apps found</h3>
+            <p>No apps match "<strong>${escapeHtml(term)}</strong>". Try a different search term.</p>
+        `;
+        appGrid.appendChild(noResults);
+    }
+    
+    function removeNoResults() {
+        const existing = document.getElementById('noResultsMessage');
+        if (existing) existing.remove();
+    }
+}
