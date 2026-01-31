@@ -5,7 +5,7 @@
 {% block page_name %}BPMN Builder{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}?v={{ css_version }}">
 
 {% endblock %}
 

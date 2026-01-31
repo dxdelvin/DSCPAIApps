@@ -5,7 +5,7 @@
 {% block page_name %}BPMN Diagram Checker{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/bpmn_checker.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/bpmn_checker.css') }}?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}

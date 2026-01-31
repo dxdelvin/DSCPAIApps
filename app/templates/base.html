@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BSH DSCP{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}?v={{ css_version }}">
     {% block extra_css %}{% endblock %}
 </head>
 <body{% if request.url_path == '/' %} class="home-page"{% endif %}>

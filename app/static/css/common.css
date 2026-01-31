@@ -532,6 +532,13 @@ body.dark-mode .tag {
     border-color: var(--brand-orange);
 }
 
+body.dark-mode .tag-new {
+    background: var(--brand-orange);
+    color: white;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 12px rgba(255, 95, 0, 0.4);
+}
+
 .tag-locked { 
     background: var(--bg); 
     color: var(--slate-500);

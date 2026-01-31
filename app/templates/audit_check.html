@@ -5,7 +5,7 @@
 {% block page_name %}Audit Checker{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/audit_check.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/audit_check.css') }}?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
