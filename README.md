@@ -1,5 +1,7 @@
 # BSH Digital Supply Chain Planning - AI Projects
 
+
+
 A FastAPI application with Jinja2 templating for generating intelligent BPMN diagrams and other supply chain optimization tools.
 
 ## Installation
