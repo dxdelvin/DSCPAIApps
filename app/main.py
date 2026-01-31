@@ -19,6 +19,7 @@ from app.services.auth_service import (
     exchange_code_for_token,
     get_logout_url,
     get_xsuaa_config,
+    validate_token,
 )
 
 
@@ -64,11 +65,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not os.getenv("VCAP_SERVICES"):
             return await call_next(request)
         
-        # Check for valid session
-        token = request.session.get("access_token")
-        if not token:
+        # Check for valid session (user_info OR access_token)
+        if not request.session.get("user_info") and not request.session.get("access_token"):
             # Not authenticated - redirect to login
-            print(f"Auth middleware: No token for path {request.url.path}, redirecting to login")
+            print(f"Auth middleware: No session for path {request.url.path}, redirecting to login")
             return RedirectResponse(url="/login", status_code=302)
         
         # Proceed with request
@@ -82,12 +82,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
 # So we add: Auth first, then Session
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "fallback-dev-secret-change-in-prod")
+# Detect production environment for strict cookie security
+IS_PROD_ENV = bool(os.getenv("VCAP_SERVICES")) or os.getenv("ENVIRONMENT") == "prod"
 
 # Add Auth middleware FIRST (will execute AFTER Session)
 app.add_middleware(AuthMiddleware)
 
 # Add Session middleware LAST (will execute FIRST)
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, max_age=3600)
+app.add_middleware(
+    SessionMiddleware, 
+    secret_key=SESSION_SECRET, 
+    max_age=3600,
+    https_only=IS_PROD_ENV,  # Secure cookies in prod (requires proxy headers!)
+    same_site="lax"
+)
 
 
 # Static assets (no auth required)
@@ -128,11 +136,20 @@ async def auth_callback(request: Request, code: str = None, error: str = None):
             print("Auth callback: No access_token in response")
             return RedirectResponse(url="/login?error=no_token", status_code=302)
         
-        # Store token in session
-        request.session["access_token"] = access_token
-        request.session["refresh_token"] = token_data.get("refresh_token")
+        # Validate and store user info (optimized for cookie size)
+        try:
+            user_info = validate_token(access_token)
+            request.session["user_info"] = user_info
+            # We explicitly do NOT store the full access_token in the session cookie
+            # because XSUAA JWTs are often >4KB, causing browsers to drop the cookie.
+            # This fixes the "Too many redirects" loop.
+            print(f"Auth callback: User {user_info.get('user')} authenticated")
+        except Exception as e:
+            print(f"Token validation failed in callback: {e}")
+            # If we can't validate, we can't log them in securely
+            return RedirectResponse(url="/login?error=token_validation_failed", status_code=302)
         
-        print("Auth callback: Token stored in session, redirecting to home")
+        print("Auth callback: Session established, redirecting to home")
         # Redirect to home page
         return RedirectResponse(url="/", status_code=302)
     except Exception as e:

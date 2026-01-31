@@ -222,13 +222,18 @@ def get_current_user(request: Request) -> dict:
         print("WARNING: Running locally without XSUAA. Auth bypassed.")
         return {"user": "local-dev", "email": "local@dev.local", "scopes": []}
     
-    # Check session for token
+    # Check session for pre-validated user info (preferred)
+    user_info = request.session.get("user_info")
+    if user_info:
+        return user_info
+
+    # Check session for raw token (legacy/fallback)
     token = request.session.get("access_token")
     if not token:
         # Not authenticated - will be handled by middleware
         raise HTTPException(status_code=401, detail="Not authenticated")
     
-    # Validate token
+    # Validate token if not already validated
     return validate_token(token)
 
 
