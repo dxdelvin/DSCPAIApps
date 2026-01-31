@@ -756,92 +756,84 @@ function updateInfoModalContent() {
     
     const stepInfo = {
         1: {
-            title: 'Step 1: Process Context',
-            content: `<p>Define the basic identity of your process.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li><strong>Process Name:</strong> A clear, descriptive name for the process</li>
-                    <li><strong>Pool/Department:</strong> The organizational unit responsible for the process</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    <strong>Process Name:</strong> Customer Order Fulfillment<br>
-                    <strong>Pool/Department:</strong> Digital Supply Chain Planning (DSCP) or Sales Department
+            title: 'Step 1: Define Your Process',
+            content: `<p>Start by giving your process a clear identity. This helps the AI understand the scope.</p>
+                <div class="guide-section">
+                    <h4>📝 What to write</h4>
+                    <ul>
+                        <li><strong>Process Name:</strong> Use a clear Verb-Noun format (e.g., "Handle Customer Order").</li>
+                        <li><strong>Pool/Department:</strong> The main organization or system owning this process (e.g., "DSCP: Digital Supply Chain Planning").</li>
+                    </ul>
+                </div>
+                <div class="guide-example">
+                    <strong>Good:</strong> "Approve Purchase Request"<br>
+                    <strong>Bad:</strong> "Approval stuff"
                 </div>`
         },
         2: {
-            title: 'Step 2: Structure & Participants',
-            content: `<p>Identify who is involved in executing the process. Use Digital Supply Chain Planning lanes/systems.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li><strong>Participants (Lanes):</strong> Roles or systems (e.g., R0P, P0P, GRP, M0P)</li>
-                    <li><strong>Sub-lanes:</strong> More specific roles within a participant (optional)</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    <strong>Participants:</strong> R0P (Demand Planning), P0P (Production Planning), GRP (Global Replenishment), M0P (Master Data), Logistics Execution, Customer Portal<br>
-                    <strong>Sub-lanes:</strong> APAC Demand Planner (under R0P), EMEA Supply Planner (under GRP)
-                </div>`
+            title: 'Step 2: Who is Involved? (Swimlanes)',
+            content: `<p>List the specific roles, systems, or departments that perform tasks. These will become the horizontal <strong>Swimlanes</strong> in your diagram.</p>
+                <div class="guide-section">
+                    <h4>👥 Participants</h4>
+                    <p>Add a new lane for every distinct actor (Human or System).</p>
+                    <ul>
+                        <li><strong>Human Roles:</strong> "Demand Planner", "Manager", "Analyst".</li>
+                        <li><strong>Systems:</strong> "SAP ERP", "Salesforce", "Email Server".</li>
+                    </ul>
+                </div>
+                <p><em>Note: You can add sub-lanes if multiple teams work under one department, but usually main lanes are enough.</em></p>`
         },
         3: {
-            title: 'Step 3: Start Triggers',
-            content: `<p>Describe how the process is initiated. Always mention the lane(s) where each start happens, and include all start events. Use supply chain examples.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li><strong>Lane + trigger type:</strong> Message (email/API), Timer (scheduled), Manual (user)</li>
-                    <li>List every start event and the lane that owns it (multiple starts allowed)</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    R0P lane — Weekly demand signal file arrives (Message); GRP lane — Nightly replenishment batch (Timer); Customer Portal lane — User submits rush order (Manual)
+            title: 'Step 3: What Starts the Process?',
+            content: `<p>Every process must have a trigger. How does this workflow begin?</p>
+                <div class="guide-section">
+                    <h4>🚦 Trigger Types</h4>
+                    <ul>
+                        <li><strong>Message:</strong> Receiving an email, file, or order (e.g., "Receive Order via EDI").</li>
+                        <li><strong>Timer:</strong> A scheduled event (e.g., "Every Monday morning").</li>
+                        <li><strong>Manual:</strong> User action (e.g., "User logs into portal").</li>
+                    </ul>
+                </div>
+                <div class="guide-example">
+                    "Planner receives a new demand signal from the Market."
                 </div>`
         },
         4: {
-            title: 'Step 4: Flow & Activities',
-            content: `<p>Describe the sequence of tasks and decisions in detail.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li>List tasks in order of execution</li>
-                    <li>Mention who is responsible for each task</li>
-                    <li>Include conditions (e.g., "If X, then Y")</li>
-                    <li>Note any parallel activities</li>
-                    <li><strong>End-of-process question:</strong> What happens after the process is completed?</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    1. R0P ingests demand plan and flags anomalies<br>
-                    2. GRP checks supply and proposes reallocations<br>
-                    3. If stock-out risk > threshold, M0P triggers master-data validation; else continue<br>
-                    4. P0P schedules production; Logistics Execution creates deliveries in parallel<br>
-                    5. Finance posts billing once goods issue is confirmed<br>
-                    <strong>End-of-process question:</strong> Customer receives order confirmation and tracking details.
+            title: 'Step 4: The Process Story',
+            content: `<p>Describe the step-by-step actions. This is the most important part for the AI.</p>
+                <div class="guide-section">
+                    <h4>✍️ How to describe flow</h4>
+                    <ul>
+                        <li><strong>Sequence:</strong> "First X does this, then Y does that."</li>
+                        <li><strong>Responsibility:</strong> ALWAYS mention who does what (e.g., "<strong>Manager</strong> approves the request").</li>
+                        <li><strong>Gateways (Decisions):</strong> "If approved, send email. If rejected, close ticket."</li>
+                        <li><strong>Parallel:</strong> "At the same time, Finance checks credit and Warehouse picks goods."</li>
+                    </ul>
                 </div>`
         },
         5: {
-            title: 'Step 5: Delays & Intermediate Events',
-            content: `<p>Identify points where the process must wait or pause, including system or document dependencies.</p>
-                <h4>What to write:</h4>
-                <ul>
-                    <li>Timer events (e.g., "Wait 2 days before follow-up")</li>
-                    <li>Message events (e.g., "Wait for payment confirmation")</li>
-                    <li>Dependencies on systems/documents (e.g., "Wait for ERP record", "Wait for invoice PDF", "Wait for DB update")</li>
-                </ul>
-                <h4>Example:</h4>
-                <div class="modal-example">
-                    Wait for payment gateway confirmation (max 5 minutes); Wait 24 hours for customer response; Wait until ERP creates delivery note; Wait for invoice PDF upload; Wait for DB update from SAP
-                </div>`
+            title: 'Step 5: Delays & Waiting',
+            content: `<p>Does the process pause to wait for something outside your control?</p>
+                 <div class="guide-section">
+                    <h4>⏳ Intermediate Events</h4>
+                    <ul>
+                        <li><strong>Time Delays:</strong> "Wait 24 hours for confirmation."</li>
+                        <li><strong>External Events:</strong> "Wait for customer reply" or "Wait for payment signal."</li>
+                    </ul>
+                </div>
+                <p><em>If the process flows continuously without external waits, you can skip this.</em></p>`
         },
         6: {
-            title: 'Step 6: Review',
-            content: `<p>Review all your inputs before generating the BPMN.</p>
-                <h4>What to do:</h4>
-                <ul>
-                    <li>Check the AI-generated summary</li>
-                    <li>Verify all information is accurate</li>
-                    <li>Use "Edit Details" to make changes</li>
-                    <li>Click "Generate BPMN" when ready</li>
-                </ul>
-                <p style="margin-top: 12px;"><strong>Tip:</strong> The more detailed your inputs, the more accurate your BPMN diagram will be.</p>`
+            title: 'Step 6: Review & Generate',
+            content: `<p>Final check before creating the diagram.</p>
+                <div class="guide-section">
+                    <h4>✅ Checklist</h4>
+                    <ul>
+                        <li>Check the <strong>AI Analysis</strong> on the right side. Does it understand your flow?</li>
+                        <li>If the analysis looks wrong, click <strong>Modify Inputs</strong> to correct the text.</li>
+                        <li>When satisfied, click <strong>Generate BPMN</strong> to download your .xml file.</li>
+                    </ul>
+                </div>`
         }
     };
     
