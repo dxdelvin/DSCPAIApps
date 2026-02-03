@@ -2,11 +2,11 @@
   "ExpandedNodes": [
     "",
     "\\app",
-    "\\approuter",
+    "\\app\\services",
     "\\app\\static",
     "\\app\\static\\js",
     "\\app\\templates"
   ],
-  "SelectedNode": "\\approuter",
+  "SelectedNode": "\\app\\services\\brain_auth.py",
   "PreviewInSolutionExplorer": false
 }
