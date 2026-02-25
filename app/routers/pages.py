@@ -48,6 +48,13 @@ async def spec_builder(request: Request):
         "css_version": CSS_VERSION,
     })
 
+@router.get("/ppt-creator")
+async def ppt_creator(request: Request):
+    return templates.TemplateResponse("ppt_creator.html", {
+        "request": request,
+        "css_version": CSS_VERSION,
+    })
+
 @router.get("/health")
 async def health_check():
     """Service health check."""

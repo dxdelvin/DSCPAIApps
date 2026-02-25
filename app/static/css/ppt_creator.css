@@ -1,0 +1,510 @@
+/* ============================================
+   PPT CREATOR - Styles (Consistent with Audit / BPMN)
+   ============================================ */
+
+:root {
+    --text-primary: var(--navy-900);
+    --text-secondary: var(--slate-700);
+}
+
+/* Container */
+.ppt-container {
+    padding: 0;
+}
+
+.ppt-builder {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Content Layout */
+.ppt-content {
+    display: flex;
+    gap: 2rem;
+    padding: 1.5rem 2rem;
+    background: var(--bg);
+    flex: 1;
+}
+
+.builder-left,
+.builder-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Form Container */
+.form-container {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-container h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-container > p {
+    color: var(--text-secondary);
+    margin: 0 0 1.5rem;
+    font-size: 0.95rem;
+}
+
+/* Form Groups */
+.form-group {
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.3s ease;
+    background: var(--bg);
+    color: var(--text-primary);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.1);
+}
+
+/* Upload Section */
+.upload-section {
+    margin: 1.5rem 0;
+}
+
+.upload-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--text-primary);
+}
+
+.upload-area {
+    border: 2px dashed var(--brand-orange);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--bg);
+}
+
+.upload-area:hover {
+    border-color: var(--brand-orange-700, #e55500);
+    background: rgba(255, 95, 0, 0.05);
+}
+
+.upload-area.dragover {
+    border-color: var(--brand-orange-700, #e55500);
+    background: rgba(255, 95, 0, 0.1);
+    transform: scale(1.02);
+}
+
+.upload-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    pointer-events: none;
+}
+
+.upload-icon {
+    font-size: 2.5rem;
+    opacity: 0.7;
+}
+
+.upload-placeholder p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.upload-hint {
+    font-size: 0.85rem !important;
+    color: var(--text-secondary) !important;
+    opacity: 0.7;
+}
+
+/* Files List */
+.files-list-section {
+    margin: 1.5rem 0;
+}
+
+.files-list-section h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    color: var(--text-primary);
+}
+
+.files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    transition: border-color 0.2s;
+}
+
+.file-item:hover {
+    border-color: var(--brand-orange);
+}
+
+.file-item .file-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.file-item .file-details {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-item .file-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-item .file-size {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.btn-remove-file {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.btn-remove-file:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+/* Actions */
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+
+/* Chat Container */
+.chat-container {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chat-container h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: var(--text-primary);
+}
+
+.chat-container > p {
+    color: var(--text-secondary);
+    margin: 0 0 1rem;
+    font-size: 0.9rem;
+}
+
+.chat-messages {
+    max-height: 260px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    padding-right: 0.25rem;
+}
+
+.chat-msg {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    max-width: 90%;
+}
+
+.chat-msg.user {
+    background: var(--brand-orange);
+    color: white;
+    align-self: flex-end;
+    border-bottom-right-radius: 2px;
+}
+
+.chat-msg.ai {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    align-self: flex-start;
+    border-bottom-left-radius: 2px;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-end;
+}
+
+.chat-input-row textarea {
+    flex: 1;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    resize: none;
+    background: var(--bg);
+    color: var(--text-primary);
+    transition: border-color 0.3s;
+}
+
+.chat-input-row textarea:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.1);
+}
+
+/* Results Container */
+.results-container {
+    background: var(--card);
+    border-radius: 8px;
+    padding: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+}
+
+.results-container > h3 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0 0 1.5rem;
+    color: var(--text-primary);
+}
+
+/* Preview Panel */
+.preview-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.section-header h4 {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.preview-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+#slide-counter {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Slide Preview Card */
+.slide-preview {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 2rem;
+    min-height: 300px;
+    aspect-ratio: 16 / 9;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    overflow-y: auto;
+}
+
+.slide-preview .slide-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--navy-900, #0f172a);
+    margin: 0 0 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 3px solid var(--brand-orange, #ff5f00);
+}
+
+.slide-preview .slide-bullets {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.slide-preview .slide-bullets li {
+    position: relative;
+    padding: 0.4rem 0 0.4rem 1.5rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--navy-900, #0f172a);
+}
+
+.slide-preview .slide-bullets li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--brand-orange, #ff5f00);
+}
+
+.slide-preview .slide-notes {
+    margin-top: auto;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border, #e2e8f0);
+    font-size: 0.85rem;
+    color: var(--slate-700, #64748b);
+    font-style: italic;
+}
+
+.preview-actions {
+    margin-top: 1.25rem;
+    justify-content: center;
+}
+
+/* Empty State */
+.empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 3rem 1rem;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    color: var(--text-secondary);
+    margin: 0;
+    font-size: 0.95rem;
+}
+
+/* Loading State */
+.loading-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.25rem;
+    padding: 3rem 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border, #e2e8f0);
+    border-top-color: var(--brand-orange, #ff5f00);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-state p {
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin: 0;
+}
+
+/* Dark Mode overrides */
+body.dark-mode .slide-preview {
+    background: var(--card);
+}
+
+body.dark-mode .slide-preview .slide-title {
+    color: var(--text-primary);
+}
+
+body.dark-mode .slide-preview .slide-bullets li {
+    color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .ppt-content {
+        flex-direction: column;
+        padding: 1rem;
+    }
+
+    .builder-left,
+    .builder-right {
+        width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+}

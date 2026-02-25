@@ -17,6 +17,11 @@ from app.services.audit_service import (
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
 from app.services.functional_spec_service import generate_functional_spec_docx
+from app.services.ppt_creator_service import (
+    extract_ppt_content,
+    refine_ppt_content,
+    generate_pptx_file,
+)
 
 router = APIRouter()
 
@@ -344,6 +349,126 @@ async def export_functional_spec(
             content={
                 "status": "error",
                 "message": "Document generation failed",
+                "detail": str(e),
+            },
+        )
+
+
+# ============== PPT Creator API Endpoints ==============
+
+@router.post("/ppt/extract")
+async def ppt_extract(
+    files: List[UploadFile] = File(...),
+    instructions: Optional[str] = Form(None),
+):
+    """Upload PowerPoint files → AI extracts & structures content."""
+    # Validate files
+    allowed_types = (
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-powerpoint",
+    )
+    file_bytes_list = []
+    for f in files:
+        if not f.filename.lower().endswith((".pptx", ".ppt")):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Invalid file type",
+                    "detail": f"'{f.filename}' is not a PowerPoint file. Only .pptx files are supported.",
+                },
+            )
+        content = await f.read()
+        file_bytes_list.append((f.filename, content))
+
+    result = await extract_ppt_content(file_bytes_list, instructions or "")
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Connection to Brain failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "content": result.get("content"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
+
+
+@router.post("/ppt/refine")
+async def ppt_refine(
+    chatHistoryId: str = Form(...),
+    message: str = Form(...),
+    currentContent: Optional[str] = Form(None),
+):
+    """Continue conversation to refine presentation content."""
+    import json as _json
+
+    current = None
+    if currentContent:
+        try:
+            current = _json.loads(currentContent)
+        except _json.JSONDecodeError:
+            pass
+
+    result = await refine_ppt_content(chatHistoryId, message, current)
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Brain request failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "content": result.get("content"),
+        "chatHistoryId": result.get("chatHistoryId"),
+        "response": result.get("result"),
+    }
+
+
+@router.post("/ppt/download")
+async def ppt_download(data: dict):
+    """Generate and download the .pptx file from structured content."""
+    from fastapi.responses import StreamingResponse
+
+    content = data.get("content")
+    if not content or "slides" not in content:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Missing content",
+                "detail": "No slide content provided.",
+            },
+        )
+
+    try:
+        buf = generate_pptx_file(content)
+        title = content.get("title", "Presentation").replace(" ", "_")
+        safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
+        filename = f"{safe}.pptx"
+
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "PowerPoint generation failed",
                 "detail": str(e),
             },
         )

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}PPT Creator - BSH DSCP AI{% endblock %}
+
+{% block page_name %}PPT Creator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/ppt_creator.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | Document Automation</p>
+        <h1>AI PowerPoint Creator</h1>
+        <p class="lede">Upload existing presentations, let AI extract &amp; combine content, then download a refreshed PowerPoint.</p>
+    </div>
+</section>
+
+<div class="container ppt-container">
+    <div class="ppt-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">PowerPoint Tools</p>
+                <h2 class="builder-title">Create Presentation</h2>
+            </div>
+        </div>
+
+        <div class="ppt-content">
+            <!-- Left: Upload & Controls -->
+            <div class="builder-left">
+                <div class="form-container">
+                    <h3>Upload PowerPoint Files</h3>
+                    <p>Upload one or more .pptx files. AI will extract and combine relevant content.</p>
+
+                    <!-- File Upload Area -->
+                    <div class="upload-section">
+                        <h4>PowerPoint Files (.pptx)</h4>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">📊</span>
+                                <p>Drag &amp; drop .pptx files here or click to select</p>
+                                <p class="upload-hint">Supports .pptx files only</p>
+                            </div>
+                            <input type="file" id="file-input" multiple accept=".pptx" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Uploaded Files List -->
+                    <div class="files-list-section" id="files-list-section" style="display:none">
+                        <h4>Uploaded Files</h4>
+                        <div class="files-list" id="files-list"></div>
+                        <div class="form-group">
+                            <button class="btn btn-secondary btn-sm" id="add-more-btn">
+                                <span>➕</span> Add More Files
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Instructions -->
+                    <div class="form-group">
+                        <label for="user-instructions">Additional Instructions (optional)</label>
+                        <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on Q4 results, combine sales data, use a professional tone..."></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="extract-btn" disabled>
+                            <span class="btn-icon">🤖</span>
+                            Extract &amp; Generate
+                        </button>
+                        <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Chat / Refine Panel -->
+                <div class="chat-container" id="chat-container" style="display:none">
+                    <h3>Refine Content</h3>
+                    <p>Ask AI to modify the slides, add content, or restructure.</p>
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <textarea id="chat-input" rows="2" placeholder="E.g. Add a summary slide at the end..."></textarea>
+                        <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Preview & Download -->
+            <div class="builder-right">
+                <div class="results-container">
+                    <h3>Preview &amp; Download</h3>
+
+                    <!-- Slide Preview -->
+                    <div class="preview-panel" id="preview-panel" style="display:none">
+                        <div class="section-header">
+                            <h4 id="preview-title">Presentation Preview</h4>
+                            <div class="preview-nav">
+                                <button class="btn btn-ghost btn-sm" id="prev-slide-btn" disabled>&larr;</button>
+                                <span id="slide-counter">1 / 1</span>
+                                <button class="btn btn-ghost btn-sm" id="next-slide-btn" disabled>&rarr;</button>
+                            </div>
+                        </div>
+                        <div class="slide-preview" id="slide-preview"></div>
+
+                        <div class="form-actions preview-actions">
+                            <button class="btn btn-primary" id="download-btn">
+                                <span class="btn-icon">⬇️</span>
+                                Download .pptx
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state">
+                        <span class="empty-icon">📑</span>
+                        <p>Upload PowerPoint files and click Extract to see a preview</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state" style="display:none">
+                        <div class="spinner"></div>
+                        <p id="loading-text">Analyzing presentations...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/ppt_creator.js') }}"></script>
+{% endblock %}
