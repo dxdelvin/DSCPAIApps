@@ -1,5 +1,5 @@
 import os
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, UploadFile, File, Form
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -16,6 +16,7 @@ from app.services.audit_service import (
     continue_audit_chat,
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
+from app.services.functional_spec_service import generate_functional_spec_docx
 
 router = APIRouter()
 
@@ -297,3 +298,52 @@ async def bpmn_diagram_check(
         "analysisStructured": result.get("structured"),
         "chatHistoryId": result.get("chatHistoryId"),
     }
+
+
+# ============== Functional Specification Export ==============
+
+@router.post("/export-functional-spec")
+async def export_functional_spec(
+    form_data: str = Form(...),
+    problem_screenshots: List[UploadFile] = File(default=[]),
+    solution_screenshots: List[UploadFile] = File(default=[]),
+):
+    """Generate a .docx Functional Specification document from form data + optional screenshots."""
+    from fastapi.responses import StreamingResponse
+    import json
+
+    try:
+        data = json.loads(form_data)
+
+        # Read uploaded images into memory
+        problem_images = []
+        for f in problem_screenshots:
+            content = await f.read()
+            if content:
+                problem_images.append({"name": f.filename, "data": content, "type": f.content_type})
+
+        solution_images = []
+        for f in solution_screenshots:
+            content = await f.read()
+            if content:
+                solution_images.append({"name": f.filename, "data": content, "type": f.content_type})
+
+        buffer = generate_functional_spec_docx(data, problem_images, solution_images)
+        role = data.get("userStory", {}).get("role", "Functional_Spec")
+        safe_name = "".join(c if c.isalnum() or c in "_ -" else "" for c in role).replace(" ", "_") or "Functional_Spec"
+        filename = f"{safe_name}_Functional_Specification.docx"
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Document generation failed",
+                "detail": str(e),
+            },
+        )

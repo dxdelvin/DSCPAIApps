@@ -16,9 +16,156 @@ class AuditCheckApp {
     }
 
     init() {
+        this.setupImageUpload();
         this.setupEventListeners();
-        this.setupDragAndDrop();
+        this.setupPdfDragAndDrop();
         this.switchMode(this.currentMode);
+    }
+
+    // ==================== IMAGE UPLOAD (standalone) ====================
+
+    setupImageUpload() {
+        const dropArea  = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        if (!dropArea || !fileInput) return;
+
+        let dragCounter = 0;
+
+        // Click to open picker
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        // File-input change
+        fileInput.addEventListener('change', () => {
+            this.handleImageFiles(Array.from(fileInput.files));
+            fileInput.value = '';
+        });
+
+        // Drag events
+        dropArea.addEventListener('dragenter', e => {
+            e.preventDefault(); e.stopPropagation();
+            dragCounter++;
+            dropArea.classList.add('dragover');
+        });
+        dropArea.addEventListener('dragover', e => {
+            e.preventDefault(); e.stopPropagation();
+        });
+        dropArea.addEventListener('dragleave', e => {
+            e.preventDefault(); e.stopPropagation();
+            dragCounter--;
+            if (dragCounter <= 0) { dragCounter = 0; dropArea.classList.remove('dragover'); }
+        });
+        dropArea.addEventListener('drop', e => {
+            e.preventDefault(); e.stopPropagation();
+            dragCounter = 0;
+            dropArea.classList.remove('dragover');
+            const valid = Array.from(e.dataTransfer.files).filter(f => this.isValidImageFile(f));
+            if (valid.length) this.handleImageFiles(valid);
+            else showToast('Only .jpg, .jpeg, .png files are supported', 'warning');
+        });
+    }
+
+    isValidImageFile(file) {
+        const validTypes = ['image/jpeg', 'image/png'];
+        const validExts  = ['.jpg', '.jpeg', '.png'];
+        return validTypes.includes(file.type) || validExts.some(ext => file.name.toLowerCase().endsWith(ext));
+    }
+
+    handleImageFiles(newFiles) {
+        const MAX = 10;
+        const MAX_SIZE = 5 * 1024 * 1024;
+
+        newFiles.forEach(file => {
+            if (this.creatorData.files.length >= MAX) { showToast(`Maximum ${MAX} files allowed`, 'warning'); return; }
+            if (file.size > MAX_SIZE) { showToast(`${file.name} exceeds 5 MB limit`, 'warning'); return; }
+            if (!this.isValidImageFile(file)) { showToast(`${file.name} is not supported`, 'warning'); return; }
+            if (this.creatorData.files.some(f => f.name === file.name && f.size === file.size)) { showToast(`${file.name} already added`, 'warning'); return; }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                this.creatorData.files.push({ name: file.name, size: file.size, type: file.type, data: reader.result, description: '' });
+                this.renderImageFileList();
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+
+    renderImageFileList() {
+        const section   = document.getElementById('files-list-section');
+        const container = document.getElementById('files-list');
+        if (!container) return;
+
+        if (section) section.style.display = this.creatorData.files.length ? 'block' : 'none';
+        container.innerHTML = '';
+
+        let dragSrcIdx = null;
+
+        this.creatorData.files.forEach((file, idx) => {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+            item.draggable = true;
+
+            const isImg = file.type.startsWith('image/');
+            const preview = isImg ? `<img src="${file.data}" class="file-preview" alt="Preview">` : '';
+
+            item.innerHTML = `
+                <div class="file-item-content">
+                    ${preview}
+                    <div class="file-details">
+                        <p class="file-name">${this.escText(file.name)}</p>
+                        <p class="file-size">${this.formatFileSize(file.size)}</p>
+                        <textarea class="description-input" placeholder="Add image description (optional)" data-index="${idx}">${this.escText(file.description)}</textarea>
+                    </div>
+                </div>
+                <button type="button" class="btn-remove-file" title="Remove">✕</button>
+            `;
+
+            // Description sync
+            const textarea = item.querySelector('.description-input');
+            if (textarea) textarea.addEventListener('input', e => { this.creatorData.files[idx].description = e.target.value; });
+
+            // Remove
+            item.querySelector('.btn-remove-file').addEventListener('click', e => {
+                e.stopPropagation();
+                this.creatorData.files.splice(idx, 1);
+                this.renderImageFileList();
+                showToast('File removed', 'info');
+            });
+
+            // Drag-to-reorder
+            item.addEventListener('dragstart', e => {
+                dragSrcIdx = idx;
+                item.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', '');
+            });
+            item.addEventListener('dragend', () => {
+                container.querySelectorAll('.file-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
+                dragSrcIdx = null;
+            });
+            item.addEventListener('dragover', e => {
+                e.preventDefault();
+                if (dragSrcIdx !== null && dragSrcIdx !== idx) item.classList.add('drag-over');
+            });
+            item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+            item.addEventListener('drop', e => {
+                e.preventDefault(); e.stopPropagation();
+                if (dragSrcIdx !== null && dragSrcIdx !== idx) {
+                    const [moved] = this.creatorData.files.splice(dragSrcIdx, 1);
+                    this.creatorData.files.splice(idx, 0, moved);
+                    this.renderImageFileList();
+                }
+                container.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over'));
+            });
+
+            container.appendChild(item);
+        });
+    }
+
+    escText(text) {
+        if (!text) return '';
+        const d = document.createElement('div');
+        d.textContent = text;
+        return d.innerHTML;
     }
 
     setupEventListeners() {
@@ -40,23 +187,6 @@ class AuditCheckApp {
         }
 
         // Creator Mode
-        const uploadArea = document.getElementById('upload-area');
-        const fileInput = document.getElementById('file-input');
-        
-        if (uploadArea && fileInput) {
-            uploadArea.addEventListener('click', (e) => {
-                console.log('Upload area clicked');
-                fileInput.click();
-            });
-
-            fileInput.addEventListener('change', (e) => {
-                console.log('Files selected:', e.target.files.length);
-                this.handleFileSelection(e.target.files);
-            });
-        } else {
-            console.warn('Upload area or file input not found');
-        }
-
         document.getElementById('generate-pdf-btn').addEventListener('click', () => this.generatePdfAndCheck());
         document.getElementById('reset-creator-btn').addEventListener('click', () => {
             showConfirmation(
@@ -76,7 +206,7 @@ class AuditCheckApp {
             downloadBtn.addEventListener('click', () => this.downloadPdf());
         }
 
-        // Add More Images button
+        // Add More Images button → open zone's file picker
         const addMoreBtn = document.getElementById('add-more-files-btn');
         if (addMoreBtn) {
             addMoreBtn.addEventListener('click', () => {
@@ -130,39 +260,20 @@ class AuditCheckApp {
         });
     }
 
-    setupDragAndDrop() {
-        ['upload-area', 'pdf-upload-area'].forEach(areaId => {
-            const area = document.getElementById(areaId);
-            if (!area) return;
+    setupPdfDragAndDrop() {
+        const area = document.getElementById('pdf-upload-area');
+        if (!area) return;
 
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-
-            ['dragenter', 'dragover'].forEach(eventName => {
-                area.addEventListener(eventName, () => {
-                    area.classList.add('dragover');
-                });
-            });
-
-            ['dragleave', 'drop'].forEach(eventName => {
-                area.addEventListener(eventName, () => {
-                    area.classList.remove('dragover');
-                });
-            });
-
-            area.addEventListener('drop', (e) => {
-                const files = e.dataTransfer.files;
-                if (areaId === 'upload-area') {
-                    this.handleFileSelection(files);
-                } else {
-                    this.handlePdfSelection(files);
-                }
-            });
-        });
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(evt =>
+            area.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); })
+        );
+        ['dragenter', 'dragover'].forEach(evt =>
+            area.addEventListener(evt, () => area.classList.add('dragover'))
+        );
+        ['dragleave', 'drop'].forEach(evt =>
+            area.addEventListener(evt, () => area.classList.remove('dragover'))
+        );
+        area.addEventListener('drop', e => this.handlePdfSelection(e.dataTransfer.files));
     }
 
     switchMode(mode) {
@@ -182,157 +293,6 @@ class AuditCheckApp {
     }
 
     // ==================== CREATOR MODE ====================
-
-    handleFileSelection(files) {
-        const fileArray = Array.from(files);
-        let validFilesAdded = 0;
-        
-        fileArray.forEach(file => {
-            // Validate file type - only JPG and PNG allowed
-            const validTypes = ['image/jpeg', 'image/png'];
-            const validExtensions = ['.jpg', '.jpeg', '.png'];
-            
-            // Check both MIME type and file extension
-            const isValidType = validTypes.includes(file.type) || 
-                                validExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
-            
-            if (!isValidType) {
-                showToast(`File "${file.name}" is not supported. Only JPG and PNG are allowed.`, 'warning');
-                return;
-            }
-
-            // Check if file already exists
-            if (this.creatorData.files.some(f => f.name === file.name && f.size === file.size)) {
-                showToast(`File "${file.name}" already added`, 'warning');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                this.creatorData.files.push({
-                    name: file.name,
-                    size: file.size,
-                    type: file.type,
-                    data: e.target.result,
-                    description: ''
-                });
-                validFilesAdded++;
-                this.renderFilesList();
-            };
-            reader.readAsDataURL(file);
-        });
-
-        // Clear the file input
-        document.getElementById('file-input').value = '';
-    }
-
-    renderFilesList() {
-        const filesList = document.getElementById('files-list');
-        const section = document.getElementById('files-list-section');
-
-        if (this.creatorData.files.length === 0) {
-            section.style.display = 'none';
-            return;
-        }
-
-        section.style.display = 'block';
-        filesList.innerHTML = '';
-
-        this.creatorData.files.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'file-item';
-            fileItem.draggable = true;
-            fileItem.dataset.index = index;
-            
-            const preview = this.isImage(file.type) 
-                ? `<img src="${file.data}" class="file-preview" alt="Preview">`
-                : '';
-
-            fileItem.innerHTML = `
-                <div class="file-item-content">
-                    ${preview}
-                    <div class="file-details">
-                        <p class="file-name">${file.name}</p>
-                        <p class="file-size">${this.formatFileSize(file.size)}</p>
-                        <textarea 
-                            class="description-input" 
-                            placeholder="Add image description (optional)"
-                            data-index="${index}"
-                        >${file.description}</textarea>
-                    </div>
-                </div>
-                <button class="btn-remove" data-index="${index}" title="Delete image">✕</button>
-            `;
-
-            // Add description listener
-            fileItem.querySelector('.description-input').addEventListener('input', (e) => {
-                this.creatorData.files[index].description = e.target.value;
-            });
-
-            // Add remove listener
-            fileItem.querySelector('.btn-remove').addEventListener('click', () => {
-                this.creatorData.files.splice(index, 1);
-                this.renderFilesList();
-                showToast('Image removed', 'info');
-            });
-
-            // Add drag and drop listeners
-            fileItem.addEventListener('dragstart', (e) => this.handleDragStart(e));
-            fileItem.addEventListener('dragend', (e) => this.handleDragEnd(e));
-            fileItem.addEventListener('dragover', (e) => this.handleDragOver(e));
-            fileItem.addEventListener('drop', (e) => this.handleDrop(e, index));
-            fileItem.addEventListener('dragleave', (e) => this.handleDragLeave(e));
-
-            filesList.appendChild(fileItem);
-        });
-    }
-
-    handleDragStart(e) {
-        e.target.closest('.file-item').classList.add('dragging');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/html', e.target.innerHTML);
-    }
-
-    handleDragEnd(e) {
-        document.querySelectorAll('.file-item').forEach(item => {
-            item.classList.remove('dragging', 'drag-over');
-        });
-    }
-
-    handleDragOver(e) {
-        e.preventDefault();
-        e.dataTransfer.dropEffect = 'move';
-        const fileItem = e.target.closest('.file-item');
-        if (fileItem && !fileItem.classList.contains('dragging')) {
-            fileItem.classList.add('drag-over');
-        }
-    }
-
-    handleDragLeave(e) {
-        e.target.closest('.file-item').classList.remove('drag-over');
-    }
-
-    handleDrop(e, targetIndex) {
-        e.preventDefault();
-        e.stopPropagation();
-        
-        const draggingItem = document.querySelector('.file-item.dragging');
-        if (!draggingItem) return;
-
-        const sourceIndex = parseInt(draggingItem.dataset.index);
-        
-        if (sourceIndex !== targetIndex) {
-            // Reorder the files array
-            const [draggedFile] = this.creatorData.files.splice(sourceIndex, 1);
-            this.creatorData.files.splice(targetIndex, 0, draggedFile);
-            this.renderFilesList();
-            showToast('Image reordered', 'info');
-        }
-
-        document.querySelectorAll('.file-item').forEach(item => {
-            item.classList.remove('drag-over');
-        });
-    }
 
     async generatePdfAndCheck() {
         // Sync latest form values to state to avoid stale data
@@ -404,8 +364,9 @@ class AuditCheckApp {
         }
 
         // Add files with alternating description and image format
-        for (let i = 0; i < this.creatorData.files.length; i++) {
-            const file = this.creatorData.files[i];
+        const uploadedFiles = this.creatorData.files;
+        for (let i = 0; i < uploadedFiles.length; i++) {
+            const file = uploadedFiles[i];
 
             // Check if we need a new page
             if (yPosition > pageHeight - 80) {
@@ -462,7 +423,7 @@ class AuditCheckApp {
             }
 
             // Add separator between items
-            if (i < this.creatorData.files.length - 1) {
+            if (i < uploadedFiles.length - 1) {
                 if (yPosition > pageHeight - 30) {
                     pdf.addPage();
                     yPosition = 20;
@@ -618,12 +579,12 @@ class AuditCheckApp {
             description: '',
             files: []
         };
+        this.renderImageFileList();
         this.generatedPdf = null;
         this.chatHistoryId = null;
 
         document.getElementById('audit-title').value = '';
         document.getElementById('audit-description').value = '';
-        document.getElementById('files-list-section').style.display = 'none';
         document.getElementById('pdf-preview-container').style.display = 'none';
         document.getElementById('results-panel-creator').style.display = 'none';
         document.getElementById('empty-state-creator').style.display = 'flex';
