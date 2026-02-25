@@ -4,7 +4,7 @@
     "\\app",
     "\\app\\services",
     "\\app\\static",
-    "\\app\\static\\js",
+    "\\app\\static\\img",
     "\\app\\templates"
   ],
   "SelectedNode": "\\app\\services\\brain_auth.py",
