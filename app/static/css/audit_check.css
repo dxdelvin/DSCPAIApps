@@ -181,6 +181,7 @@
     flex-direction: column;
     align-items: center;
     gap: 0.75rem;
+    pointer-events: none;       /* let all drag/click events reach parent .upload-area */
 }
 
 .upload-icon {
@@ -321,7 +322,8 @@
     box-shadow: 0 0 0 2px rgba(255, 95, 0, 0.1);
 }
 
-.btn-remove {
+.btn-remove,
+.btn-remove-file {
     background: #ff6b6b;
     color: white;
     border: none;
@@ -337,7 +339,8 @@
     font-weight: bold;
 }
 
-.btn-remove:hover {
+.btn-remove:hover,
+.btn-remove-file:hover {
     background: #ff5252;
     transform: scale(1.1);
 }

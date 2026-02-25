@@ -7,9 +7,10 @@ pydantic
 python-dotenv
 itsdangerous
 python-pptx
+python-docx
 Pillow
 
 # SAP BTP XSUAA
 cfenv
 sap-xssec
-requests
+requests    

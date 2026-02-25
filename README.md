@@ -2,7 +2,7 @@
 
 
 
-A FastAPI application with Jinja2 templating for generating intelligent BPMN diagrams and other supply chain optimization tools.
+A FastAPI application with Jinja2 templating for DSCP AI APPS
 
 ## Installation
 
@@ -11,7 +11,7 @@ A FastAPI application with Jinja2 templating for generating intelligent BPMN dia
 cd c:\Users\dxdel\Extra Activities\THEAI\Ai Projects\DSCP_AI
 ```
 
-2. **Create a virtual environment** (recommended)
+2. **Create a virtual environment** 
 ```bash
 python -m venv venv
 venv\Scripts\activate

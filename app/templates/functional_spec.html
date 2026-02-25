@@ -1,0 +1,316 @@
+{% extends "base.html" %}
+
+{% block title %}Spec Builder - BSH DSCP{% endblock %}
+
+{% block page_name %}Spec Builder{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/functional_spec.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | Document Automation</p>
+        <h1>Spec Builder</h1>
+        <p class="lede">Fill in the Functional Specification form and export a polished Word document in one click.</p>
+    </div>
+</section>
+
+<div class="container spec-container">
+    <div class="spec-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Document builder</p>
+                <h2 class="builder-title">Functional Specification</h2>
+            </div>
+            <div class="builder-actions">
+                <button class="btn btn-icon-help" type="button" id="infoBtn" title="About this form">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4M12 8h.01"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step Indicator -->
+        <div class="step-indicator">
+            <div class="step step-active" data-step="1"><span class="step-number">1</span><span class="step-label">User Story</span></div>
+            <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Process</span></div>
+            <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">User</span></div>
+            <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Problem</span></div>
+            <div class="step" data-step="5"><span class="step-number">5</span><span class="step-label">Solution</span></div>
+            <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Design</span></div>
+            <div class="step" data-step="7"><span class="step-number">7</span><span class="step-label">Review</span></div>
+        </div>
+
+        <div class="form-container">
+            <!-- ========== Step 1: User Story ========== -->
+            <div class="form-step active" id="step-1">
+                <h3>User Story</h3>
+                <p>Describe the need from the user's perspective.</p>
+                <div class="form-group">
+                    <label for="userRole">I as a …</label>
+                    <input type="text" id="userRole" placeholder="e.g., Production Planner" />
+                </div>
+                <div class="form-group">
+                    <label for="userWant">want to …</label>
+                    <input type="text" id="userWant" placeholder="e.g., automate the rescheduling of production orders" />
+                </div>
+                <div class="form-group">
+                    <label for="userAbility">to be able to …</label>
+                    <input type="text" id="userAbility" placeholder="e.g., reduce manual planning effort by 50 %" />
+                </div>
+            </div>
+
+            <!-- ========== Step 2: Process ========== -->
+            <div class="form-step" id="step-2">
+                <h3>Process</h3>
+                <p>Select the applicable function, process area, and sub-area.</p>
+
+                <div class="checkbox-grid three-col">
+                    <!-- Function -->
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">Function</h4>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="Unser Interface" /><span>Unser Interface</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="MRP Planning" /><span>MRP Planning</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="Sequencing" /><span>Sequencing</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="Optimization" /><span>Optimization</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="System Interface" /><span>System Interface</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="function" value="Other" data-toggle-other="functionOther" /><span>Other</span></label>
+                        <input type="text" id="functionOther" class="other-input hidden" placeholder="Describe custom function…" />
+                    </div>
+
+                    <!-- Process Area -->
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">Process-Area</h4>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="Demand-Plan" /><span>Demand-Plan</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="APPS" /><span>APPS</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="CSC" /><span>CSC</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="Final-Assembly" /><span>Final-Assembly</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="Pre-Assembly" /><span>Pre-Assembly</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="External-Procurement" /><span>External-Procurement</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processArea" value="Other" data-toggle-other="processAreaOther" /><span>Other</span></label>
+                        <input type="text" id="processAreaOther" class="other-input hidden" placeholder="Describe custom area…" />
+                    </div>
+
+                    <!-- Process Sub-Area -->
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">Process-Sub-Area <span class="optional-badge">optional</span></h4>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Series-Planning" /><span>Series-Planning</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Pre- & Zero-Series-Planning" /><span>Pre- & Zero-Series-Planning</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Manual Scheduling" /><span>Manual Scheduling</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Quotation" /><span>Quotation</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Subcontracting" /><span>Subcontracting</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Sample Orders" /><span>Sample Orders</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Co-Products" /><span>Co-Products</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Alerting & Exception Messages" /><span>Alerting & Exception Messages</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Evaluations" /><span>Evaluations</span></label>
+                    </div>
+                </div>
+
+                <div class="describe-below">
+                    <p class="describe-hint">If you did not find a suitable <strong>Function</strong> and <strong>Area</strong>, please describe below:</p>
+                    <textarea id="processDescribeBelow" rows="3" placeholder="Describe your custom function and/or area here…"></textarea>
+                </div>
+            </div>
+
+            <!-- ========== Step 3: User ========== -->
+            <div class="form-step" id="step-3">
+                <h3>User Group</h3>
+                <p>Who will use this feature?</p>
+
+                <div class="checkbox-grid three-col">
+                    <div class="checkbox-column">
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Planner" /><span>Planner</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="MRP Controller" /><span>MRP Controller</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Management" /><span>Management</span></label>
+                    </div>
+                    <div class="checkbox-column">
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Shop Floor" /><span>Shop Floor</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Development" /><span>Development</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Purchasing" /><span>Purchasing</span></label>
+                    </div>
+                    <div class="checkbox-column">
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Key-Users" /><span>Key-Users</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="IT-Support" /><span>IT-Support</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Other" data-toggle-other="userGroupOther" /><span>Other</span></label>
+                        <input type="text" id="userGroupOther" class="other-input hidden" placeholder="Specify other user group…" />
+                    </div>
+                </div>
+
+                <div class="describe-below">
+                    <p class="describe-hint">If you did not find a suitable <strong>User-Group</strong>, please describe below:</p>
+                    <textarea id="userGroupDescribeBelow" rows="3" placeholder="Describe your custom user group here…"></textarea>
+                </div>
+            </div>
+
+            <!-- ========== Step 4: Problem Description ========== -->
+            <div class="form-step" id="step-4">
+                <h3>Actual Problem what should be solved</h3>
+                <p>Describe the Problem in short words, provide screenshots if necessary.</p>
+                <div class="form-group">
+                    <label for="problemDescription">Problem Description</label>
+                    <textarea id="problemDescription" rows="6" placeholder="Describe the problem in short words…"></textarea>
+                </div>
+
+                <div class="upload-section">
+                    <h4>Screenshots <span class="optional-badge">optional</span></h4>
+                    <div class="upload-area" id="problem-upload-area">
+                        <div class="upload-placeholder">
+                            <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <p>Drag & drop images here or click to select</p>
+                            <p class="upload-hint">Supports JPG and PNG</p>
+                        </div>
+                        <input type="file" id="problem-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
+                    </div>
+                    <div class="files-list" id="problem-files-list"></div>
+                </div>
+            </div>
+
+            <!-- ========== Step 5: Solution Description ========== -->
+            <div class="form-step" id="step-5">
+                <h3>Solution Description</h3>
+                <p>Describe how could the solution look like in short words, provide screenshots if necessary.</p>
+                <div class="form-group">
+                    <label for="solutionDescription">Solution Description</label>
+                    <textarea id="solutionDescription" rows="6" placeholder="Describe how the solution could look like…"></textarea>
+                </div>
+
+                <div class="upload-section">
+                    <h4>Screenshots <span class="optional-badge">optional</span></h4>
+                    <div class="upload-area" id="solution-upload-area">
+                        <div class="upload-placeholder">
+                            <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <p>Drag & drop images here or click to select</p>
+                            <p class="upload-hint">Supports JPG and PNG</p>
+                        </div>
+                        <input type="file" id="solution-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
+                    </div>
+                    <div class="files-list" id="solution-files-list"></div>
+                </div>
+            </div>
+
+            <!-- ========== Step 6: Solution Design ========== -->
+            <div class="form-step" id="step-6">
+                <h3>Solution Design</h3>
+                <p>Specify the development system, technical details, naming, and authorizations.</p>
+
+                <!-- Development System checkboxes -->
+                <h4 class="subsection-title">Development System</h4>
+                <div class="checkbox-grid three-col">
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">ERP</h4>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_060" /><span>M0D_060</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_160" /><span>M0D_160</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_260" /><span>M0D_260</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_360" /><span>M0D_360</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_460" /><span>M0D_460</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="erp" value="Other" data-toggle-other="erpOther" /><span>Other</span></label>
+                        <input type="text" id="erpOther" class="other-input hidden" placeholder="Specify other ERP…" />
+                    </div>
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">SCM / S4</h4>
+                        <label class="checkbox-item"><input type="checkbox" name="scm" value="P0D_060" /><span>P0D_060</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="scm" value="R4B_060" /><span>R4B_060</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="scm" value="Other" data-toggle-other="scmOther" /><span>Other</span></label>
+                        <input type="text" id="scmOther" class="other-input hidden" placeholder="Specify other SCM…" />
+                    </div>
+                    <div class="checkbox-column">
+                        <h4 class="col-heading">Cloud</h4>
+                        <label class="checkbox-item"><input type="checkbox" name="cloud" value="IBP" /><span>IBP</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="cloud" value="CPI/SDI" /><span>CPI/SDI</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="cloud" value="SCP" /><span>SCP</span></label>
+                        <label class="checkbox-item"><input type="checkbox" name="cloud" value="Other" data-toggle-other="cloudOther" /><span>Other</span></label>
+                        <input type="text" id="cloudOther" class="other-input hidden" placeholder="Specify other Cloud…" />
+                    </div>
+                </div>
+
+                <div class="design-fields">
+                    <div class="form-group">
+                        <label for="technicalDetails">Technical Details</label>
+                        <textarea id="technicalDetails" rows="4" placeholder="Describe all objects which have to be adjusted or created. Tables, Programs, Transactions, Views, etc."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="namesAndLanguage">Names and Language</label>
+                        <textarea id="namesAndLanguage" rows="4" placeholder="If you create new fields, columns, transactions etc. describe short and long-texts in all necessary languages."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="authorization">Authorization</label>
+                        <textarea id="authorization" rows="4" placeholder="Consider special authorization objects for specific user groups, e.g. Key-Users."></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== Step 7: Review & Export ========== -->
+            <div class="form-step" id="step-7">
+                <h3>Review & Export</h3>
+                <p>Review your specification below, then export as a Word document.</p>
+
+                <div class="review-panel" id="reviewPanel">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="cta-panel">
+                    <p>When you're satisfied, click <strong>Export .docx</strong> to download your Functional Specification.</p>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" id="editFromReviewBtn">Edit Form</button>
+                        <button type="button" class="btn btn-primary" id="exportBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            Export .docx
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <div class="form-navigation">
+            <div class="nav-left">
+                <button type="button" class="btn btn-ghost btn-reset-link" id="resetBtn">Reset Form</button>
+            </div>
+            <div class="nav-right">
+                <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingSpinner" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Generating Document...</p>
+</div>
+
+<!-- Info Modal -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close">&times;</span>
+            <h2>About Spec Builder</h2>
+        </div>
+        <div class="modal-body">
+            <p>This form mirrors the BSH <strong>Functional Specification</strong> template. Fill in each section step-by-step, review the summary, then export a ready-to-share Word document.</p>
+            <h4>User Story</h4>
+            <p>Describe the feature request from the end-user's perspective using the "I as a …, want to …, to be able to …" pattern.</p>
+            <h4>Process & User</h4>
+            <p>Select the relevant function area, process area, sub-area, and intended user groups from the predefined BSH categories.</p>
+            <h4>Problem & Solution</h4>
+            <p>State the current problem clearly and describe how the solution should look.</p>
+            <h4>Solution Design</h4>
+            <p>Specify the development system (ERP, SCM, Cloud), technical objects to create/modify, naming conventions, and authorization considerations.</p>
+            <h4>Export</h4>
+            <p>The final review step lets you verify all inputs. Click <strong>Export .docx</strong> to download a formatted Word document matching the official BSH template.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/functional_spec.js') }}"></script>
+{% endblock %}
