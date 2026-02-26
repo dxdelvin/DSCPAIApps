@@ -1,6 +1,6 @@
 import os
 from typing import Optional, List
-from fastapi import APIRouter, UploadFile, File, Form
+from fastapi import APIRouter, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -18,7 +18,7 @@ from app.services.audit_service import (
 from app.services.bpmn_checker_service import check_bpmn_diagram
 from app.services.functional_spec_service import generate_functional_spec_docx
 from app.services.ppt_creator_service import (
-    extract_ppt_content,
+    extract_pdf_content,
     refine_ppt_content,
     generate_pptx_file,
 )
@@ -361,27 +361,22 @@ async def ppt_extract(
     files: List[UploadFile] = File(...),
     instructions: Optional[str] = Form(None),
 ):
-    """Upload PowerPoint files → AI extracts & structures content."""
-    # Validate files
-    allowed_types = (
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        "application/vnd.ms-powerpoint",
-    )
+    """Upload PDF files → AI structures content into presentation slides."""
     file_bytes_list = []
     for f in files:
-        if not f.filename.lower().endswith((".pptx", ".ppt")):
+        if not f.filename.lower().endswith(".pdf"):
             return JSONResponse(
                 status_code=400,
                 content={
                     "status": "error",
                     "message": "Invalid file type",
-                    "detail": f"'{f.filename}' is not a PowerPoint file. Only .pptx files are supported.",
+                    "detail": f"'{f.filename}' is not a PDF file. Only .pdf files are supported.",
                 },
             )
         content = await f.read()
         file_bytes_list.append((f.filename, content))
 
-    result = await extract_ppt_content(file_bytes_list, instructions or "")
+    result = await extract_pdf_content(file_bytes_list, instructions or "")
 
     if result.get("error"):
         return JSONResponse(
@@ -400,23 +395,16 @@ async def ppt_extract(
     }
 
 
+class PptRefineRequest(BaseModel):
+    chatHistoryId: str
+    message: str
+    currentContent: Optional[dict] = None
+
+
 @router.post("/ppt/refine")
-async def ppt_refine(
-    chatHistoryId: str = Form(...),
-    message: str = Form(...),
-    currentContent: Optional[str] = Form(None),
-):
+async def ppt_refine(data: PptRefineRequest):
     """Continue conversation to refine presentation content."""
-    import json as _json
-
-    current = None
-    if currentContent:
-        try:
-            current = _json.loads(currentContent)
-        except _json.JSONDecodeError:
-            pass
-
-    result = await refine_ppt_content(chatHistoryId, message, current)
+    result = await refine_ppt_content(data.chatHistoryId, data.message, data.currentContent)
 
     if result.get("error"):
         return JSONResponse(
@@ -436,12 +424,17 @@ async def ppt_refine(
     }
 
 
+class PptDownloadRequest(BaseModel):
+    content: dict
+
+
 @router.post("/ppt/download")
-async def ppt_download(data: dict):
-    """Generate and download the .pptx file from structured content."""
+async def ppt_download(data: PptDownloadRequest):
+    """Generate and download the .pptx file from structured AI content."""
     from fastapi.responses import StreamingResponse
 
-    content = data.get("content")
+    content = data.content
+
     if not content or "slides" not in content:
         return JSONResponse(
             status_code=400,

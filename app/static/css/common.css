@@ -178,7 +178,40 @@ body.dark-mode .navbar {
 body.dark-mode .changelog-bell:hover,
 body.dark-mode .theme-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--navy-900);
+}
+
+/* Beta Banner - Subtle top indicator */
+.beta-banner {
+    background: rgba(255, 95, 0, 0.06);
+    border-bottom: 1px solid rgba(255, 95, 0, 0.12);
+    padding: 8px 24px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--brand-orange);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    z-index: 999;
+}
+
+.beta-badge {
+    font-weight: 700;
+    font-size: 14px;
+    opacity: 0.8;
+}
+
+.beta-text {
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+body.dark-mode .beta-banner {
+    background: rgba(255, 95, 0, 0.08);
+    border-bottom-color: rgba(255, 95, 0, 0.2);
+    color: rgba(255, 95, 0, 0.9);
 }
 
 .changelog-bell .badge-dot {
@@ -570,23 +603,29 @@ body.dark-mode .app-card:hover {
 }
 
 .app-icon { 
-    width: 56px; 
-    height: 56px; 
-    border-radius: 12px; 
-    background: linear-gradient(135deg, #fff8f3, #ffede0); 
+    width: 64px; 
+    height: 64px; 
+    border-radius: 14px; 
+    background: linear-gradient(135deg, #fff4ec, #ffe4d0); 
     display: grid; 
     place-items: center; 
-    border: 1px solid rgba(255, 95, 0, 0.12);
-    transition: transform 0.2s ease;
+    border: 1px solid rgba(255, 95, 0, 0.18);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.app-icon svg {
+    width: 34px;
+    height: 34px;
 }
 
 body.dark-mode .app-icon {
-    background: linear-gradient(135deg, rgba(255, 95, 0, 0.15), rgba(255, 95, 0, 0.25));
+    background: linear-gradient(135deg, rgba(255, 95, 0, 0.12), rgba(255, 95, 0, 0.22));
     border-color: rgba(255, 95, 0, 0.3);
 }
 
 .app-card:hover .app-icon {
-    transform: scale(1.03);
+    transform: scale(1.06);
+    box-shadow: 0 4px 14px rgba(255, 95, 0, 0.15);
 }
 
 .btn-open {
@@ -596,6 +635,21 @@ body.dark-mode .app-icon {
     border-radius: 8px;
     width: 100%;
     margin-top: auto;
+    background: transparent;
+    color: var(--brand-orange);
+    border: 1.5px solid #e1e1e1b5;
+    transition: all 0.25s ease;
+}
+
+.btn-open:hover,
+.app-card:hover .btn-open {
+    background: var(--brand-orange);
+    color: #fff;
+    border-color: var(--brand-orange);
+}
+
+body.dark-mode .btn-open {
+    border-color: rgba(121, 121, 121, 0.268);
 }
 
 .btn-locked {

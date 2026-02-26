@@ -13,7 +13,7 @@
     <div>
         <p class="eyebrow">BSH | Document Automation</p>
         <h1>AI PowerPoint Creator</h1>
-        <p class="lede">Upload existing presentations, let AI extract &amp; combine content, then download a refreshed PowerPoint.</p>
+        <p class="lede">Upload PDF documents, let AI structure the content into a professional PowerPoint presentation with varied layouts.</p>
     </div>
 </section>
 
@@ -22,7 +22,7 @@
         <div class="builder-head">
             <div>
                 <p class="eyebrow">PowerPoint Tools</p>
-                <h2 class="builder-title">Create Presentation</h2>
+                <h2 class="builder-title">Create Presentation from PDF</h2>
             </div>
         </div>
 
@@ -30,19 +30,19 @@
             <!-- Left: Upload & Controls -->
             <div class="builder-left">
                 <div class="form-container">
-                    <h3>Upload PowerPoint Files</h3>
-                    <p>Upload one or more .pptx files. AI will extract and combine relevant content.</p>
+                    <h3>Upload PDF Documents</h3>
+                    <p>Upload one or more PDF files. AI will read the content and create a structured PowerPoint presentation.</p>
 
                     <!-- File Upload Area -->
                     <div class="upload-section">
-                        <h4>PowerPoint Files (.pptx)</h4>
+                        <h4>PDF Files (.pdf)</h4>
                         <div class="upload-area" id="upload-area">
                             <div class="upload-placeholder">
-                                <span class="upload-icon">📊</span>
-                                <p>Drag &amp; drop .pptx files here or click to select</p>
-                                <p class="upload-hint">Supports .pptx files only</p>
+                                <span class="upload-icon">📄</span>
+                                <p>Drag &amp; drop PDF files here or click to select</p>
+                                <p class="upload-hint">Supports .pdf files only</p>
                             </div>
-                            <input type="file" id="file-input" multiple accept=".pptx" hidden>
+                            <input type="file" id="file-input" multiple accept=".pdf" hidden>
                         </div>
                     </div>
 
@@ -60,14 +60,14 @@
                     <!-- Instructions -->
                     <div class="form-group">
                         <label for="user-instructions">Additional Instructions (optional)</label>
-                        <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on Q4 results, combine sales data, use a professional tone..."></textarea>
+                        <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on key findings, use a professional tone, create 10 slides..."></textarea>
                     </div>
 
                     <!-- Action Buttons -->
                     <div class="form-actions">
                         <button class="btn btn-primary" id="extract-btn" disabled>
                             <span class="btn-icon">🤖</span>
-                            Extract &amp; Generate
+                            Generate Presentation
                         </button>
                         <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
                     </div>
@@ -85,24 +85,15 @@
                 </div>
             </div>
 
-            <!-- Right: Preview & Download -->
+            <!-- Right: Result & Download -->
             <div class="builder-right">
                 <div class="results-container">
-                    <h3>Preview &amp; Download</h3>
+                    <h3>Result</h3>
 
-                    <!-- Slide Preview -->
-                    <div class="preview-panel" id="preview-panel" style="display:none">
-                        <div class="section-header">
-                            <h4 id="preview-title">Presentation Preview</h4>
-                            <div class="preview-nav">
-                                <button class="btn btn-ghost btn-sm" id="prev-slide-btn" disabled>&larr;</button>
-                                <span id="slide-counter">1 / 1</span>
-                                <button class="btn btn-ghost btn-sm" id="next-slide-btn" disabled>&rarr;</button>
-                            </div>
-                        </div>
-                        <div class="slide-preview" id="slide-preview"></div>
-
-                        <div class="form-actions preview-actions">
+                    <!-- Result Panel -->
+                    <div class="result-panel" id="result-panel" style="display:none">
+                        <div class="result-info" id="result-info"></div>
+                        <div class="form-actions result-actions">
                             <button class="btn btn-primary" id="download-btn">
                                 <span class="btn-icon">⬇️</span>
                                 Download .pptx
@@ -113,13 +104,13 @@
                     <!-- Empty State -->
                     <div class="empty-state" id="empty-state">
                         <span class="empty-icon">📑</span>
-                        <p>Upload PowerPoint files and click Extract to see a preview</p>
+                        <p>Upload PDF files and click Generate to create a presentation</p>
                     </div>
 
                     <!-- Loading State -->
                     <div class="loading-state" id="loading-state" style="display:none">
                         <div class="spinner"></div>
-                        <p id="loading-text">Analyzing presentations...</p>
+                        <p id="loading-text">Creating presentation from PDF...</p>
                     </div>
                 </div>
             </div>

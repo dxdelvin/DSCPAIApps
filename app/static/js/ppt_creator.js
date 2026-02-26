@@ -1,453 +1,400 @@
-// ============================================
-// PPT CREATOR - Main JavaScript
-// ============================================
+/**
+ * PPT Creator – frontend controller.
+ * Handles PDF upload, AI extraction, chat refinement,
+ * result summary, and PPTX download.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    const app = new PptCreatorApp();
+});
 
 class PptCreatorApp {
     constructor() {
         this.files = [];
         this.chatHistoryId = null;
-        this.currentContent = null;   // parsed JSON from AI
-        this.currentSlideIdx = 0;
+        this.currentContent = null;
         this.init();
     }
 
-    // ==================== Initialisation ====================
+    /* ── Bootstrap ────────────────────────────────────── */
 
     init() {
         this.setupUpload();
         this.setupEventListeners();
     }
 
-    // ==================== File Upload ====================
+    /* ── Upload handling ──────────────────────────────── */
 
     setupUpload() {
-        const dropArea  = document.getElementById('upload-area');
-        const fileInput = document.getElementById('file-input');
-        if (!dropArea || !fileInput) return;
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput  = document.getElementById('file-input');
 
-        let dragCounter = 0;
+        uploadArea.addEventListener('click', () => fileInput.click());
 
-        dropArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('drag-over');
+        });
+
+        uploadArea.addEventListener('drop', e => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            this.addFiles(e.dataTransfer.files);
+        });
 
         fileInput.addEventListener('change', () => {
-            this.handleFiles(Array.from(fileInput.files));
+            this.addFiles(fileInput.files);
             fileInput.value = '';
         });
-
-        dropArea.addEventListener('dragenter', e => {
-            e.preventDefault(); e.stopPropagation();
-            dragCounter++;
-            dropArea.classList.add('dragover');
-        });
-        dropArea.addEventListener('dragover', e => {
-            e.preventDefault(); e.stopPropagation();
-        });
-        dropArea.addEventListener('dragleave', e => {
-            e.preventDefault(); e.stopPropagation();
-            dragCounter--;
-            if (dragCounter <= 0) { dragCounter = 0; dropArea.classList.remove('dragover'); }
-        });
-        dropArea.addEventListener('drop', e => {
-            e.preventDefault(); e.stopPropagation();
-            dragCounter = 0;
-            dropArea.classList.remove('dragover');
-            const valid = Array.from(e.dataTransfer.files).filter(f => this.isValidFile(f));
-            if (valid.length) this.handleFiles(valid);
-            else showToast('Only .pptx files are supported', 'warning');
-        });
     }
 
-    isValidFile(file) {
-        return file.name.toLowerCase().endsWith('.pptx');
-    }
-
-    handleFiles(newFiles) {
-        const MAX = 10;
-        const MAX_SIZE = 25 * 1024 * 1024; // 25 MB
-
-        newFiles.forEach(file => {
-            if (this.files.length >= MAX) { showToast(`Maximum ${MAX} files allowed`, 'warning'); return; }
-            if (file.size > MAX_SIZE) { showToast(`${file.name} exceeds 25 MB limit`, 'warning'); return; }
-            if (!this.isValidFile(file)) { showToast(`${file.name} is not a .pptx file`, 'warning'); return; }
-            if (this.files.some(f => f.name === file.name && f.size === file.size)) {
-                showToast(`${file.name} already added`, 'warning');
-                return;
+    addFiles(fileList) {
+        for (const f of fileList) {
+            if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+                if (!this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
+                    this.files.push(f);
+                }
+            } else {
+                showToast(`Skipped "${f.name}" – only PDF files are accepted`, 'warning');
             }
-            this.files.push(file);
-        });
-        this.renderFileList();
+        }
+        this.renderFilesList();
         this.updateExtractBtn();
     }
 
-    renderFileList() {
-        const section   = document.getElementById('files-list-section');
-        const container = document.getElementById('files-list');
-        if (!container) return;
+    renderFilesList() {
+        const section = document.getElementById('files-list-section');
+        const list    = document.getElementById('files-list');
+        if (!this.files.length) {
+            section.style.display = 'none';
+            return;
+        }
+        section.style.display = 'block';
+        list.innerHTML = this.files.map((f, i) => `
+            <div class="file-item">
+                <span class="file-icon">📄</span>
+                <span class="file-name">${this.esc(f.name)}</span>
+                <span class="file-size">${this.formatSize(f.size)}</span>
+                <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
+            </div>
+        `).join('');
 
-        section.style.display = this.files.length ? 'block' : 'none';
-        container.innerHTML = '';
-
-        this.files.forEach((file, idx) => {
-            const item = document.createElement('div');
-            item.className = 'file-item';
-            item.innerHTML = `
-                <span class="file-icon">📊</span>
-                <div class="file-details">
-                    <p class="file-name">${this.esc(file.name)}</p>
-                    <p class="file-size">${this.formatSize(file.size)}</p>
-                </div>
-                <button type="button" class="btn-remove-file" title="Remove">✕</button>
-            `;
-            item.querySelector('.btn-remove-file').addEventListener('click', () => {
-                this.files.splice(idx, 1);
-                this.renderFileList();
+        list.querySelectorAll('.file-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.files.splice(+btn.dataset.index, 1);
+                this.renderFilesList();
                 this.updateExtractBtn();
-                showToast('File removed', 'info');
             });
-            container.appendChild(item);
+        });
+    }
+
+    /* ── Event listeners ──────────────────────────────── */
+
+    setupEventListeners() {
+        document.getElementById('add-more-btn').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+
+        document.getElementById('extract-btn').addEventListener('click', () => this.extractContent());
+        document.getElementById('reset-btn').addEventListener('click', ()   => this.resetAll());
+        document.getElementById('download-btn').addEventListener('click', () => this.downloadPptx());
+
+        document.getElementById('chat-send-btn').addEventListener('click', () => this.sendChatMessage());
+        document.getElementById('chat-input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.sendChatMessage();
+            }
         });
     }
 
     updateExtractBtn() {
-        const btn = document.getElementById('extract-btn');
-        if (btn) btn.disabled = this.files.length === 0;
+        document.getElementById('extract-btn').disabled = this.files.length === 0;
     }
 
-    // ==================== Event Listeners ====================
-
-    setupEventListeners() {
-        // Add More
-        const addMoreBtn = document.getElementById('add-more-btn');
-        if (addMoreBtn) addMoreBtn.addEventListener('click', () => document.getElementById('file-input').click());
-
-        // Extract
-        const extractBtn = document.getElementById('extract-btn');
-        if (extractBtn) extractBtn.addEventListener('click', () => this.extractContent());
-
-        // Reset
-        const resetBtn = document.getElementById('reset-btn');
-        if (resetBtn) resetBtn.addEventListener('click', () => {
-            showConfirmation(
-                'Reset All?',
-                'Clear all uploaded files and generated content?',
-                () => this.resetAll(),
-                { icon: '⚠️', confirmText: 'Reset', cancelText: 'Cancel' }
-            );
-        });
-
-        // Download
-        const downloadBtn = document.getElementById('download-btn');
-        if (downloadBtn) downloadBtn.addEventListener('click', () => this.downloadPptx());
-
-        // Slide navigation
-        const prevBtn = document.getElementById('prev-slide-btn');
-        const nextBtn = document.getElementById('next-slide-btn');
-        if (prevBtn) prevBtn.addEventListener('click', () => this.navigateSlide(-1));
-        if (nextBtn) nextBtn.addEventListener('click', () => this.navigateSlide(1));
-
-        // Chat send
-        const chatSendBtn = document.getElementById('chat-send-btn');
-        if (chatSendBtn) chatSendBtn.addEventListener('click', () => this.sendChatMessage());
-
-        const chatInput = document.getElementById('chat-input');
-        if (chatInput) {
-            chatInput.addEventListener('keydown', e => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendChatMessage();
-                }
-            });
-        }
-    }
-
-    // ==================== Extract Content ====================
+    /* ── Extract content ──────────────────────────────── */
 
     async extractContent() {
-        if (this.files.length === 0) {
-            showToast('Please upload at least one PowerPoint file', 'warning');
-            return;
-        }
+        if (!this.files.length) return;
 
-        this.showLoading('Analyzing presentations with AI...');
+        this.showLoading('Creating presentation from PDFs…');
 
         const formData = new FormData();
         this.files.forEach(f => formData.append('files', f));
-
-        const instructions = document.getElementById('user-instructions')?.value?.trim();
+        const instructions = document.getElementById('user-instructions').value.trim();
         if (instructions) formData.append('instructions', instructions);
 
         try {
-            const response = await fetch('/api/ppt/extract', {
-                method: 'POST',
-                body: formData,
-            });
-            const data = await response.json();
+            const res  = await fetch('/api/ppt/extract', { method: 'POST', body: formData });
+            const data = await res.json();
 
-            if (data.status !== 'success') {
-                showToast(data.detail || data.message || 'Extraction failed', 'error');
+            if (!res.ok || data.error || data.status === 'error') {
                 this.hideLoading();
+                const title = data.message || 'Extraction Failed';
+                const detail = data.detail || 'The AI could not process the uploaded PDF. Try a different file or add more instructions.';
+                this.showError(title, detail);
+                return;
+            }
+
+            if (!data.content || !data.content.slides || data.content.slides.length === 0) {
+                this.hideLoading();
+                this.showError(
+                    'No Slides Generated',
+                    'The AI could not extract meaningful content from the PDF. The document may be image-based, scanned, or empty. Try a different file or provide additional instructions.'
+                );
                 return;
             }
 
             this.currentContent = data.content;
-            this.chatHistoryId = data.chatHistoryId;
-            this.currentSlideIdx = 0;
+            this.chatHistoryId  = data.chatHistoryId;
 
-            this.renderPreview();
-            this.showChatPanel();
             this.hideLoading();
-            showToast('Content extracted successfully!', 'success');
+            this.showResult();
+            document.getElementById('chat-container').style.display = 'block';
+            showToast('Presentation generated successfully!', 'success');
         } catch (err) {
-            console.error('Extract error:', err);
-            showToast('Failed to connect to API', 'error');
             this.hideLoading();
+            this.showError('Connection Error', 'Could not reach the server. Please check your connection and try again.');
         }
     }
 
-    // ==================== Chat / Refine ====================
+    /* ── Chat / Refine ────────────────────────────────── */
 
     async sendChatMessage() {
         const input = document.getElementById('chat-input');
-        const message = input?.value?.trim();
-        if (!message || !this.chatHistoryId) return;
+        const msg   = input.value.trim();
+        if (!msg) return;
 
-        // Show user message
-        this.addChatMsg(message, 'user');
+        this.appendChat('user', msg);
         input.value = '';
 
-        // Disable send while loading
-        const sendBtn = document.getElementById('chat-send-btn');
-        if (sendBtn) sendBtn.disabled = true;
-
-        const formData = new FormData();
-        formData.append('chatHistoryId', this.chatHistoryId);
-        formData.append('message', message);
-        if (this.currentContent) {
-            formData.append('currentContent', JSON.stringify(this.currentContent));
-        }
+        this.appendChat('assistant', '⏳ Thinking…');
+        const thinkingEl = document.querySelector('#chat-messages .chat-msg:last-child');
 
         try {
-            const response = await fetch('/api/ppt/refine', {
+            const res  = await fetch('/api/ppt/refine', {
                 method: 'POST',
-                body: formData,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chatHistoryId: this.chatHistoryId,
+                    message: msg,
+                    currentContent: this.currentContent,
+                }),
             });
-            const data = await response.json();
+            const data = await res.json();
 
-            if (data.status !== 'success') {
-                this.addChatMsg(data.detail || data.message || 'Refine failed', 'ai');
-                showToast('Refine request failed', 'error');
-            } else if (data.content) {
+            if (thinkingEl) thinkingEl.remove();
+
+            if (data.error) {
+                this.appendChat('assistant', `Error: ${data.message}`);
+                return;
+            }
+
+            if (data.content) {
                 this.currentContent = data.content;
-                this.currentSlideIdx = 0;
-                this.renderPreview();
-                this.addChatMsg('Presentation updated! Check the preview.', 'ai');
-                showToast('Content updated', 'success');
-            } else if (data.response) {
-                this.addChatMsg(data.response, 'ai');
+                this.chatHistoryId  = data.chatHistoryId || this.chatHistoryId;
+                this.showResult();
+                this.appendChat('assistant', 'Presentation updated! Check the result panel.');
+            } else {
+                this.appendChat('assistant', data.result || 'No structured update received.');
             }
         } catch (err) {
-            console.error('Chat error:', err);
-            this.addChatMsg('Failed to connect to API', 'ai');
+            if (thinkingEl) thinkingEl.remove();
+            this.appendChat('assistant', 'Error: ' + err.message);
         }
-
-        if (sendBtn) sendBtn.disabled = false;
     }
 
-    addChatMsg(text, role) {
-        const container = document.getElementById('chat-messages');
-        if (!container) return;
-        const div = document.createElement('div');
-        div.className = `chat-msg ${role}`;
+    appendChat(role, text) {
+        const msgs = document.getElementById('chat-messages');
+        const div  = document.createElement('div');
+        div.className = `chat-msg chat-${role}`;
         div.textContent = text;
-        container.appendChild(div);
-        container.scrollTop = container.scrollHeight;
+        msgs.appendChild(div);
+        msgs.scrollTop = msgs.scrollHeight;
     }
 
-    // ==================== Preview ====================
+    /* ── Error display ────────────────────────────────── */
 
-    renderPreview() {
-        if (!this.currentContent || !this.currentContent.slides) return;
+    showError(title, detail) {
+        const resultPanel = document.getElementById('result-panel');
+        const emptyState  = document.getElementById('empty-state');
+        const resultInfo  = document.getElementById('result-info');
 
-        const slides = this.currentContent.slides;
-        const previewPanel = document.getElementById('preview-panel');
-        const emptyState = document.getElementById('empty-state');
-        const previewTitle = document.getElementById('preview-title');
+        if (emptyState)  emptyState.style.display = 'none';
+        if (resultPanel) resultPanel.style.display = 'flex';
+        const dlRow = document.getElementById('download-btn')?.closest('.result-actions');
+        if (dlRow) dlRow.style.display = 'none';
 
-        if (emptyState) emptyState.style.display = 'none';
-        if (previewPanel) previewPanel.style.display = 'flex';
-        if (previewTitle) previewTitle.textContent = this.currentContent.title || 'Presentation Preview';
+        let html = '<div class="result-error">';
+        html += '<span class="error-icon">⚠️</span>';
+        html += `<h4 class="error-title">${this.esc(title)}</h4>`;
+        html += `<p class="error-detail">${this.esc(detail)}</p>`;
+        html += '<p class="error-hint">You can try uploading a different PDF or add more specific instructions.</p>';
+        html += '</div>';
 
-        this.renderSlide();
-        this.updateSlideNav();
+        resultInfo.innerHTML = html;
+        showToast(title, 'error');
     }
 
-    renderSlide() {
-        const container = document.getElementById('slide-preview');
-        if (!container || !this.currentContent) return;
+    /* ── Result panel ─────────────────────────────────── */
 
-        const slides = this.currentContent.slides;
-        if (slides.length === 0) {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-secondary)">No slides found</p>';
-            return;
-        }
+    showResult() {
+        const content = this.currentContent;
+        if (!content || !content.slides) return;
 
-        const slide = slides[this.currentSlideIdx];
+        const resultPanel = document.getElementById('result-panel');
+        const emptyState  = document.getElementById('empty-state');
+        const resultInfo  = document.getElementById('result-info');
+
+        if (emptyState)  emptyState.style.display = 'none';
+        if (resultPanel) resultPanel.style.display = 'flex';
+
+        // Re-show download row (may have been hidden by showError)
+        const dlRow = document.getElementById('download-btn')?.closest('.result-actions');
+        if (dlRow) dlRow.style.display = '';
+
+        const slides = content.slides;
+        const layoutCounts = {};
+        slides.forEach(s => {
+            const l = s.layout || 'content';
+            layoutCounts[l] = (layoutCounts[l] || 0) + 1;
+        });
+
         let html = '';
 
-        if (slide.title) {
-            html += `<div class="slide-title">${this.esc(slide.title)}</div>`;
+        /* Title & Subtitle */
+        html += '<div class="result-header">';
+        html += `<h4 class="result-title">${this.esc(content.title || 'Untitled Presentation')}</h4>`;
+        if (content.subtitle) {
+            html += `<p class="result-subtitle">${this.esc(content.subtitle)}</p>`;
         }
+        html += '</div>';
 
-        if (slide.bullets && slide.bullets.length) {
-            html += '<ul class="slide-bullets">';
-            slide.bullets.forEach(b => {
-                html += `<li>${this.esc(b)}</li>`;
-            });
-            html += '</ul>';
+        /* Stats */
+        const smartArtCount = slides.filter(s => s.layout === 'smart_art').length;
+        const imageCount    = slides.filter(s => s.image_description).length;
+
+        html += '<div class="result-stats">';
+        html += `<div class="stat-item"><span class="stat-value">${slides.length}</span><span class="stat-label">Slides</span></div>`;
+        html += `<div class="stat-item"><span class="stat-value">${Object.keys(layoutCounts).length}</span><span class="stat-label">Layouts</span></div>`;
+        if (smartArtCount) {
+            html += `<div class="stat-item"><span class="stat-value">${smartArtCount}</span><span class="stat-label">SmartArt</span></div>`;
         }
-
-        if (slide.notes) {
-            html += `<div class="slide-notes">📝 ${this.esc(slide.notes)}</div>`;
+        if (imageCount) {
+            html += `<div class="stat-item"><span class="stat-value">${imageCount}</span><span class="stat-label">Images</span></div>`;
         }
+        html += '</div>';
 
-        container.innerHTML = html;
+        /* Slide breakdown */
+        html += '<div class="result-slides-list">';
+        html += '<h5>Slide Breakdown</h5>';
+        slides.forEach((s, i) => {
+            const layout = (s.layout || 'content').replace(/_/g, ' ');
+            const icon   = this.getLayoutIcon(s.layout);
+            html += '<div class="result-slide-row">';
+            html += `<span class="slide-num">${i + 1}</span>`;
+            html += `<span class="slide-info">${this.esc(s.title || '(No title)')}</span>`;
+            html += `<span class="slide-layout-tag">${icon} ${layout}</span>`;
+            html += '</div>';
+        });
+        html += '</div>';
+
+        resultInfo.innerHTML = html;
     }
 
-    navigateSlide(delta) {
-        if (!this.currentContent || !this.currentContent.slides) return;
-        const total = this.currentContent.slides.length;
-        this.currentSlideIdx = Math.max(0, Math.min(total - 1, this.currentSlideIdx + delta));
-        this.renderSlide();
-        this.updateSlideNav();
+    getLayoutIcon(layout) {
+        const icons = {
+            title_slide:        '🎯',
+            chapter:            '📖',
+            content:            '📝',
+            smart_art:          '✨',
+            content_with_image: '🖼️',
+            image_with_content: '🖼️',
+            two_columns:        '▪▪',
+            three_columns:      '▪▪▪',
+            four_quadrants:     '⊞',
+            full_image:         '🌄',
+            title_only:         '🏷️',
+            end_slide:          '🏁',
+        };
+        return icons[layout] || '📄';
     }
 
-    updateSlideNav() {
-        const total = this.currentContent?.slides?.length || 0;
-        const counter = document.getElementById('slide-counter');
-        const prevBtn = document.getElementById('prev-slide-btn');
-        const nextBtn = document.getElementById('next-slide-btn');
-
-        if (counter) counter.textContent = `${this.currentSlideIdx + 1} / ${total}`;
-        if (prevBtn) prevBtn.disabled = this.currentSlideIdx <= 0;
-        if (nextBtn) nextBtn.disabled = this.currentSlideIdx >= total - 1;
-    }
-
-    // ==================== Download ====================
+    /* ── Download ─────────────────────────────────────── */
 
     async downloadPptx() {
-        if (!this.currentContent) {
-            showToast('No content to download', 'warning');
-            return;
-        }
-
-        showToast('Generating PowerPoint...', 'info');
+        if (!this.currentContent) return;
 
         try {
-            const response = await fetch('/api/ppt/download', {
+            const res = await fetch('/api/ppt/download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ content: this.currentContent }),
             });
 
-            if (!response.ok) {
-                const err = await response.json();
-                showToast(err.detail || 'Download failed', 'error');
+            if (!res.ok) {
+                const err = await res.json();
+                showToast(err.message || 'Download failed', 'error');
                 return;
             }
 
-            const blob = await response.blob();
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-
-            // Try to get filename from Content-Disposition header
-            const disposition = response.headers.get('Content-Disposition');
-            let filename = 'Presentation.pptx';
-            if (disposition) {
-                const match = disposition.match(/filename="?(.+?)"?$/);
-                if (match) filename = match[1];
-            }
-            a.download = filename;
+            const blob = await res.blob();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = (this.currentContent.title || 'Presentation').replace(/[^a-zA-Z0-9 _-]/g, '') + '.pptx';
             document.body.appendChild(a);
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
-
-            showToast('PowerPoint downloaded!', 'success');
+            showToast('Download started!', 'success');
         } catch (err) {
-            console.error('Download error:', err);
-            showToast('Download failed', 'error');
+            showToast('Download error: ' + err.message, 'error');
         }
     }
 
-    // ==================== UI helpers ====================
+    /* ── UI helpers ───────────────────────────────────── */
 
     showLoading(text) {
-        const loading = document.getElementById('loading-state');
-        const empty   = document.getElementById('empty-state');
-        const preview = document.getElementById('preview-panel');
-        const loadingText = document.getElementById('loading-text');
-
-        if (empty)   empty.style.display   = 'none';
-        if (preview) preview.style.display = 'none';
-        if (loading) loading.style.display = 'flex';
-        if (loadingText) loadingText.textContent = text || 'Processing...';
+        document.getElementById('empty-state').style.display   = 'none';
+        const rp = document.getElementById('result-panel');
+        if (rp) rp.style.display = 'none';
+        document.getElementById('loading-state').style.display = 'flex';
+        document.getElementById('loading-text').textContent    = text || 'Processing…';
     }
 
     hideLoading() {
-        const loading = document.getElementById('loading-state');
-        if (loading) loading.style.display = 'none';
-    }
-
-    showChatPanel() {
-        const chat = document.getElementById('chat-container');
-        if (chat) chat.style.display = 'block';
+        document.getElementById('loading-state').style.display = 'none';
     }
 
     resetAll() {
-        this.files = [];
-        this.chatHistoryId = null;
+        this.files          = [];
+        this.chatHistoryId  = null;
         this.currentContent = null;
-        this.currentSlideIdx = 0;
 
-        this.renderFileList();
+        this.renderFilesList();
         this.updateExtractBtn();
-
-        // Reset instructions
-        const inst = document.getElementById('user-instructions');
-        if (inst) inst.value = '';
-
-        // Hide panels
-        const preview = document.getElementById('preview-panel');
-        const empty   = document.getElementById('empty-state');
-        const loading = document.getElementById('loading-state');
-        const chat    = document.getElementById('chat-container');
-        const chatMsgs = document.getElementById('chat-messages');
-
-        if (preview) preview.style.display = 'none';
-        if (loading) loading.style.display = 'none';
-        if (empty)   empty.style.display   = 'flex';
-        if (chat)    chat.style.display    = 'none';
-        if (chatMsgs) chatMsgs.innerHTML   = '';
-
-        showToast('All data cleared', 'info');
+        document.getElementById('user-instructions').value          = '';
+        document.getElementById('chat-container').style.display     = 'none';
+        document.getElementById('chat-messages').innerHTML          = '';
+        const rp = document.getElementById('result-panel');
+        if (rp) rp.style.display = 'none';
+        document.getElementById('empty-state').style.display        = 'flex';
+        document.getElementById('loading-state').style.display      = 'none';
     }
 
-    esc(text) {
-        if (!text) return '';
-        const d = document.createElement('div');
-        d.textContent = text;
-        return d.innerHTML;
+    esc(str) {
+        const el = document.createElement('span');
+        el.textContent = str;
+        return el.innerHTML;
     }
 
     formatSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        if (bytes < 1024)        return bytes + ' B';
+        if (bytes < 1048576)     return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1048576).toFixed(1) + ' MB';
     }
 }
-
-// ── Bootstrap ─────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    window.pptApp = new PptCreatorApp();
-});

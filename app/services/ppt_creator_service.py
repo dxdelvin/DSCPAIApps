@@ -1,28 +1,29 @@
 """
 PPT Creator Service.
-Handles AI-powered PowerPoint generation from uploaded presentations.
-Uses Brain workflow to extract & synthesize content, then builds
-a new .pptx via python-pptx with the project template.
+Handles AI-powered PowerPoint creation from uploaded PDF documents.
+Reads PDF content, sends to AI for structuring into slides,
+then builds a .pptx using varied layouts from the BSH template
+with SmartArt-like diagrams and placeholder images.
 """
 import io
 import json
+import math
 import os
 import re
-from typing import List, Optional
+import zipfile
+from typing import List, Optional, Tuple
 
+from PIL import Image, ImageDraw, ImageFont
 from pptx import Presentation
 from pptx.util import Inches, Pt, Emu
 from pptx.dml.color import RGBColor
+from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
 from app.services.common_service import (
     create_chat_history,
-    upload_attachments,
-    call_brain_workflow_chat,
+    call_brain_pure_llm_chat,
 )
-
-# Re-use Signavio workflow for now
-SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
 
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "static", "docs", "pptTemplate.potx"
@@ -34,65 +35,167 @@ BSH_NAVY   = RGBColor(0x0F, 0x17, 0x2A)
 BSH_WHITE  = RGBColor(0xFF, 0xFF, 0xFF)
 BSH_GREY   = RGBColor(0x64, 0x74, 0x8B)
 
+# ── Layout name → index mapping (from the .potx template) ──
+LAYOUT_MAP = {
+    "title_slide":          0,
+    "chapter":              3,
+    "content":              6,
+    "smart_art":            13,
+    "content_with_image":   11,
+    "image_with_content":   12,
+    "two_columns":          8,
+    "three_columns":        9,
+    "four_quadrants":       10,
+    "full_image":           7,
+    "title_only":           13,
+    "end_slide":            15,
+}
+
+# ── SmartArt colour palette ───────────────────────────────
+SMART_ART_COLORS = [
+    RGBColor(0xFF, 0x5F, 0x00),  # BSH Orange
+    RGBColor(0x22, 0x8B, 0xE6),  # Blue
+    RGBColor(0x10, 0xB9, 0x81),  # Green
+    RGBColor(0x8B, 0x5C, 0xF6),  # Purple
+    RGBColor(0xF5, 0x9E, 0x0B),  # Amber
+    RGBColor(0xEF, 0x44, 0x44),  # Red
+    RGBColor(0x06, 0xB6, 0xD4),  # Cyan
+    RGBColor(0x0F, 0x17, 0x2A),  # BSH Navy
+]
+
 # ── AI behaviour prompts ──────────────────────────────────
+
 EXTRACT_BEHAVIOUR = (
-    "You are a PowerPoint content analyst. "
-    "Analyze the uploaded PowerPoint files and extract all relevant content. "
-    "Return your response as a valid JSON object with this exact structure:\n"
-    '{\n'
+    "You are a professional presentation designer. "
+    "You receive text extracted from PDF documents and must structure it into "
+    "a compelling PowerPoint presentation.\n\n"
+    "AVAILABLE SLIDE LAYOUTS (use the exact layout name):\n"
+    '- "title_slide": Opening slide with title & subtitle\n'
+    '- "chapter": Section divider / new chapter heading\n'
+    '- "content": Standard slide with title and bullet points\n'
+    '- "smart_art": Visual diagram instead of plain bullets (see SMART ART TYPES)\n'
+    '- "content_with_image": Text on left + image placeholder on right\n'
+    '- "image_with_content": Image placeholder on left + text on right\n'
+    '- "two_columns": Two side-by-side content areas\n'
+    '- "three_columns": Three side-by-side content areas\n'
+    '- "four_quadrants": Four content areas in a 2x2 grid\n'
+    '- "full_image": Title + full-width image placeholder\n'
+    '- "title_only": Slide with only a large title\n'
+    '- "end_slide": Closing / thank-you slide\n\n'
+    "SMART ART TYPES (use with layout \"smart_art\"):\n"
+    '- "process": Horizontal flow showing sequential steps (3-6 items)\n'
+    '- "list_blocks": Vertical accent blocks for features/categories (3-6 items)\n'
+    '- "pyramid": Layered pyramid for hierarchy/priority (3-5 items, top=highest)\n'
+    '- "matrix": 2x2 grid for comparisons/categories (exactly 4 items)\n'
+    '- "cycle": Circular arrangement for recurring processes (3-6 items)\n\n'
+    "RULES:\n"
+    "1. Start with a title_slide and end with an end_slide.\n"
+    "2. Use chapter slides to separate major sections.\n"
+    "3. Use VARIED layouts — do NOT use the same layout for every slide.\n"
+    "4. Use \"smart_art\" layout for AT LEAST 25-30% of content slides. "
+    "Choose the type that best fits:\n"
+    "   - Sequential steps/workflows -> process\n"
+    "   - Features/specs/categories -> list_blocks\n"
+    "   - Priority/hierarchy/levels -> pyramid\n"
+    "   - 2x2 comparisons -> matrix\n"
+    "   - Recurring/cyclical processes -> cycle\n"
+    "5. Use image placeholder slides (content_with_image, image_with_content, "
+    "full_image) where a visual would enhance the message.\n"
+    "6. Keep bullet points concise (max 6 per slide, max 15 words each).\n"
+    "7. Smart art items should be short labels (2-5 words each).\n"
+    "8. For two_columns / three_columns / four_quadrants, provide content "
+    "in the 'columns' array.\n\n"
+    "Return your response as a valid JSON object with this EXACT structure:\n"
+    "{\n"
     '  "title": "Presentation Title",\n'
-    '  "subtitle": "Short subtitle or tagline",\n'
+    '  "subtitle": "Short subtitle",\n'
     '  "slides": [\n'
-    '    {\n'
+    "    {\n"
+    '      "layout": "content",\n'
     '      "title": "Slide Title",\n'
-    '      "bullets": ["Point 1", "Point 2", "Point 3"],\n'
-    '      "notes": "Optional speaker notes"\n'
-    '    }\n'
-    '  ]\n'
-    '}\n'
-    "Combine and de-duplicate content from all files. "
-    "Create a logical flow. Keep bullet points concise. "
-    "Return ONLY the JSON, no markdown fences, no explanation."
+    '      "subtitle": "Optional subtitle (title/chapter/end slides only)",\n'
+    '      "bullets": ["Point 1", "Point 2"],\n'
+    '      "smart_art": {"type": "process", "items": ["Step 1", "Step 2", "Step 3"]},\n'
+    '      "columns": [\n'
+    '        {"heading": "Col 1", "bullets": ["item"]},\n'
+    '        {"heading": "Col 2", "bullets": ["item"]}\n'
+    "      ],\n"
+    '      "image_description": "Brief description of what image should show",\n'
+    '      "notes": "Speaker notes"\n'
+    "    }\n"
+    "  ]\n"
+    "}\n\n"
+    "FIELD USAGE BY LAYOUT:\n"
+    "- title_slide / chapter / end_slide: title + subtitle\n"
+    "- content: title + bullets\n"
+    "- smart_art: title + smart_art object (type + items)\n"
+    "- content_with_image / image_with_content: title + bullets + image_description\n"
+    "- two_columns / three_columns / four_quadrants: title + columns\n"
+    "- full_image: title + image_description\n"
+    "- Return ONLY the JSON, no markdown fences, no explanation."
 )
 
 REFINE_BEHAVIOUR = (
     "You are a PowerPoint content editor. "
     "The user wants changes to the presentation content. "
     "Apply the requested changes and return the FULL updated JSON "
-    "with the same structure (title, subtitle, slides array). "
+    "with the same structure (title, subtitle, slides array with layout field). "
+    "Keep using varied layouts including smart_art where appropriate. "
+    "Available smart_art types: process, list_blocks, pyramid, matrix, cycle. "
     "Return ONLY the JSON, no markdown fences, no explanation."
 )
 
 
-def _extract_text_from_pptx(file_bytes: bytes) -> str:
-    """Pull all text from a .pptx file for prompt context."""
-    prs = Presentation(io.BytesIO(file_bytes))
-    parts: list[str] = []
-    for i, slide in enumerate(prs.slides, 1):
-        texts: list[str] = []
-        for shape in slide.shapes:
-            if shape.has_text_frame:
-                for para in shape.text_frame.paragraphs:
-                    t = para.text.strip()
-                    if t:
-                        texts.append(t)
-        if texts:
-            parts.append(f"--- Slide {i} ---\n" + "\n".join(texts))
-    return "\n\n".join(parts)
+# ─── PDF text extraction ─────────────────────────────────
 
+def _extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
+    """Extract text from a PDF file using PyPDF2.
+    
+    Returns (text, error). On success error is None; on failure text is None.
+    """
+    try:
+        from PyPDF2 import PdfReader
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        pages: list[str] = []
+        has_content = False
+        for i, page in enumerate(reader.pages, 1):
+            text = page.extract_text() or ""
+            text = text.strip()
+            if text:
+                pages.append(f"--- Page {i} ---\n{text}")
+                has_content = True
+            else:
+                pages.append(f"--- Page {i} ---\n(No extractable text)")
+        if not has_content:
+            return None, "No readable text found in the PDF. The file may be image-based or scanned."
+        full_text = "\n\n".join(pages)
+        # Check if meaningful content was extracted (not just headers/footers)
+        clean = re.sub(r'---\s*Page\s*\d+\s*---', '', full_text)
+        clean = re.sub(r'\(No extractable text\)', '', clean).strip()
+        if len(clean) < 80:
+            return None, (
+                "The PDF appears to be image-based or scanned. "
+                "Only minimal text could be extracted (less than 80 characters). "
+                "Please use a text-based PDF for best results."
+            )
+        return full_text, None
+    except ImportError:
+        return None, "PDF processing library (PyPDF2) is not installed on the server."
+    except Exception as e:
+        return None, f"PDF text extraction failed: {str(e)}"
+
+
+# ─── JSON parsing ────────────────────────────────────────
 
 def _parse_json_response(text: str) -> dict:
     """Try to parse a JSON object from the AI response."""
-    # Strip markdown fences if present
     cleaned = re.sub(r"```(?:json)?", "", text).strip().rstrip("`").strip()
 
-    # Try direct parse
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         pass
 
-    # Try finding a JSON object in the text
     match = re.search(r"\{.*\}", cleaned, re.DOTALL)
     if match:
         try:
@@ -103,78 +206,363 @@ def _parse_json_response(text: str) -> dict:
     return {}
 
 
-def _build_pptx(content: dict) -> io.BytesIO:
-    """Build a .pptx from structured content dict using the project template."""
-    # Try to use the template; fall back to blank if missing
+# ─── Placeholder image generation ────────────────────────
+
+def _create_placeholder_image(
+    description: str = "Image Placeholder",
+    width_px: int = 800,
+    height_px: int = 600,
+) -> io.BytesIO:
+    """Create a branded placeholder image with Pillow."""
+    img = Image.new("RGB", (width_px, height_px), (240, 244, 248))
+    draw = ImageDraw.Draw(img)
+
+    margin = 20
+    draw.rectangle(
+        [margin, margin, width_px - margin, height_px - margin],
+        fill=(245, 247, 250), outline=(15, 23, 42), width=2,
+    )
+    draw.rectangle(
+        [margin, margin, width_px - margin, margin + 6],
+        fill=(255, 95, 0),
+    )
+
+    cx, cy = width_px // 2, height_px // 2 - 30
+    icon_size = min(width_px, height_px) // 6
+    draw.rectangle(
+        [cx - icon_size, cy - icon_size * 3 // 4,
+         cx + icon_size, cy + icon_size * 3 // 4],
+        outline=(100, 116, 139), width=3,
+    )
+    r = icon_size // 3
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(100, 116, 139), width=2)
+
+    try:
+        font = ImageFont.truetype("arial.ttf", max(16, min(width_px, height_px) // 25))
+    except (OSError, IOError):
+        font = ImageFont.load_default()
+
+    desc = description[:80] + "..." if len(description) > 80 else description
+    bbox = draw.textbbox((0, 0), desc, font=font)
+    tw = bbox[2] - bbox[0]
+    draw.text(((width_px - tw) // 2, cy + icon_size + 20), desc, fill=(100, 116, 139), font=font)
+
+    try:
+        small_font = ImageFont.truetype("arial.ttf", max(12, min(width_px, height_px) // 35))
+    except (OSError, IOError):
+        small_font = ImageFont.load_default()
+    label = "Placeholder Image"
+    lbbox = draw.textbbox((0, 0), label, font=small_font)
+    lw = lbbox[2] - lbbox[0]
+    draw.text(((width_px - lw) // 2, height_px - margin - 30), label, fill=(148, 163, 184), font=small_font)
+
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    buf.seek(0)
+    return buf
+
+
+# ─── SmartArt-like shape builders ────────────────────────
+
+def _get_sa_color(idx: int) -> RGBColor:
+    """Get a colour from the SmartArt palette."""
+    return SMART_ART_COLORS[idx % len(SMART_ART_COLORS)]
+
+
+def _add_shape_with_text(
+    slide, shape_type, left, top, width, height,
+    text, fill_color, text_color=None, font_size=Pt(12), bold=True,
+):
+    """Add a shape with centred text."""
+    shape = slide.shapes.add_shape(shape_type, left, top, width, height)
+    shape.fill.solid()
+    shape.fill.fore_color.rgb = fill_color
+    shape.line.fill.background()
+
+    tf = shape.text_frame
+    tf.word_wrap = True
+    tf.margin_top = Inches(0.05)
+    tf.margin_bottom = Inches(0.05)
+    p = tf.paragraphs[0]
+    p.alignment = PP_ALIGN.CENTER
+    p.text = text
+    run = p.runs[0]
+    run.font.size = font_size
+    run.font.color.rgb = text_color or BSH_WHITE
+    run.font.bold = bold
+    return shape
+
+
+def _draw_process_smart_art(slide, items):
+    """Horizontal process flow — rounded boxes with arrows between them."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.6)
+    area_top = Inches(1.8)
+    area_w = Inches(10.8)
+    area_h = Inches(4.0)
+
+    arrow_w = Inches(0.25)
+    gap = Inches(0.1)
+
+    total_arrow_space = max(0, n - 1) * (arrow_w + gap * 2)
+    box_w = min(int((area_w - total_arrow_space) / n), Inches(2.5))
+    box_h = Inches(1.2)
+    fs = Pt(12) if box_w > Inches(1.8) else Pt(10) if box_w > Inches(1.2) else Pt(9)
+
+    total_w = n * box_w + max(0, n - 1) * (arrow_w + gap * 2)
+    start_x = area_left + (area_w - total_w) // 2
+    y = area_top + (area_h - box_h) // 2
+
+    x = start_x
+    for i, item in enumerate(items):
+        _add_shape_with_text(
+            slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(x), int(y), int(box_w), int(box_h),
+            item, _get_sa_color(i), BSH_WHITE, fs, True,
+        )
+        x += box_w
+        if i < n - 1:
+            x += gap
+            arrow = slide.shapes.add_shape(
+                MSO_SHAPE.RIGHT_ARROW,
+                int(x), int(y + box_h // 2 - Inches(0.15)),
+                int(arrow_w), int(Inches(0.3)),
+            )
+            arrow.fill.solid()
+            arrow.fill.fore_color.rgb = BSH_GREY
+            arrow.line.fill.background()
+            x += arrow_w + gap
+
+
+def _draw_list_blocks_smart_art(slide, items):
+    """Vertical accent blocks with coloured left bar."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(1.5)
+    area_top = Inches(1.8)
+    area_w = Inches(9)
+    area_h = Inches(4.5)
+
+    gap = Inches(0.15)
+    block_h = min(int((area_h - (n - 1) * gap) / n), Inches(0.9))
+    accent_w = Inches(0.12)
+    total_h = n * block_h + (n - 1) * gap
+    y = area_top + (area_h - total_h) // 2
+
+    for i, item in enumerate(items):
+        color = _get_sa_color(i)
+
+        # Accent bar
+        accent = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            int(area_left), int(y), int(accent_w), int(block_h),
+        )
+        accent.fill.solid()
+        accent.fill.fore_color.rgb = color
+        accent.line.fill.background()
+
+        # Content block
+        blk = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(area_left + accent_w + Inches(0.08)), int(y),
+            int(area_w - accent_w - Inches(0.08)), int(block_h),
+        )
+        blk.fill.solid()
+        blk.fill.fore_color.rgb = RGBColor(0xF8, 0xFA, 0xFC)
+        blk.line.color.rgb = RGBColor(0xE2, 0xE8, 0xF0)
+        blk.line.width = Pt(1)
+
+        tf = blk.text_frame
+        tf.word_wrap = True
+        tf.margin_left = Inches(0.3)
+        tf.margin_top = Inches(0.1)
+        p = tf.paragraphs[0]
+        p.text = item
+        p.alignment = PP_ALIGN.LEFT
+        run = p.runs[0]
+        run.font.size = Pt(13)
+        run.font.color.rgb = BSH_NAVY
+        run.font.bold = True
+
+        y += block_h + gap
+
+
+def _draw_pyramid_smart_art(slide, items):
+    """Pyramid — widest at bottom, narrowest at top."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(1)
+    area_top = Inches(1.8)
+    area_w = Inches(10)
+    area_h = Inches(4.5)
+
+    gap = Inches(0.1)
+    layer_h = min(int((area_h - (n - 1) * gap) / n), Inches(1))
+    total_h = n * layer_h + (n - 1) * gap
+    y = area_top + (area_h - total_h) // 2
+
+    center_x = area_left + area_w // 2
+    min_w = Inches(3)
+    max_w = area_w
+
+    for i, item in enumerate(items):
+        frac = (n - 1 - i) / max(n - 1, 1)
+        w = int(min_w + frac * (max_w - min_w))
+        left = int(center_x - w // 2)
+        _add_shape_with_text(
+            slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+            left, int(y), w, int(layer_h),
+            item, _get_sa_color(i), BSH_WHITE, Pt(12), True,
+        )
+        y += layer_h + gap
+
+
+def _draw_matrix_smart_art(slide, items):
+    """2x2 matrix grid."""
+    padded = (items + ["", "", "", ""])[:4]
+
+    area_left = Inches(1.5)
+    area_top = Inches(1.8)
+    area_w = Inches(9)
+    area_h = Inches(4.2)
+
+    gap = Inches(0.25)
+    cell_w = int((area_w - gap) / 2)
+    cell_h = int((area_h - gap) / 2)
+
+    positions = [
+        (area_left, area_top),
+        (area_left + cell_w + gap, area_top),
+        (area_left, area_top + cell_h + gap),
+        (area_left + cell_w + gap, area_top + cell_h + gap),
+    ]
+
+    for i, (item, (x, y)) in enumerate(zip(padded, positions)):
+        if not item:
+            continue
+        _add_shape_with_text(
+            slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(x), int(y), cell_w, cell_h,
+            item, _get_sa_color(i), BSH_WHITE, Pt(14), True,
+        )
+
+
+def _draw_cycle_smart_art(slide, items):
+    """Items in a circular arrangement representing a cycle."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.8)
+    area_top = Inches(1.5)
+    area_w = Inches(10.4)
+    area_h = Inches(5)
+
+    cx = area_left + area_w // 2
+    cy = area_top + area_h // 2
+
+    node_w = Inches(2)
+    node_h = Inches(0.85)
+    radius_x = (area_w - node_w) // 2 - Inches(0.3)
+    radius_y = (area_h - node_h) // 2 - Inches(0.2)
+
+    # Background circle outline
+    cr = min(radius_x, radius_y) + Inches(0.15)
+    circle = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL,
+        int(cx - cr), int(cy - cr), int(cr * 2), int(cr * 2),
+    )
+    circle.fill.background()
+    circle.line.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
+    circle.line.width = Pt(1.5)
+
+    for i, item in enumerate(items):
+        angle = 2 * math.pi * i / n - math.pi / 2
+        x = cx + radius_x * math.cos(angle) - node_w // 2
+        y = cy + radius_y * math.sin(angle) - node_h // 2
+
+        _add_shape_with_text(
+            slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(x), int(y), int(node_w), int(node_h),
+            item, _get_sa_color(i), BSH_WHITE, Pt(11), True,
+        )
+
+
+SMART_ART_DRAWERS = {
+    "process": _draw_process_smart_art,
+    "list_blocks": _draw_list_blocks_smart_art,
+    "pyramid": _draw_pyramid_smart_art,
+    "matrix": _draw_matrix_smart_art,
+    "cycle": _draw_cycle_smart_art,
+}
+
+
+# ─── Template loader ─────────────────────────────────────
+
+def _load_template() -> Presentation:
+    """Load the .potx template, patching Content_Types for python-pptx compatibility."""
     if os.path.exists(TEMPLATE_PATH):
-        prs = Presentation(TEMPLATE_PATH)
+        raw = io.BytesIO()
+        with zipfile.ZipFile(TEMPLATE_PATH, "r") as zin, zipfile.ZipFile(raw, "w") as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+                if item.filename == "[Content_Types].xml":
+                    data = data.replace(
+                        b"application/vnd.openxmlformats-officedocument.presentationml.template.main+xml",
+                        b"application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml",
+                    )
+                zout.writestr(item, data)
+        raw.seek(0)
+        return Presentation(raw)
     else:
         prs = Presentation()
         prs.slide_width = Inches(13.333)
         prs.slide_height = Inches(7.5)
+        return prs
 
-    slides_data = content.get("slides", [])
-    pres_title = content.get("title", "AI Generated Presentation")
-    pres_subtitle = content.get("subtitle", "")
 
-    # ── Title slide ──────────────────────────────────────
-    title_layout = prs.slide_layouts[0]  # typically the title layout
-    title_slide = prs.slides.add_slide(title_layout)
+# ─── Slide builders ──────────────────────────────────────
 
-    # Try to populate placeholders; fall back to shapes
+def _set_placeholder_text(slide, ph_idx: int, text: str):
+    """Safely set text on a placeholder by index."""
     try:
-        title_slide.placeholders[0].text = pres_title
-        if len(title_slide.placeholders) > 1:
-            title_slide.placeholders[1].text = pres_subtitle
+        slide.placeholders[ph_idx].text = text
     except (KeyError, IndexError):
-        _add_textbox(title_slide, pres_title, Inches(1), Inches(2.5), Inches(11), Inches(1.5), Pt(36), True, BSH_NAVY)
-        if pres_subtitle:
-            _add_textbox(title_slide, pres_subtitle, Inches(1), Inches(4.2), Inches(11), Inches(1), Pt(20), False, BSH_GREY)
+        pass
 
-    # ── Content slides ───────────────────────────────────
-    # Pick a content layout (index 1 is usually "Title + Content")
-    content_layout_idx = min(1, len(prs.slide_layouts) - 1)
-    content_layout = prs.slide_layouts[content_layout_idx]
 
-    for slide_data in slides_data:
-        slide = prs.slides.add_slide(content_layout)
-        slide_title = slide_data.get("title", "")
-        bullets = slide_data.get("bullets", [])
-        notes_text = slide_data.get("notes", "")
+def _fill_bullets(placeholder, bullets: list[str]):
+    """Fill a content placeholder with bullet points."""
+    try:
+        tf = placeholder.text_frame
+        tf.clear()
+        for j, bullet in enumerate(bullets):
+            if j == 0:
+                tf.paragraphs[0].text = bullet
+                _style_para(tf.paragraphs[0], Pt(16), BSH_NAVY)
+            else:
+                p = tf.add_paragraph()
+                p.text = bullet
+                _style_para(p, Pt(16), BSH_NAVY)
+    except Exception:
+        pass
 
-        # Title
-        try:
-            slide.placeholders[0].text = slide_title
-        except (KeyError, IndexError):
-            _add_textbox(slide, slide_title, Inches(0.8), Inches(0.4), Inches(11.5), Inches(1), Pt(28), True, BSH_NAVY)
 
-        # Bullets
-        try:
-            body = slide.placeholders[1]
-            tf = body.text_frame
-            tf.clear()
-            for j, bullet in enumerate(bullets):
-                if j == 0:
-                    tf.paragraphs[0].text = bullet
-                    _style_para(tf.paragraphs[0], Pt(18), BSH_NAVY)
-                else:
-                    p = tf.add_paragraph()
-                    p.text = bullet
-                    _style_para(p, Pt(18), BSH_NAVY)
-        except (KeyError, IndexError):
-            y = Inches(1.6)
-            for bullet in bullets:
-                _add_textbox(slide, f"• {bullet}", Inches(1), y, Inches(11), Inches(0.5), Pt(16), False, BSH_NAVY)
-                y += Inches(0.55)
-
-        # Speaker notes
-        if notes_text:
-            slide.notes_slide.notes_text_frame.text = notes_text
-
-    buf = io.BytesIO()
-    prs.save(buf)
-    buf.seek(0)
-    return buf
+def _insert_placeholder_image(slide, ph_idx: int, description: str):
+    """Insert a placeholder image into a picture placeholder."""
+    try:
+        pic_ph = slide.placeholders[ph_idx]
+        img_buf = _create_placeholder_image(description)
+        pic_ph.insert_picture(img_buf)
+    except (KeyError, IndexError, Exception):
+        pass
 
 
 def _add_textbox(slide, text, left, top, width, height, font_size, bold, color):
@@ -195,51 +583,254 @@ def _style_para(para, size, color, bold=False):
         run.font.bold = bold
 
 
-# ── Public API ─────────────────────────────────────────────
+def _build_title_slide(prs, slide_data, layout):
+    """Build a title / chapter / end slide."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    subtitle = slide_data.get("subtitle", "")
+    if subtitle:
+        _set_placeholder_text(slide, 1, subtitle)
+    return slide
 
-async def extract_ppt_content(file_bytes_list: list[tuple[str, bytes]], user_instructions: str = "") -> dict:
+
+def _build_content_slide(prs, slide_data, layout):
+    """Build a standard content slide with title + bullets."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    bullets = slide_data.get("bullets", [])
+    if bullets:
+        try:
+            _fill_bullets(slide.placeholders[1], bullets)
+        except (KeyError, IndexError):
+            y = Inches(1.6)
+            for b in bullets:
+                _add_textbox(slide, f"• {b}", Inches(1), y, Inches(11), Inches(0.5), Pt(16), False, BSH_NAVY)
+                y += Inches(0.55)
+    return slide
+
+
+def _build_content_with_image_slide(prs, slide_data, layout):
+    """Build text+image slide (layout 11: text left, picture right)."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    bullets = slide_data.get("bullets", [])
+    if bullets:
+        try:
+            _fill_bullets(slide.placeholders[1], bullets)
+        except (KeyError, IndexError):
+            pass
+    desc = slide_data.get("image_description", "Relevant visual")
+    _insert_placeholder_image(slide, 2, desc)
+    return slide
+
+
+def _build_image_with_content_slide(prs, slide_data, layout):
+    """Build image+text slide (layout 12: picture left, text right)."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    bullets = slide_data.get("bullets", [])
+    if bullets:
+        try:
+            _fill_bullets(slide.placeholders[2], bullets)
+        except (KeyError, IndexError):
+            pass
+    desc = slide_data.get("image_description", "Relevant visual")
+    _insert_placeholder_image(slide, 1, desc)
+    return slide
+
+
+def _build_full_image_slide(prs, slide_data, layout):
+    """Build title + full image slide (layout 7)."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    desc = slide_data.get("image_description", "Full-width visual")
+    _insert_placeholder_image(slide, 1, desc)
+    return slide
+
+
+def _build_multi_column_slide(prs, slide_data, layout, num_cols: int):
+    """Build a multi-column slide (2, 3, or 4 columns)."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+
+    columns = slide_data.get("columns", [])
+
+    for col_idx in range(num_cols):
+        ph_idx = col_idx + 1
+        if col_idx < len(columns):
+            col_data = columns[col_idx]
+            heading = col_data.get("heading", "")
+            col_bullets = col_data.get("bullets", [])
+            all_text = []
+            if heading:
+                all_text.append(heading)
+            all_text.extend(col_bullets)
+            if all_text:
+                try:
+                    tf = slide.placeholders[ph_idx].text_frame
+                    tf.clear()
+                    for j, txt in enumerate(all_text):
+                        if j == 0:
+                            tf.paragraphs[0].text = txt
+                            _style_para(
+                                tf.paragraphs[0],
+                                Pt(16) if j == 0 and heading else Pt(14),
+                                BSH_NAVY,
+                                j == 0 and bool(heading),
+                            )
+                        else:
+                            p = tf.add_paragraph()
+                            p.text = txt
+                            _style_para(p, Pt(14), BSH_NAVY)
+                except (KeyError, IndexError):
+                    pass
+
+    return slide
+
+
+def _build_title_only_slide(prs, slide_data, layout):
+    """Build a title-only slide (layout 13)."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+    return slide
+
+
+def _build_smart_art_slide(prs, slide_data, layout):
+    """Build a slide with SmartArt-like diagram shapes."""
+    slide = prs.slides.add_slide(layout)
+    _set_placeholder_text(slide, 0, slide_data.get("title", ""))
+
+    sa = slide_data.get("smart_art", {})
+    sa_type = sa.get("type", "list_blocks")
+    sa_items = sa.get("items", [])
+
+    drawer = SMART_ART_DRAWERS.get(sa_type)
+    if drawer and sa_items:
+        drawer(slide, sa_items)
+
+    return slide
+
+
+# ─── Main PPT builder ────────────────────────────────────
+
+def generate_pptx_file(content: dict) -> io.BytesIO:
     """
-    Upload PPT files to Brain, ask it to extract & structure the content.
+    Build a .pptx from structured AI content using varied template layouts.
+    Inserts SmartArt diagrams and placeholder images where indicated.
+    """
+    prs = _load_template()
+    slides_data = content.get("slides", [])
+
+    for slide_data in slides_data:
+        layout_name = slide_data.get("layout", "content")
+        layout_idx = LAYOUT_MAP.get(layout_name, LAYOUT_MAP["content"])
+
+        if layout_idx >= len(prs.slide_layouts):
+            layout_idx = LAYOUT_MAP["content"]
+
+        layout = prs.slide_layouts[layout_idx]
+
+        if layout_name in ("title_slide", "chapter", "end_slide"):
+            slide = _build_title_slide(prs, slide_data, layout)
+
+        elif layout_name == "content":
+            slide = _build_content_slide(prs, slide_data, layout)
+
+        elif layout_name == "smart_art":
+            slide = _build_smart_art_slide(prs, slide_data, layout)
+
+        elif layout_name == "content_with_image":
+            slide = _build_content_with_image_slide(prs, slide_data, layout)
+
+        elif layout_name == "image_with_content":
+            slide = _build_image_with_content_slide(prs, slide_data, layout)
+
+        elif layout_name == "full_image":
+            slide = _build_full_image_slide(prs, slide_data, layout)
+
+        elif layout_name == "two_columns":
+            slide = _build_multi_column_slide(prs, slide_data, layout, 2)
+
+        elif layout_name == "three_columns":
+            slide = _build_multi_column_slide(prs, slide_data, layout, 3)
+
+        elif layout_name == "four_quadrants":
+            slide = _build_multi_column_slide(prs, slide_data, layout, 4)
+
+        elif layout_name == "title_only":
+            slide = _build_title_only_slide(prs, slide_data, layout)
+
+        else:
+            slide = _build_content_slide(prs, slide_data, layout)
+
+        notes = slide_data.get("notes", "")
+        if notes:
+            try:
+                slide.notes_slide.notes_text_frame.text = notes
+            except Exception:
+                pass
+
+    buf = io.BytesIO()
+    prs.save(buf)
+    buf.seek(0)
+    return buf
+
+
+# ─── Public API ─────────────────────────────────────────────
+
+async def extract_pdf_content(
+    pdf_bytes_list: list[tuple[str, bytes]],
+    user_instructions: str = "",
+) -> dict:
+    """
+    Extract text from uploaded PDF files, send to AI for structuring into slides.
     Returns dict with 'content' (parsed JSON), 'chatHistoryId', or 'error'.
     """
-    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    brain_id = os.getenv("DSCP_BRAIN_ID")
     if not brain_id:
-        return {"error": True, "message": "API Not Active", "detail": "SIGNAVIO_BRAIN_ID is not configured."}
+        return {"error": True, "message": "API Not Active", "detail": "DSCP_BRAIN_ID is not configured."}
 
-    # Build text context from all files
     all_text_parts: list[str] = []
-    for fname, fbytes in file_bytes_list:
-        try:
-            text = _extract_text_from_pptx(fbytes)
+    errors: list[str] = []
+    for fname, fbytes in pdf_bytes_list:
+        text, err = _extract_pdf_text(fbytes)
+        if err:
+            errors.append(f"{fname}: {err}")
+        elif text:
             all_text_parts.append(f"=== File: {fname} ===\n{text}")
-        except Exception:
-            all_text_parts.append(f"=== File: {fname} === (could not extract text)")
+
+    if not all_text_parts:
+        detail = "\n".join(errors) if errors else "No readable text could be extracted from the uploaded files."
+        return {
+            "error": True,
+            "message": "PDF Extraction Failed",
+            "detail": detail,
+        }
 
     combined_text = "\n\n".join(all_text_parts)
 
     prompt = (
-        "Below is the text content extracted from the uploaded PowerPoint files.\n"
-        "Analyze all content, combine related topics, remove duplicates, and produce "
-        "a clean, structured JSON for a new presentation.\n\n"
+        "Below is text content extracted from uploaded PDF documents.\n"
+        "Create a professional PowerPoint presentation from this content.\n"
+        "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
+        "Include image placeholder slides where visuals would enhance the message.\n\n"
         f"{combined_text}"
     )
 
     if user_instructions:
         prompt += f"\n\nAdditional user instructions:\n{user_instructions}"
 
-    # Create chat history for ongoing conversation
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
         return chat_result
 
     chat_history_id = chat_result.get("chatHistoryId")
 
-    response = await call_brain_workflow_chat(
+    response = await call_brain_pure_llm_chat(
         brain_id,
         prompt,
         chat_history_id=chat_history_id,
         custom_behaviour=EXTRACT_BEHAVIOUR,
-        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -262,26 +853,30 @@ async def extract_ppt_content(file_bytes_list: list[tuple[str, bytes]], user_ins
     }
 
 
-async def refine_ppt_content(chat_history_id: str, message: str, current_content: dict = None) -> dict:
+async def refine_ppt_content(
+    chat_history_id: str,
+    message: str,
+    current_content: dict = None,
+) -> dict:
     """Continue the conversation to refine the presentation content."""
-    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    brain_id = os.getenv("DSCP_BRAIN_ID")
     if not brain_id:
-        return {"error": True, "message": "API Not Active", "detail": "SIGNAVIO_BRAIN_ID is not configured."}
+        return {"error": True, "message": "API Not Active", "detail": "DSCP_BRAIN_ID is not configured."}
 
     prompt = message
     if current_content:
         prompt = (
             f"Here is the current presentation JSON:\n{json.dumps(current_content, indent=2)}\n\n"
             f"User request: {message}\n\n"
-            "Apply the changes and return the FULL updated JSON."
+            "Apply the changes and return the FULL updated JSON with the same structure "
+            "(title, subtitle, slides array with layout field)."
         )
 
-    response = await call_brain_workflow_chat(
+    response = await call_brain_pure_llm_chat(
         brain_id,
         prompt,
         chat_history_id=chat_history_id,
         custom_behaviour=REFINE_BEHAVIOUR,
-        workflow_id=SIGNAVIO_WORKFLOW_ID,
     )
 
     if response.get("error"):
@@ -291,7 +886,6 @@ async def refine_ppt_content(chat_history_id: str, message: str, current_content
     parsed = _parse_json_response(raw)
 
     if not parsed or "slides" not in parsed:
-        # Return the raw text so the UI can show it
         return {
             "result": raw,
             "chatHistoryId": response.get("chatHistoryId", chat_history_id),
@@ -301,8 +895,3 @@ async def refine_ppt_content(chat_history_id: str, message: str, current_content
         "content": parsed,
         "chatHistoryId": response.get("chatHistoryId", chat_history_id),
     }
-
-
-def generate_pptx_file(content: dict) -> io.BytesIO:
-    """Generate a .pptx file from structured content dict. Returns BytesIO buffer."""
-    return _build_pptx(content)
