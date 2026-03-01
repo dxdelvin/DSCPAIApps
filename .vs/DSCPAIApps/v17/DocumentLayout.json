@@ -7,6 +7,22 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\services\\brain_auth.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\base.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\index.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:main.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\audit_check.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\services\\auth_service.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
@@ -21,10 +37,6 @@
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\main.py||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:main.py||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\requirements.txt||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -83,24 +95,12 @@
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\static\\css\\common.css||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\base.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\js\\signavio_bpmn.js||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\static\\js\\signavio_bpmn.js||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\audit_check.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\css\\audit_check.css||{3B902123-F8A7-4915-9F01-361F908088D0}",
       "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\static\\css\\audit_check.css||{3B902123-F8A7-4915-9F01-361F908088D0}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
-      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:app\\templates\\index.html||{3B902123-F8A7-4915-9F01-361F908088D0}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\signavio_bpmn.html||{3B902123-F8A7-4915-9F01-361F908088D0}",
@@ -122,34 +122,8 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "auth_service.py",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py",
-              "RelativeDocumentMoniker": "app\\services\\auth_service.py",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py",
-              "RelativeToolTip": "app\\services\\auth_service.py",
-              "ViewState": "AgIAAIoAAAAAAAAAAAAAAGkAAAASAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-26T10:42:53.476Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "xs-security.json",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\xs-security.json",
-              "RelativeDocumentMoniker": "xs-security.json",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\xs-security.json",
-              "RelativeToolTip": "xs-security.json",
-              "ViewState": "AgIAABgAAAAAAAAAAAAgwCQAAAABAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-01-26T10:31:18.699Z",
-              "EditorCaption": ""
-            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
@@ -158,38 +132,14 @@
               "RelativeDocumentMoniker": "app\\services\\brain_auth.py",
               "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\brain_auth.py",
               "RelativeToolTip": "app\\services\\brain_auth.py",
-              "ViewState": "AgIAAAwAAAAAAAAAAAAAABoAAAAEAAAAAAAAAA==",
+              "ViewState": "AgIAAAMAAAAAAAAAAAAkwAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-01-12T09:26:33.944Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
-              "Title": "common_service.py",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\common_service.py",
-              "RelativeDocumentMoniker": "app\\services\\common_service.py",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\common_service.py",
-              "RelativeToolTip": "app\\services\\common_service.py",
-              "ViewState": "AgIAADsAAAAAAAAAAAAmwEgAAAA6AAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-20T10:35:03.712Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 9,
-              "Title": "bpmn_checker.html",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\bpmn_checker.html",
-              "RelativeDocumentMoniker": "app\\templates\\bpmn_checker.html",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\bpmn_checker.html",
-              "RelativeToolTip": "app\\templates\\bpmn_checker.html",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-01-22T00:32:29.686Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 6,
               "Title": ".env.example",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\.env.example",
               "RelativeDocumentMoniker": ".env.example",
@@ -202,43 +152,46 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
-              "Title": "manifest.yml",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\manifest.yml",
-              "RelativeDocumentMoniker": "manifest.yml",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\manifest.yml",
-              "RelativeToolTip": "manifest.yml",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAGAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
-              "WhenOpened": "2026-01-20T11:40:22.82Z"
+              "DocumentIndex": 4,
+              "Title": "audit_check.html",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html",
+              "RelativeDocumentMoniker": "app\\templates\\audit_check.html",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html",
+              "RelativeToolTip": "app\\templates\\audit_check.html",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAgwCwAAABGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-01-12T08:49:26.277Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
-              "Title": "audit_service.py",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\audit_service.py",
-              "RelativeDocumentMoniker": "app\\services\\audit_service.py",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\audit_service.py",
-              "RelativeToolTip": "app\\services\\audit_service.py",
-              "ViewState": "AgIAAEMAAAAAAAAAAAAAAHcAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-20T10:55:47.078Z"
+              "DocumentIndex": 1,
+              "Title": "base.html",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html",
+              "RelativeDocumentMoniker": "app\\templates\\base.html",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html",
+              "RelativeToolTip": "app\\templates\\base.html",
+              "ViewState": "AgIAACMAAAAAAAAAAAAkwDQAAABMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-01-12T09:51:54.841Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "test.py",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\test.py",
-              "RelativeDocumentMoniker": "test.py",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\test.py",
-              "RelativeToolTip": "test.py",
-              "ViewState": "AgIAAFsAAAAAAAAAAAAuwHEAAAAZAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-15T16:23:17.474Z"
+              "DocumentIndex": 7,
+              "Title": "xs-security.json",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\xs-security.json",
+              "RelativeDocumentMoniker": "xs-security.json",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\xs-security.json",
+              "RelativeToolTip": "xs-security.json",
+              "ViewState": "AgIAABgAAAAAAAAAAAAgwCQAAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2026-01-26T10:31:18.699Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
+              "DocumentIndex": 3,
               "Title": "main.py",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\main.py",
               "RelativeDocumentMoniker": "main.py",
@@ -246,11 +199,101 @@
               "RelativeToolTip": "main.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-09T14:56:48.279Z"
+              "WhenOpened": "2026-01-09T14:56:48.279Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 2,
+              "Title": "index.html",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html",
+              "RelativeDocumentMoniker": "app\\templates\\index.html",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html",
+              "RelativeToolTip": "app\\templates\\index.html",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-01-12T09:18:52.956Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "bpmn_checker.html",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\bpmn_checker.html",
+              "RelativeDocumentMoniker": "app\\templates\\bpmn_checker.html",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\bpmn_checker.html",
+              "RelativeToolTip": "app\\templates\\bpmn_checker.html",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
+              "WhenOpened": "2026-01-22T00:32:29.686Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "common_service.py",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\common_service.py",
+              "RelativeDocumentMoniker": "app\\services\\common_service.py",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\common_service.py",
+              "RelativeToolTip": "app\\services\\common_service.py",
+              "ViewState": "AgIAADsAAAAAAAAAAAAmwEgAAAA6AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-01-20T10:35:03.712Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "auth_service.py",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py",
+              "RelativeDocumentMoniker": "app\\services\\auth_service.py",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py",
+              "RelativeToolTip": "app\\services\\auth_service.py",
+              "ViewState": "AgIAAIoAAAAAAAAAAAAAAGkAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-01-26T10:42:53.476Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "manifest.yml",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\manifest.yml",
+              "RelativeDocumentMoniker": "manifest.yml",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\manifest.yml",
+              "RelativeToolTip": "manifest.yml",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003775|",
+              "WhenOpened": "2026-01-20T11:40:22.82Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "audit_service.py",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\audit_service.py",
+              "RelativeDocumentMoniker": "app\\services\\audit_service.py",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\audit_service.py",
+              "RelativeToolTip": "app\\services\\audit_service.py",
+              "ViewState": "AgIAAEMAAAAAAAAAAAAAAHcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-01-20T10:55:47.078Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 18,
+              "Title": "test.py",
+              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\test.py",
+              "RelativeDocumentMoniker": "test.py",
+              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\test.py",
+              "RelativeToolTip": "test.py",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
+              "WhenOpened": "2026-01-15T16:23:17.474Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 20,
               "Title": "common.js",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\js\\common.js",
               "RelativeDocumentMoniker": "app\\static\\js\\common.js",
@@ -258,11 +301,12 @@
               "RelativeToolTip": "app\\static\\js\\common.js",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-01-12T12:00:16.355Z"
+              "WhenOpened": "2026-01-12T12:00:16.355Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 13,
               "Title": "Procfile",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\Procfile",
               "RelativeDocumentMoniker": "Procfile",
@@ -270,11 +314,12 @@
               "RelativeToolTip": "Procfile",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-12T13:03:05.132Z"
+              "WhenOpened": "2026-01-12T13:03:05.132Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 9,
               "Title": "requirements.txt",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\requirements.txt",
               "RelativeDocumentMoniker": "requirements.txt",
@@ -282,11 +327,12 @@
               "RelativeToolTip": "requirements.txt",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAsAAAAIAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003109|",
-              "WhenOpened": "2026-01-11T21:31:05.301Z"
+              "WhenOpened": "2026-01-11T21:31:05.301Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
+              "DocumentIndex": 17,
               "Title": "bpmn_service.py",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\bpmn_service.py",
               "RelativeDocumentMoniker": "app\\services\\bpmn_service.py",
@@ -297,19 +343,18 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 16,
               "Title": "web.py",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\routers\\web.py",
               "RelativeDocumentMoniker": "app\\routers\\web.py",
               "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\routers\\web.py",
               "RelativeToolTip": "app\\routers\\web.py",
-              "ViewState": "AgIAADsBAAAAAAAAAAAnwDsBAABEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-01-12T09:18:59.65Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 21,
+              "DocumentIndex": 23,
               "Title": "signavio_bpmn.js",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\js\\signavio_bpmn.js",
               "RelativeDocumentMoniker": "app\\static\\js\\signavio_bpmn.js",
@@ -317,11 +362,12 @@
               "RelativeToolTip": "app\\static\\js\\signavio_bpmn.js",
               "ViewState": "AgIAAOUBAAAAAAAAAAAgwPoBAABAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-01-12T10:00:00.047Z"
+              "WhenOpened": "2026-01-12T10:00:00.047Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 8,
               "Title": "main.py",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\main.py",
               "RelativeDocumentMoniker": "app\\main.py",
@@ -329,11 +375,12 @@
               "RelativeToolTip": "app\\main.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-12T13:05:30.004Z"
+              "WhenOpened": "2026-01-12T13:05:30.004Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 11,
               "Title": "bpmn_checker_service.py",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\bpmn_checker_service.py",
               "RelativeDocumentMoniker": "app\\services\\bpmn_checker_service.py",
@@ -341,11 +388,12 @@
               "RelativeToolTip": "app\\services\\bpmn_checker_service.py",
               "ViewState": "AgIAAEEAAAAAAAAAAADgv0oAAAAuAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-20T10:55:45.882Z"
+              "WhenOpened": "2026-01-20T10:55:45.882Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 22,
               "Title": "common.css",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\css\\common.css",
               "RelativeDocumentMoniker": "app\\static\\css\\common.css",
@@ -353,11 +401,12 @@
               "RelativeToolTip": "app\\static\\css\\common.css",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAADAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2026-01-12T11:59:06.609Z"
+              "WhenOpened": "2026-01-12T11:59:06.609Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 21,
               "Title": "signavio_bpmn.css",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\css\\signavio_bpmn.css",
               "RelativeDocumentMoniker": "app\\static\\css\\signavio_bpmn.css",
@@ -365,11 +414,12 @@
               "RelativeToolTip": "app\\static\\css\\signavio_bpmn.css",
               "ViewState": "AgIAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2026-01-12T12:00:13.303Z"
+              "WhenOpened": "2026-01-12T12:00:13.303Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 19,
               "Title": "audit_check.js",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\js\\audit_check.js",
               "RelativeDocumentMoniker": "app\\static\\js\\audit_check.js",
@@ -377,23 +427,12 @@
               "RelativeToolTip": "app\\static\\js\\audit_check.js",
               "ViewState": "AgIAADAAAAAAAAAAAAAAACMAAAAsAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001646|",
-              "WhenOpened": "2026-01-12T12:00:15.784Z"
+              "WhenOpened": "2026-01-12T12:00:15.784Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
-              "Title": "base.html",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html",
-              "RelativeDocumentMoniker": "app\\templates\\base.html",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\base.html",
-              "RelativeToolTip": "app\\templates\\base.html",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-01-12T09:51:54.841Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 23,
+              "DocumentIndex": 24,
               "Title": "audit_check.css",
               "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\static\\css\\audit_check.css",
               "RelativeDocumentMoniker": "app\\static\\css\\audit_check.css",
@@ -401,7 +440,8 @@
               "RelativeToolTip": "app\\static\\css\\audit_check.css",
               "ViewState": "AgIAAFEBAAAAAAAAAAAgwHcBAAABAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003000|",
-              "WhenOpened": "2026-01-12T09:56:41.795Z"
+              "WhenOpened": "2026-01-12T09:56:41.795Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -413,19 +453,8 @@
               "RelativeToolTip": "app\\core\\config.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-12T09:26:21.416Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 24,
-              "Title": "index.html",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html",
-              "RelativeDocumentMoniker": "app\\templates\\index.html",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\index.html",
-              "RelativeToolTip": "app\\templates\\index.html",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAACEAAAASAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-01-12T09:18:52.956Z"
+              "WhenOpened": "2026-01-12T09:26:21.416Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -437,19 +466,8 @@
               "RelativeToolTip": "app\\templates\\signavio_bpmn.html",
               "ViewState": "AgIAAIQAAAAAAAAAAAAAALMAAAA7AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-01-12T08:49:35.601Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 22,
-              "Title": "audit_check.html",
-              "DocumentMoniker": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html",
-              "RelativeDocumentMoniker": "app\\templates\\audit_check.html",
-              "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\templates\\audit_check.html",
-              "RelativeToolTip": "app\\templates\\audit_check.html",
-              "ViewState": "AgIAAB0AAAAAAAAAAAAgwCwAAABGAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001512|",
-              "WhenOpened": "2026-01-12T08:49:26.277Z"
+              "WhenOpened": "2026-01-12T08:49:35.601Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
@@ -461,7 +479,8 @@
               "RelativeToolTip": "README.md",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
-              "WhenOpened": "2026-01-11T21:34:37.833Z"
+              "WhenOpened": "2026-01-11T21:34:37.833Z",
+              "EditorCaption": ""
             }
           ]
         }
