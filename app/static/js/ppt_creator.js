@@ -12,6 +12,7 @@ class PptCreatorApp {
         this.files = [];
         this.chatHistoryId = null;
         this.currentContent = null;
+        this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         this.init();
     }
 
@@ -54,9 +55,27 @@ class PptCreatorApp {
     addFiles(fileList) {
         for (const f of fileList) {
             if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
-                if (!this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
-                    this.files.push(f);
+                // Check if file already exists
+                if (this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
+                    continue;
                 }
+                
+                // Check total size limit (10MB across all files)
+                const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
+                const newTotal = currentTotal + f.size;
+                
+                if (newTotal > this.MAX_FILE_SIZE) {
+                    const remaining = this.MAX_FILE_SIZE - currentTotal;
+                    showToast(
+                        `Cannot add "${f.name}" (${this.formatSize(f.size)}). ` +
+                        `Total upload limit is 10 MB. Current: ${this.formatSize(currentTotal)}, ` +
+                        `Available: ${this.formatSize(remaining)}.`,
+                        'error'
+                    );
+                    continue;
+                }
+                
+                this.files.push(f);
             } else {
                 showToast(`Skipped "${f.name}" – only PDF files are accepted`, 'warning');
             }
@@ -73,6 +92,12 @@ class PptCreatorApp {
             return;
         }
         section.style.display = 'block';
+        
+        // Calculate total size
+        const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
+        const totalSizeStr = this.formatSize(totalSize);
+        const limitStr = this.formatSize(this.MAX_FILE_SIZE);
+        
         list.innerHTML = this.files.map((f, i) => `
             <div class="file-item">
                 <span class="file-icon">📄</span>
@@ -80,7 +105,14 @@ class PptCreatorApp {
                 <span class="file-size">${this.formatSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
             </div>
-        `).join('');
+        `).join('') + `
+            <div class="file-item total-size">
+                <span class="file-icon">📊</span>
+                <span class="file-name"><strong>Total Size</strong></span>
+                <span class="file-size"><strong>${totalSizeStr} / ${limitStr}</strong></span>
+                <span style="width: 24px;"></span>
+            </div>
+        `;
 
         list.querySelectorAll('.file-remove').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -120,10 +152,18 @@ class PptCreatorApp {
     async extractContent() {
         if (!this.files.length) return;
 
+        const userName = document.getElementById('user-name').value.trim();
+        if (!userName) {
+            showToast('Please enter your name before generating the presentation.', 'warning');
+            document.getElementById('user-name').focus();
+            return;
+        }
+
         this.showLoading('Creating presentation from PDFs…');
 
         const formData = new FormData();
         this.files.forEach(f => formData.append('files', f));
+        formData.append('username', userName);
         const instructions = document.getElementById('user-instructions').value.trim();
         if (instructions) formData.append('instructions', instructions);
 
@@ -284,7 +324,7 @@ class PptCreatorApp {
             html += `<div class="stat-item"><span class="stat-value">${smartArtCount}</span><span class="stat-label">SmartArt</span></div>`;
         }
         if (imageCount) {
-            html += `<div class="stat-item"><span class="stat-value">${imageCount}</span><span class="stat-label">Images</span></div>`;
+            html += `<div class="stat-item"><span class="stat-value">${imageCount}</span><span class="stat-label">Placeholders</span></div>`;
         }
         html += '</div>';
 
@@ -328,11 +368,16 @@ class PptCreatorApp {
     async downloadPptx() {
         if (!this.currentContent) return;
 
+        const userName = document.getElementById('user-name').value.trim() || 'Unknown User';
+
         try {
             const res = await fetch('/api/ppt/download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: this.currentContent }),
+                body: JSON.stringify({ 
+                    content: this.currentContent,
+                    username: userName 
+                }),
             });
 
             if (!res.ok) {
@@ -377,8 +422,9 @@ class PptCreatorApp {
 
         this.renderFilesList();
         this.updateExtractBtn();
+        document.getElementById('user-name').value                  = '';
         document.getElementById('user-instructions').value          = '';
-        document.getElementById('chat-container').style.display     = 'none';
+        document.getElementById('chat-container').style.display     = 'none'
         document.getElementById('chat-messages').innerHTML          = '';
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';

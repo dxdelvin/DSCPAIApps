@@ -190,6 +190,53 @@
     color: var(--text-muted, #94a3b8) !important;
 }
 
+.file-item.total-size {
+    background: linear-gradient(135deg, rgba(255, 95, 0, 0.08), rgba(255, 95, 0, 0.04));
+    border-color: var(--brand-orange, #ff5f00);
+    margin-top: 0.5rem;
+}
+
+.file-item.total-size .file-name {
+    color: var(--brand-orange, #ff5f00);
+}
+
+.file-item.total-size .file-size {
+    color: var(--text-primary, #0f172a);
+    font-weight: 600;
+}
+
+/* ── Warning Notice ───────────────────────────────────────── */
+.warning-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-left: 3px solid #f59e0b;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.warning-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.warning-content {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-secondary, #64748b);
+}
+
+.warning-content strong {
+    color: var(--text-primary, #0f172a);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.15rem;
+}
+
 /* ── Action buttons ───────────────────────────────────────── */
 .form-actions {
     display: flex;
@@ -511,6 +558,28 @@ body.dark-mode .chat-assistant {
 body.dark-mode .file-item {
     background: var(--navy-800, #1e293b);
     border-color: var(--border);
+}
+
+body.dark-mode .file-item.total-size {
+    background: linear-gradient(135deg, rgba(255, 95, 0, 0.15), rgba(255, 95, 0, 0.08));
+    border-color: var(--brand-orange, #ff5f00);
+}
+
+body.dark-mode .file-item.total-size .file-size {
+    color: var(--text-primary);
+}
+
+body.dark-mode .warning-notice {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+body.dark-mode .warning-content {
+    color: var(--text-secondary);
+}
+
+body.dark-mode .warning-content strong {
+    color: var(--text-primary);
 }
 
 body.dark-mode .stat-item {

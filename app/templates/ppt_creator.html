@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}PPT Creator - BSH DSCP AI{% endblock %}
+{% block title %}BSH PPT Creator - BSH DSCP AI{% endblock %}
 
-{% block page_name %}PPT Creator{% endblock %}
+{% block page_name %}BSH PPT Creator{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/ppt_creator.css') }}?v={{ css_version }}">
@@ -11,9 +11,9 @@
 {% block content %}
 <section class="builder-hero">
     <div>
-        <p class="eyebrow">BSH | Document Automation</p>
+        <p class="eyebrow">BSH Template | Powerpoint Creator</p>
         <h1>AI PowerPoint Creator</h1>
-        <p class="lede">Upload PDF documents, let AI structure the content into a professional PowerPoint presentation with varied layouts.</p>
+        <p class="lede">Upload PDF documents, let AI structure the content into a BSH Template PowerPoint presentation.</p>
     </div>
 </section>
 
@@ -40,7 +40,7 @@
                             <div class="upload-placeholder">
                                 <span class="upload-icon">📄</span>
                                 <p>Drag &amp; drop PDF files here or click to select</p>
-                                <p class="upload-hint">Supports .pdf files only</p>
+                                <p class="upload-hint">Supports .pdf files only (max 10 MB total for all files)</p>
                             </div>
                             <input type="file" id="file-input" multiple accept=".pdf" hidden>
                         </div>
@@ -57,16 +57,29 @@
                         </div>
                     </div>
 
+                    <!-- User Name -->
+                    <div class="form-group">
+                        <label for="user-name">Your Name <span style="color: var(--brand-orange, #ff5f00);">*</span></label>
+                        <input type="text" id="user-name" placeholder="e.g. John Doe" required>
+                    </div>
+
                     <!-- Instructions -->
                     <div class="form-group">
                         <label for="user-instructions">Additional Instructions (optional)</label>
                         <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on key findings, use a professional tone, create 10 slides..."></textarea>
                     </div>
 
+                    <!-- Warning Notice -->
+                    <div class="warning-notice">
+                        <span class="warning-icon">⚠️</span>
+                        <div class="warning-content">
+                            <strong>Important:</strong> Only text content is extracted from PDFs. Images, charts, and graphics within the PDF will not be processed or understood by the AI. For best results, use text-based PDFs.
+                        </div>
+                    </div>
+
                     <!-- Action Buttons -->
                     <div class="form-actions">
                         <button class="btn btn-primary" id="extract-btn" disabled>
-                            <span class="btn-icon">🤖</span>
                             Generate Presentation
                         </button>
                         <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
@@ -121,5 +134,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/ppt_creator.js') }}"></script>
+<script src="{{ url_for('static', path='js/ppt_creator.js') }}?v={{ css_version }}"></script>
 {% endblock %}

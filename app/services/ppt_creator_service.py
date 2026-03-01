@@ -38,6 +38,7 @@ BSH_GREY   = RGBColor(0x64, 0x74, 0x8B)
 # ── Layout name → index mapping (from the .potx template) ──
 LAYOUT_MAP = {
     "title_slide":          0,
+    "title_slide_with_image": 2,
     "chapter":              3,
     "content":              6,
     "smart_art":            13,
@@ -71,6 +72,7 @@ EXTRACT_BEHAVIOUR = (
     "a compelling PowerPoint presentation.\n\n"
     "AVAILABLE SLIDE LAYOUTS (use the exact layout name):\n"
     '- "title_slide": Opening slide with title & subtitle\n'
+    '- "title_slide_with_image": Title slide with image placeholder (RARELY use - only when opening slide strongly benefits from a visual)\n'
     '- "chapter": Section divider / new chapter heading\n'
     '- "content": Standard slide with title and bullet points\n'
     '- "smart_art": Visual diagram instead of plain bullets (see SMART ART TYPES)\n'
@@ -87,12 +89,15 @@ EXTRACT_BEHAVIOUR = (
     '- "list_blocks": Vertical accent blocks for features/categories (3-6 items)\n'
     '- "pyramid": Layered pyramid for hierarchy/priority (3-5 items, top=highest)\n'
     '- "matrix": 2x2 grid for comparisons/categories (exactly 4 items)\n'
-    '- "cycle": Circular arrangement for recurring processes (3-6 items)\n\n'
+    '- "cycle": Circular arrangement for recurring processes (3-6 items)\n'
+    '- "timeline": Horizontal timeline with events/milestones (3-6 items)\n'
+    '- "venn": Overlapping circles showing relationships (2-3 items)\n'
+    '- "funnel": Conversion funnel - wide at top, narrow at bottom (3-5 items)\n\n'
     "RULES:\n"
     "1. Start with a title_slide and end with an end_slide.\n"
-    "2. Use chapter slides to separate major sections.\n"
-    "3. Use VARIED layouts — do NOT use the same layout for every slide.\n"
-    "4. Use \"smart_art\" layout for AT LEAST 25-30% of content slides. "
+    "2. Use chapter slides to separate major sections.\n (Optional)"
+    "3. Use VARIED layouts — do NOT use the same layout for every slide. (Use what feels natural for the content)\n"
+    "4. Use \"smart_art\" layout for AT LEAST 25-30% of content slides. (Make sure it fits the content, see types below)\n"
     "Choose the type that best fits:\n"
     "   - Sequential steps/workflows -> process\n"
     "   - Features/specs/categories -> list_blocks\n"
@@ -104,7 +109,9 @@ EXTRACT_BEHAVIOUR = (
     "6. Keep bullet points concise (max 6 per slide, max 15 words each).\n"
     "7. Smart art items should be short labels (2-5 words each).\n"
     "8. For two_columns / three_columns / four_quadrants, provide content "
-    "in the 'columns' array.\n\n"
+    "in the 'columns' array.\n"
+    "9. For smart_art, you can optionally specify custom 'colors' array with hex values "
+    "(e.g., ['#FF5F00', '#228BE6']). If not specified, default palette is used.\n\n"
     "Return your response as a valid JSON object with this EXACT structure:\n"
     "{\n"
     '  "title": "Presentation Title",\n'
@@ -115,7 +122,7 @@ EXTRACT_BEHAVIOUR = (
     '      "title": "Slide Title",\n'
     '      "subtitle": "Optional subtitle (title/chapter/end slides only)",\n'
     '      "bullets": ["Point 1", "Point 2"],\n'
-    '      "smart_art": {"type": "process", "items": ["Step 1", "Step 2", "Step 3"]},\n'
+    '      "smart_art": {"type": "process", "items": ["Step 1", "Step 2", "Step 3"], "colors": ["#FF5F00", "#228BE6"]},\n'
     '      "columns": [\n'
     '        {"heading": "Col 1", "bullets": ["item"]},\n'
     '        {"heading": "Col 2", "bullets": ["item"]}\n'
@@ -127,8 +134,9 @@ EXTRACT_BEHAVIOUR = (
     "}\n\n"
     "FIELD USAGE BY LAYOUT:\n"
     "- title_slide / chapter / end_slide: title + subtitle\n"
+    "- title_slide_with_image: title + subtitle + image_description\n"
     "- content: title + bullets\n"
-    "- smart_art: title + smart_art object (type + items)\n"
+    "- smart_art: title + smart_art object (type + items + optional colors)\n"
     "- content_with_image / image_with_content: title + bullets + image_description\n"
     "- two_columns / three_columns / four_quadrants: title + columns\n"
     "- full_image: title + image_description\n"
@@ -141,7 +149,8 @@ REFINE_BEHAVIOUR = (
     "Apply the requested changes and return the FULL updated JSON "
     "with the same structure (title, subtitle, slides array with layout field). "
     "Keep using varied layouts including smart_art where appropriate. "
-    "Available smart_art types: process, list_blocks, pyramid, matrix, cycle. "
+    "Available smart_art types: process, list_blocks, pyramid, matrix, cycle, timeline, venn, funnel. "
+    "For color changes, specify hex color codes in the smart_art.colors array. "
     "Return ONLY the JSON, no markdown fences, no explanation."
 )
 
@@ -169,6 +178,9 @@ def _extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
         if not has_content:
             return None, "No readable text found in the PDF. The file may be image-based or scanned."
         full_text = "\n\n".join(pages)
+        # Limit to first 95K characters
+        if len(full_text) > 95000:
+            full_text = full_text[:95000] + "\n\n[Content truncated at 95K characters. Only first portion processed.]"
         # Check if meaningful content was extracted (not just headers/footers)
         clean = re.sub(r'---\s*Page\s*\d+\s*---', '', full_text)
         clean = re.sub(r'\(No extractable text\)', '', clean).strip()
@@ -213,48 +225,35 @@ def _create_placeholder_image(
     width_px: int = 800,
     height_px: int = 600,
 ) -> io.BytesIO:
-    """Create a branded placeholder image with Pillow."""
-    img = Image.new("RGB", (width_px, height_px), (240, 244, 248))
+    """Create a simple grey placeholder image with BSH branding."""
+    img = Image.new("RGB", (width_px, height_px), (200, 200, 200))
     draw = ImageDraw.Draw(img)
 
-    margin = 20
-    draw.rectangle(
-        [margin, margin, width_px - margin, height_px - margin],
-        fill=(245, 247, 250), outline=(15, 23, 42), width=2,
-    )
-    draw.rectangle(
-        [margin, margin, width_px - margin, margin + 6],
-        fill=(255, 95, 0),
-    )
+    # Simple grey box
+    draw.rectangle([0, 0, width_px, height_px], fill=(220, 220, 220), outline=(180, 180, 180), width=2)
 
-    cx, cy = width_px // 2, height_px // 2 - 30
-    icon_size = min(width_px, height_px) // 6
-    draw.rectangle(
-        [cx - icon_size, cy - icon_size * 3 // 4,
-         cx + icon_size, cy + icon_size * 3 // 4],
-        outline=(100, 116, 139), width=3,
-    )
-    r = icon_size // 3
-    draw.ellipse([cx - r, cy - r, cx + r, cy + r], outline=(100, 116, 139), width=2)
-
+    # BSH text
     try:
-        font = ImageFont.truetype("arial.ttf", max(16, min(width_px, height_px) // 25))
+        bsh_font = ImageFont.truetype("arial.ttf", max(36, min(width_px, height_px) // 15))
     except (OSError, IOError):
-        font = ImageFont.load_default()
+        bsh_font = ImageFont.load_default()
 
-    desc = description[:80] + "..." if len(description) > 80 else description
-    bbox = draw.textbbox((0, 0), desc, font=font)
-    tw = bbox[2] - bbox[0]
-    draw.text(((width_px - tw) // 2, cy + icon_size + 20), desc, fill=(100, 116, 139), font=font)
+    bsh_text = "BSH"
+    bsh_bbox = draw.textbbox((0, 0), bsh_text, font=bsh_font)
+    bsh_w = bsh_bbox[2] - bsh_bbox[0]
+    bsh_h = bsh_bbox[3] - bsh_bbox[1]
+    draw.text(((width_px - bsh_w) // 2, height_px // 2 - bsh_h - 10), bsh_text, fill=(100, 100, 100), font=bsh_font)
 
+    # Placeholder Image text
     try:
-        small_font = ImageFont.truetype("arial.ttf", max(12, min(width_px, height_px) // 35))
+        label_font = ImageFont.truetype("arial.ttf", max(14, min(width_px, height_px) // 30))
     except (OSError, IOError):
-        small_font = ImageFont.load_default()
+        label_font = ImageFont.load_default()
+
     label = "Placeholder Image"
-    lbbox = draw.textbbox((0, 0), label, font=small_font)
-    lw = lbbox[2] - lbbox[0]
-    draw.text(((width_px - lw) // 2, height_px - margin - 30), label, fill=(148, 163, 184), font=small_font)
+    label_bbox = draw.textbbox((0, 0), label, font=label_font)
+    label_w = label_bbox[2] - label_bbox[0]
+    draw.text(((width_px - label_w) // 2, height_px // 2 + 20), label, fill=(120, 120, 120), font=label_font)
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -264,8 +263,14 @@ def _create_placeholder_image(
 
 # ─── SmartArt-like shape builders ────────────────────────
 
-def _get_sa_color(idx: int) -> RGBColor:
-    """Get a colour from the SmartArt palette."""
+def _get_sa_color(idx: int, custom_colors: list = None) -> RGBColor:
+    """Get a colour from custom list or default SmartArt palette."""
+    if custom_colors and idx < len(custom_colors):
+        hex_color = custom_colors[idx].lstrip('#')
+        try:
+            return RGBColor(int(hex_color[0:2], 16), int(hex_color[2:4], 16), int(hex_color[4:6], 16))
+        except (ValueError, IndexError):
+            pass
     return SMART_ART_COLORS[idx % len(SMART_ART_COLORS)]
 
 
@@ -293,7 +298,7 @@ def _add_shape_with_text(
     return shape
 
 
-def _draw_process_smart_art(slide, items):
+def _draw_process_smart_art(slide, items, custom_colors=None):
     """Horizontal process flow — rounded boxes with arrows between them."""
     n = len(items)
     if n == 0:
@@ -321,7 +326,7 @@ def _draw_process_smart_art(slide, items):
         _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             int(x), int(y), int(box_w), int(box_h),
-            item, _get_sa_color(i), BSH_WHITE, fs, True,
+            item, _get_sa_color(i, custom_colors), BSH_WHITE, fs, True,
         )
         x += box_w
         if i < n - 1:
@@ -337,7 +342,7 @@ def _draw_process_smart_art(slide, items):
             x += arrow_w + gap
 
 
-def _draw_list_blocks_smart_art(slide, items):
+def _draw_list_blocks_smart_art(slide, items, custom_colors=None):
     """Vertical accent blocks with coloured left bar."""
     n = len(items)
     if n == 0:
@@ -355,7 +360,7 @@ def _draw_list_blocks_smart_art(slide, items):
     y = area_top + (area_h - total_h) // 2
 
     for i, item in enumerate(items):
-        color = _get_sa_color(i)
+        color = _get_sa_color(i, custom_colors)
 
         # Accent bar
         accent = slide.shapes.add_shape(
@@ -392,7 +397,7 @@ def _draw_list_blocks_smart_art(slide, items):
         y += block_h + gap
 
 
-def _draw_pyramid_smart_art(slide, items):
+def _draw_pyramid_smart_art(slide, items, custom_colors=None):
     """Pyramid — widest at bottom, narrowest at top."""
     n = len(items)
     if n == 0:
@@ -419,12 +424,12 @@ def _draw_pyramid_smart_art(slide, items):
         _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             left, int(y), w, int(layer_h),
-            item, _get_sa_color(i), BSH_WHITE, Pt(12), True,
+            item, _get_sa_color(i, custom_colors), BSH_WHITE, Pt(12), True,
         )
         y += layer_h + gap
 
 
-def _draw_matrix_smart_art(slide, items):
+def _draw_matrix_smart_art(slide, items, custom_colors=None):
     """2x2 matrix grid."""
     padded = (items + ["", "", "", ""])[:4]
 
@@ -450,11 +455,11 @@ def _draw_matrix_smart_art(slide, items):
         _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             int(x), int(y), cell_w, cell_h,
-            item, _get_sa_color(i), BSH_WHITE, Pt(14), True,
+            item, _get_sa_color(i, custom_colors), BSH_WHITE, Pt(14), True,
         )
 
 
-def _draw_cycle_smart_art(slide, items):
+def _draw_cycle_smart_art(slide, items, custom_colors=None):
     """Items in a circular arrangement representing a cycle."""
     n = len(items)
     if n == 0:
@@ -491,8 +496,138 @@ def _draw_cycle_smart_art(slide, items):
         _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             int(x), int(y), int(node_w), int(node_h),
-            item, _get_sa_color(i), BSH_WHITE, Pt(11), True,
+            item, _get_sa_color(i, custom_colors), BSH_WHITE, Pt(11), True,
         )
+
+
+def _draw_timeline_smart_art(slide, items, custom_colors=None):
+    """Horizontal timeline with milestone markers."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(1)
+    area_top = Inches(2.5)
+    area_w = Inches(10)
+    line_y = area_top + Inches(1)
+
+    # Timeline line
+    line = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        int(area_left), int(line_y - Inches(0.02)),
+        int(area_w), int(Inches(0.04)),
+    )
+    line.fill.solid()
+    line.fill.fore_color.rgb = BSH_GREY
+    line.line.fill.background()
+
+    gap = area_w / max(n - 1, 1) if n > 1 else 0
+    marker_r = Inches(0.15)
+
+    for i, item in enumerate(items):
+        x = area_left + (gap * i if n > 1 else area_w // 2)
+        
+        # Marker circle
+        marker = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(x - marker_r), int(line_y - marker_r),
+            int(marker_r * 2), int(marker_r * 2),
+        )
+        marker.fill.solid()
+        marker.fill.fore_color.rgb = _get_sa_color(i, custom_colors)
+        marker.line.fill.background()
+
+        # Label (alternating above/below)
+        label_y = line_y - Inches(0.8) if i % 2 == 0 else line_y + Inches(0.4)
+        _add_textbox(slide, item, int(x - Inches(0.8)), int(label_y), int(Inches(1.6)), int(Inches(0.4)), Pt(11), True, BSH_NAVY)
+
+
+def _draw_venn_smart_art(slide, items, custom_colors=None):
+    """Overlapping circles (2-3 circles) showing relationships."""
+    n = min(len(items), 3)
+    if n == 0:
+        return
+
+    area_left = Inches(2)
+    area_top = Inches(2)
+    circle_d = Inches(3)
+
+    if n == 2:
+        positions = [
+            (area_left + Inches(1.5), area_top + Inches(1)),
+            (area_left + Inches(3.5), area_top + Inches(1)),
+        ]
+    else:  # n == 3
+        positions = [
+            (area_left + Inches(2.5), area_top + Inches(0.5)),
+            (area_left + Inches(1.5), area_top + Inches(2)),
+            (area_left + Inches(3.5), area_top + Inches(2)),
+        ]
+
+    for i in range(n):
+        x, y = positions[i]
+        circle = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(x), int(y), int(circle_d), int(circle_d),
+        )
+        circle.fill.solid()
+        color = _get_sa_color(i, custom_colors)
+        circle.fill.fore_color.rgb = color
+        circle.fill.transparency = 0.5
+        circle.line.color.rgb = color
+        circle.line.width = Pt(2)
+
+        # Label
+        tf = circle.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = items[i]
+        p.alignment = PP_ALIGN.CENTER
+        p.runs[0].font.size = Pt(12)
+        p.runs[0].font.color.rgb = BSH_NAVY
+        p.runs[0].font.bold = True
+
+
+def _draw_funnel_smart_art(slide, items, custom_colors=None):
+    """Conversion funnel - wide at top, narrow at bottom."""
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(2)
+    area_top = Inches(1.8)
+    area_w = Inches(8)
+    area_h = Inches(4.5)
+
+    gap = Inches(0.1)
+    stage_h = (area_h - (n - 1) * gap) / n
+
+    y = area_top
+    for i, item in enumerate(items):
+        # Calculate width - narrow from top to bottom
+        frac = 1 - (i / max(n, 1)) * 0.6  # 100% to 40% width
+        w = int(area_w * frac)
+        x = int(area_left + (area_w - w) // 2)
+
+        shape = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            x, int(y), w, int(stage_h),
+        )
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = _get_sa_color(i, custom_colors)
+        shape.line.fill.background()
+
+        tf = shape.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.alignment = PP_ALIGN.CENTER
+        p.text = item
+        run = p.runs[0]
+        run.font.size = Pt(13)
+        run.font.color.rgb = BSH_WHITE
+        run.font.bold = True
+
+        y += stage_h + gap
 
 
 SMART_ART_DRAWERS = {
@@ -501,6 +636,9 @@ SMART_ART_DRAWERS = {
     "pyramid": _draw_pyramid_smart_art,
     "matrix": _draw_matrix_smart_art,
     "cycle": _draw_cycle_smart_art,
+    "timeline": _draw_timeline_smart_art,
+    "venn": _draw_venn_smart_art,
+    "funnel": _draw_funnel_smart_art,
 }
 
 
@@ -703,23 +841,35 @@ def _build_smart_art_slide(prs, slide_data, layout):
     sa = slide_data.get("smart_art", {})
     sa_type = sa.get("type", "list_blocks")
     sa_items = sa.get("items", [])
+    sa_colors = sa.get("colors", None)
 
     drawer = SMART_ART_DRAWERS.get(sa_type)
     if drawer and sa_items:
-        drawer(slide, sa_items)
+        drawer(slide, sa_items, sa_colors)
 
-    return slide
+    return slide    
 
 
 # ─── Main PPT builder ────────────────────────────────────
 
-def generate_pptx_file(content: dict) -> io.BytesIO:
+def generate_pptx_file(content: dict, username: str = "Unknown User") -> io.BytesIO:
     """
     Build a .pptx from structured AI content using varied template layouts.
     Inserts SmartArt diagrams and placeholder images where indicated.
+    Adds footer with date and username to each slide.
     """
+    from datetime import datetime
+    
     prs = _load_template()
+    
+    # Remove any default slides that come with the template
+    while len(prs.slides) > 0:
+        rId = prs.slides._sldIdLst[0].rId
+        prs.part.drop_rel(rId)
+        del prs.slides._sldIdLst[0]
+    
     slides_data = content.get("slides", [])
+    current_date = datetime.now().strftime("%B %d, %Y")  # e.g., "March 01, 2026"
 
     for slide_data in slides_data:
         layout_name = slide_data.get("layout", "content")
@@ -732,6 +882,12 @@ def generate_pptx_file(content: dict) -> io.BytesIO:
 
         if layout_name in ("title_slide", "chapter", "end_slide"):
             slide = _build_title_slide(prs, slide_data, layout)
+
+        elif layout_name == "title_slide_with_image":
+            slide = _build_title_slide(prs, slide_data, layout)
+            # Add image placeholder if description provided
+            desc = slide_data.get("image_description", "Opening visual")
+            _insert_placeholder_image(slide, 2, desc)
 
         elif layout_name == "content":
             slide = _build_content_slide(prs, slide_data, layout)
@@ -769,6 +925,26 @@ def generate_pptx_file(content: dict) -> io.BytesIO:
                 slide.notes_slide.notes_text_frame.text = notes
             except Exception:
                 pass
+        
+        # Add footer with date and username (bottom-left) - only on title_slide and end_slide
+        if layout_name in ("title_slide", "title_slide_with_image", "end_slide"):
+            try:
+                footer_text = f"{current_date}\n{username}"
+                footer_box = slide.shapes.add_textbox(
+                    Inches(0.3), 
+                    prs.slide_height - Inches(0.6),
+                    Inches(2.5), 
+                    Inches(0.4)
+                )
+                tf = footer_box.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = footer_text
+                for run in p.runs:
+                    run.font.size = Pt(8)
+                    run.font.color.rgb = BSH_WHITE  # White color
+            except Exception:
+                pass  # Silently fail if footer can't be added
 
     buf = io.BytesIO()
     prs.save(buf)
@@ -781,6 +957,7 @@ def generate_pptx_file(content: dict) -> io.BytesIO:
 async def extract_pdf_content(
     pdf_bytes_list: list[tuple[str, bytes]],
     user_instructions: str = "",
+    username: str = "Unknown User",
 ) -> dict:
     """
     Extract text from uploaded PDF files, send to AI for structuring into slides.
@@ -850,6 +1027,7 @@ async def extract_pdf_content(
     return {
         "content": parsed,
         "chatHistoryId": response.get("chatHistoryId", chat_history_id),
+        "username": username,
     }
 
 

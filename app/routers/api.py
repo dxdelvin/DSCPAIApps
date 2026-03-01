@@ -359,10 +359,14 @@ async def export_functional_spec(
 @router.post("/ppt/extract")
 async def ppt_extract(
     files: List[UploadFile] = File(...),
+    username: str = Form(...),
     instructions: Optional[str] = Form(None),
 ):
     """Upload PDF files → AI structures content into presentation slides."""
+    MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total across all files
     file_bytes_list = []
+    total_size = 0
+    
     for f in files:
         if not f.filename.lower().endswith(".pdf"):
             return JSONResponse(
@@ -374,9 +378,22 @@ async def ppt_extract(
                 },
             )
         content = await f.read()
+        total_size += len(content)
+        
+        # Check total size across all files
+        if total_size > MAX_TOTAL_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "status": "error",
+                    "message": "Total upload size too large",
+                    "detail": f"Combined file size exceeds the 10 MB limit. Current total: {total_size / (1024*1024):.1f} MB.",
+                },
+            )
+        
         file_bytes_list.append((f.filename, content))
 
-    result = await extract_pdf_content(file_bytes_list, instructions or "")
+    result = await extract_pdf_content(file_bytes_list, instructions or "", username)
 
     if result.get("error"):
         return JSONResponse(
@@ -426,6 +443,7 @@ async def ppt_refine(data: PptRefineRequest):
 
 class PptDownloadRequest(BaseModel):
     content: dict
+    username: str = "Unknown User"
 
 
 @router.post("/ppt/download")
@@ -434,6 +452,7 @@ async def ppt_download(data: PptDownloadRequest):
     from fastapi.responses import StreamingResponse
 
     content = data.content
+    username = data.username
 
     if not content or "slides" not in content:
         return JSONResponse(
@@ -446,7 +465,7 @@ async def ppt_download(data: PptDownloadRequest):
         )
 
     try:
-        buf = generate_pptx_file(content)
+        buf = generate_pptx_file(content, username)
         title = content.get("title", "Presentation").replace(" ", "_")
         safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
         filename = f"{safe}.pptx"
