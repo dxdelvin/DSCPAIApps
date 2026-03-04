@@ -43,7 +43,7 @@ async def bpmn_checker(request: Request):
 
 @router.get("/spec-builder")
 async def spec_builder(request: Request):
-    return templates.TemplateResponse("functional_spec.html", {
+    return templates.TemplateResponse("fs_br_document.html", {
         "request": request,
         "css_version": CSS_VERSION,
     })

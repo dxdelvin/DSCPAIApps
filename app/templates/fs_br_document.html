@@ -1,0 +1,708 @@
+{% extends "base.html" %}
+
+{% block title %}Document Builder - BSH DSCP{% endblock %}
+
+{% block page_name %}FS & BR Document Builder{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/fs_br_document.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">BSH | FS & BR Document Automation</p>
+        <h1>FS & BR Document Builder</h1>
+        <p class="lede">Create Functional Specifications or Business Requirement documents and export polished Word files in one click.</p>
+    </div>
+</section>
+
+<div class="container spec-container">
+    <div class="spec-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">FS & BR Document builder</p>
+                <h2 class="builder-title">Select Document Type</h2>
+            </div>
+            <!-- Mode Tabs (same pattern as Audit Checker) -->
+            <div class="mode-tabs">
+                <button class="mode-tab active" data-mode="functional-spec">Functional Spec</button>
+                <button class="mode-tab" data-mode="business-req">Business Requirement</button>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             FUNCTIONAL SPEC MODE
+             ═══════════════════════════════════════════════════════════ -->
+        <div class="mode-panel active" id="functional-spec-mode">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step step-active" data-step="1"><span class="step-number">1</span><span class="step-label">User Story</span></div>
+                <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Process</span></div>
+                <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">User</span></div>
+                <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Problem</span></div>
+                <div class="step" data-step="5"><span class="step-number">5</span><span class="step-label">Solution</span></div>
+                <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Design</span></div>
+                <div class="step" data-step="7"><span class="step-number">7</span><span class="step-label">Review</span></div>
+            </div>
+
+            <div class="form-container">
+                <!-- ========== Step 1: User Story ========== -->
+                <div class="form-step active" id="step-1">
+                    <h3>User Story</h3>
+                    <p>Describe the need from the user's perspective.</p>
+                    <div class="form-group">
+                        <label for="userRole">I as a …</label>
+                        <input type="text" id="userRole" placeholder="e.g., Production Planner" />
+                    </div>
+                    <div class="form-group">
+                        <label for="userWant">want to …</label>
+                        <input type="text" id="userWant" placeholder="e.g., automate the rescheduling of production orders" />
+                    </div>
+                    <div class="form-group">
+                        <label for="userAbility">to be able to …</label>
+                        <input type="text" id="userAbility" placeholder="e.g., reduce manual planning effort by 50 %" />
+                    </div>
+                </div>
+
+                <!-- ========== Step 2: Process ========== -->
+                <div class="form-step" id="step-2">
+                    <h3>Process</h3>
+                    <p>Select the applicable function, process area, and sub-area.</p>
+
+                    <div class="checkbox-grid three-col">
+                        <!-- Function -->
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">Function</h4>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="Unser Interface" /><span>Unser Interface</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="MRP Planning" /><span>MRP Planning</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="Sequencing" /><span>Sequencing</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="Optimization" /><span>Optimization</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="System Interface" /><span>System Interface</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="function" value="Other" data-toggle-other="functionOther" /><span>Other</span></label>
+                            <input type="text" id="functionOther" class="other-input hidden" placeholder="Describe custom function…" />
+                        </div>
+
+                        <!-- Process Area -->
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">Process-Area</h4>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Demand-Plan" /><span>Demand-Plan</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="APPS" /><span>APPS</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="CSC" /><span>CSC</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Final-Assembly" /><span>Final-Assembly</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Pre-Assembly" /><span>Pre-Assembly</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="External-Procurement" /><span>External-Procurement</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Other" data-toggle-other="processAreaOther" /><span>Other</span></label>
+                            <input type="text" id="processAreaOther" class="other-input hidden" placeholder="Describe custom area…" />
+                        </div>
+
+                        <!-- Process Sub-Area -->
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">Process-Sub-Area <span class="optional-badge">optional</span></h4>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Series-Planning" /><span>Series-Planning</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Pre- & Zero-Series-Planning" /><span>Pre- & Zero-Series-Planning</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Manual Scheduling" /><span>Manual Scheduling</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Quotation" /><span>Quotation</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Subcontracting" /><span>Subcontracting</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Sample Orders" /><span>Sample Orders</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Co-Products" /><span>Co-Products</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Alerting & Exception Messages" /><span>Alerting & Exception Messages</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Evaluations" /><span>Evaluations</span></label>
+                        </div>
+                    </div>
+
+                    <div class="describe-below">
+                        <p class="describe-hint">If you did not find a suitable <strong>Function</strong> and <strong>Area</strong>, please describe below:</p>
+                        <textarea id="processDescribeBelow" rows="3" placeholder="Describe your custom function and/or area here…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== Step 3: User ========== -->
+                <div class="form-step" id="step-3">
+                    <h3>User Group</h3>
+                    <p>Who will use this feature?</p>
+
+                    <div class="checkbox-grid three-col">
+                        <div class="checkbox-column">
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Planner" /><span>Planner</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="MRP Controller" /><span>MRP Controller</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Management" /><span>Management</span></label>
+                        </div>
+                        <div class="checkbox-column">
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Shop Floor" /><span>Shop Floor</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Development" /><span>Development</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Purchasing" /><span>Purchasing</span></label>
+                        </div>
+                        <div class="checkbox-column">
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Key-Users" /><span>Key-Users</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="IT-Support" /><span>IT-Support</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Other" data-toggle-other="userGroupOther" /><span>Other</span></label>
+                            <input type="text" id="userGroupOther" class="other-input hidden" placeholder="Specify other user group…" />
+                        </div>
+                    </div>
+
+                    <div class="describe-below">
+                        <p class="describe-hint">If you did not find a suitable <strong>User-Group</strong>, please describe below:</p>
+                        <textarea id="userGroupDescribeBelow" rows="3" placeholder="Describe your custom user group here…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== Step 4: Problem Description ========== -->
+                <div class="form-step" id="step-4">
+                    <h3>Actual Problem what should be solved</h3>
+                    <p>Describe the Problem in short words, provide screenshots if necessary.</p>
+                    <div class="form-group">
+                        <label for="problemDescription">Problem Description</label>
+                        <textarea id="problemDescription" rows="6" placeholder="Describe the problem in short words…"></textarea>
+                    </div>
+
+                    <div class="upload-section">
+                        <h4>Screenshots <span class="optional-badge">optional</span></h4>
+                        <div class="upload-area" id="problem-upload-area">
+                            <div class="upload-placeholder">
+                                <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <p>Drag & drop images here or click to select</p>
+                                <p class="upload-hint">Supports JPG and PNG</p>
+                            </div>
+                            <input type="file" id="problem-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
+                        </div>
+                        <div class="files-list" id="problem-files-list"></div>
+                    </div>
+                </div>
+
+                <!-- ========== Step 5: Solution Description ========== -->
+                <div class="form-step" id="step-5">
+                    <h3>Solution Description</h3>
+                    <p>Describe how could the solution look like in short words, provide screenshots if necessary.</p>
+                    <div class="form-group">
+                        <label for="solutionDescription">Solution Description</label>
+                        <textarea id="solutionDescription" rows="6" placeholder="Describe how the solution could look like…"></textarea>
+                    </div>
+
+                    <div class="upload-section">
+                        <h4>Screenshots <span class="optional-badge">optional</span></h4>
+                        <div class="upload-area" id="solution-upload-area">
+                            <div class="upload-placeholder">
+                                <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <p>Drag & drop images here or click to select</p>
+                                <p class="upload-hint">Supports JPG and PNG</p>
+                            </div>
+                            <input type="file" id="solution-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
+                        </div>
+                        <div class="files-list" id="solution-files-list"></div>
+                    </div>
+                </div>
+
+                <!-- ========== Step 6: Solution Design ========== -->
+                <div class="form-step" id="step-6">
+                    <h3>Solution Design</h3>
+                    <p>Specify the development system, technical details, naming, and authorizations.</p>
+
+                    <!-- Development System checkboxes -->
+                    <h4 class="subsection-title">Development System</h4>
+                    <div class="checkbox-grid three-col">
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">ERP</h4>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_060" /><span>M0D_060</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_160" /><span>M0D_160</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_260" /><span>M0D_260</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_360" /><span>M0D_360</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_460" /><span>M0D_460</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="erp" value="Other" data-toggle-other="erpOther" /><span>Other</span></label>
+                            <input type="text" id="erpOther" class="other-input hidden" placeholder="Specify other ERP…" />
+                        </div>
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">SCM / S4</h4>
+                            <label class="checkbox-item"><input type="checkbox" name="scm" value="P0D_060" /><span>P0D_060</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="scm" value="R4B_060" /><span>R4B_060</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="scm" value="Other" data-toggle-other="scmOther" /><span>Other</span></label>
+                            <input type="text" id="scmOther" class="other-input hidden" placeholder="Specify other SCM…" />
+                        </div>
+                        <div class="checkbox-column">
+                            <h4 class="col-heading">Cloud</h4>
+                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="IBP" /><span>IBP</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="CPI/SDI" /><span>CPI/SDI</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="SCP" /><span>SCP</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="Other" data-toggle-other="cloudOther" /><span>Other</span></label>
+                            <input type="text" id="cloudOther" class="other-input hidden" placeholder="Specify other Cloud…" />
+                        </div>
+                    </div>
+
+                    <div class="design-fields">
+                        <div class="form-group">
+                            <label for="technicalDetails">Technical Details</label>
+                            <textarea id="technicalDetails" rows="4" placeholder="Describe all objects which have to be adjusted or created. Tables, Programs, Transactions, Views, etc."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="namesAndLanguage">Names and Language</label>
+                            <textarea id="namesAndLanguage" rows="4" placeholder="If you create new fields, columns, transactions etc. describe short and long-texts in all necessary languages."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="authorization">Authorization</label>
+                            <textarea id="authorization" rows="4" placeholder="Consider special authorization objects for specific user groups, e.g. Key-Users."></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== Step 7: Review & Export ========== -->
+                <div class="form-step" id="step-7">
+                    <h3>Review & Export</h3>
+                    <p>Review your specification below, then export as a Word document.</p>
+
+                    <div class="review-panel" id="reviewPanel">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="cta-panel">
+                        <p>When you're satisfied, click <strong>Export .docx</strong> to download your Functional Specification.</p>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="editFromReviewBtn">Edit Form</button>
+                            <button type="button" class="btn btn-primary" id="exportBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export .docx
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <div class="form-navigation">
+                <div class="nav-left">
+                    <button type="button" class="btn btn-ghost btn-reset-link" id="resetBtn">Reset Form</button>
+                </div>
+                <div class="nav-right">
+                    <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
+                    <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             BUSINESS REQUIREMENT MODE
+             ═══════════════════════════════════════════════════════════ -->
+        <div class="mode-panel" id="business-req-mode">
+            <!-- Step Indicator for BR -->
+            <div class="step-indicator" id="br-step-indicator">
+                <div class="step step-active" data-br-step="1"><span class="step-number">1</span><span class="step-label">General</span></div>
+                <div class="step" data-br-step="2"><span class="step-number">2</span><span class="step-label">Responsibles</span></div>
+                <div class="step" data-br-step="3"><span class="step-number">3</span><span class="step-label">Description</span></div>
+                <div class="step" data-br-step="4"><span class="step-number">4</span><span class="step-label">Benefits</span></div>
+                <div class="step" data-br-step="5"><span class="step-number">5</span><span class="step-label">Sign Off</span></div>
+                <div class="step" data-br-step="6"><span class="step-number">6</span><span class="step-label">Decision</span></div>
+                <div class="step" data-br-step="7"><span class="step-number">7</span><span class="step-label">Costs</span></div>
+                <div class="step" data-br-step="8"><span class="step-number">8</span><span class="step-label">Review</span></div>
+            </div>
+
+            <div class="form-container" id="br-form-container">
+                <!-- ========== BR Step 1: General Info ========== -->
+                <div class="br-form-step active" id="br-step-1">
+                    <h3>General Information</h3>
+                    <p>Provide the basic details of the business requirement.</p>
+
+                    <!-- Load from JSON -->
+                    <div class="json-load-bar">
+                        <button type="button" class="btn btn-ghost btn-sm" id="brLoadJsonBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Load from JSON
+                        </button>
+                        <input type="file" id="brJsonFileInput" accept=".json" hidden />
+                        <span class="json-load-hint">Resume a previously saved Business Requirement</span>
+                    </div>
+                    <div class="form-group">
+                        <label for="brTitle">Requirement Title *</label>
+                        <input type="text" id="brTitle" placeholder="e.g., Automated Order Rescheduling" />
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="brProject">Project</label>
+                            <input type="text" id="brProject" placeholder="e.g., DSCP Phase 2" />
+                        </div>
+                        <div class="form-group">
+                            <label for="brProductOwner">Product Owner</label>
+                            <input type="text" id="brProductOwner" placeholder="e.g., John Doe" />
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="brItProduct">IT Product</label>
+                            <input type="text" id="brItProduct" placeholder="e.g., SAP APO" />
+                        </div>
+                        <div class="form-group">
+                            <label for="brTargetDate">Target Date</label>
+                            <input type="date" id="brTargetDate" />
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="brRequestor">Requestor *</label>
+                            <input type="text" id="brRequestor" placeholder="e.g., Jane Smith" />
+                        </div>
+                        <div class="form-group">
+                            <label for="brRequestorCompany">Requestor Company *</label>
+                            <input type="text" id="brRequestorCompany" placeholder="e.g., BSH Hausgeräte GmbH" />
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="brCreateDate">Create Date</label>
+                            <input type="date" id="brCreateDate" />
+                        </div>
+                        <div class="form-group">
+                            <label for="brCreatedBy">Created By</label>
+                            <input type="text" id="brCreatedBy" placeholder="e.g., John Doe" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 2: Requirement Responsibles ========== -->
+                <div class="br-form-step" id="br-step-2">
+                    <h3>Requirement Responsibles</h3>
+                    <p>Specify the responsible stakeholders for this requirement.</p>
+
+                    <div class="responsible-grid">
+                        <div class="responsible-card">
+                            <h4>Local Business</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brLocalEmail">eMail</label>
+                                    <input type="email" id="brLocalEmail" placeholder="email@company.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brLocalCompany">Company</label>
+                                    <input type="text" id="brLocalCompany" placeholder="Company name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brLocalDept">Department</label>
+                                <input type="text" id="brLocalDept" placeholder="Department" />
+                            </div>
+                        </div>
+
+                        <div class="responsible-card">
+                            <h4>Global Business</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brGlobalEmail">eMail</label>
+                                    <input type="email" id="brGlobalEmail" placeholder="email@company.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brGlobalCompany">Company</label>
+                                    <input type="text" id="brGlobalCompany" placeholder="Company name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brGlobalDept">Department</label>
+                                <input type="text" id="brGlobalDept" placeholder="Department" />
+                            </div>
+                        </div>
+
+                        <div class="responsible-card">
+                            <h4>Global Shape GDS</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brGdsEmail">eMail</label>
+                                    <input type="email" id="brGdsEmail" placeholder="email@company.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brGdsCompany">Company</label>
+                                    <input type="text" id="brGdsCompany" placeholder="Company name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brGdsDept">Department</label>
+                                <input type="text" id="brGdsDept" placeholder="Department" />
+                            </div>
+                        </div>
+
+                        <div class="responsible-card">
+                            <h4>Regional Shape GDS</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brRegionalEmail">eMail</label>
+                                    <input type="email" id="brRegionalEmail" placeholder="email@company.com" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brRegionalCompany">Company</label>
+                                    <input type="text" id="brRegionalCompany" placeholder="Company name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brRegionalDept">Department</label>
+                                <input type="text" id="brRegionalDept" placeholder="Department" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 3: Business Requirement Description ========== -->
+                <div class="br-form-step" id="br-step-3">
+                    <h3>Business Requirement Description</h3>
+                    <p>Answer the following questions to describe the requirement in detail.</p>
+
+                    <div class="form-group">
+                        <label for="brInitialSituation">What is the initial situation? *</label>
+                        <textarea id="brInitialSituation" rows="4" placeholder="Describe the current state or situation…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brRequiredSituation">What is the required situation? *</label>
+                        <textarea id="brRequiredSituation" rows="4" placeholder="Describe the desired / target state…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brDepartments">Who is involved in the function/process (departments)?</label>
+                        <textarea id="brDepartments" rows="3" placeholder="List the departments involved…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brItComponents">Which IT-components are used (e.g. transactions, programs, interfaces)?</label>
+                        <textarea id="brItComponents" rows="3" placeholder="List specific IT components…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brDataAffected">What data is used or affected?</label>
+                        <textarea id="brDataAffected" rows="3" placeholder="Describe the data involved…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brProposalSolution">What is your proposal for solution?</label>
+                        <textarea id="brProposalSolution" rows="4" placeholder="Describe your proposed solution…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 4: Benefits ========== -->
+                <div class="br-form-step" id="br-step-4">
+                    <h3>Benefits for the Business</h3>
+                    <p>Describe the expected benefits and impact.</p>
+
+                    <div class="form-group">
+                        <label for="brBenefits">What benefits can be reached? *</label>
+                        <textarea id="brBenefits" rows="4" placeholder="Describe the benefits this will bring…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brSavings">What are your savings p.a.?</label>
+                        <textarea id="brSavings" rows="3" placeholder="Estimate annual savings…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brWithoutImpl">What would happen without the implementation?</label>
+                        <textarea id="brWithoutImpl" rows="3" placeholder="Describe the risks or consequences of not implementing…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 5: Sign Off / Agreement ========== -->
+                <div class="br-form-step" id="br-step-5">
+                    <h3>Sign Off / Agreement</h3>
+                    <p>Provide sign-off details (only for Business Requirements within a Project).</p>
+
+                    <div class="responsible-grid">
+                        <div class="responsible-card">
+                            <h4>Global Business Process Owner</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brSignoffGbpoName">Name</label>
+                                    <input type="text" id="brSignoffGbpoName" placeholder="Full name" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brSignoffGbpoDept">Department</label>
+                                    <input type="text" id="brSignoffGbpoDept" placeholder="Department" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brSignoffGbpoDate">Date</label>
+                                <input type="date" id="brSignoffGbpoDate" />
+                            </div>
+                        </div>
+
+                        <div class="responsible-card">
+                            <h4>GDS Product Owner / Manager</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="brSignoffGdsName">Name</label>
+                                    <input type="text" id="brSignoffGdsName" placeholder="Full name" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="brSignoffGdsDept">Department</label>
+                                    <input type="text" id="brSignoffGdsDept" placeholder="Department" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="brSignoffGdsDate">Date</label>
+                                <input type="date" id="brSignoffGdsDate" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 6: Cost Estimation & Decision ========== -->
+                <div class="br-form-step" id="br-step-6">
+                    <h3>Cost Estimation & Decision</h3>
+                    <p>Evaluation and decision details.</p>
+
+                    <div class="form-group">
+                        <label for="brEvaluation">Evaluation of technical and standardization aspects by</label>
+                        <input type="text" id="brEvaluation" placeholder="Name / Department or Committee" />
+                    </div>
+                    <div class="form-group">
+                        <label for="brDecisionDate">Decision Date</label>
+                        <input type="date" id="brDecisionDate" />
+                    </div>
+                    <div class="form-group">
+                        <label>Decision</label>
+                        <div class="radio-group" id="brDecisionGroup">
+                            <label class="radio-item"><input type="radio" name="brDecision" value="rejected" /><span>Rejected</span></label>
+                            <label class="radio-item"><input type="radio" name="brDecision" value="accepted" /><span>Accepted</span></label>
+                            <!-- Sub-options shown only when Accepted is selected -->
+                            <div class="accepted-sub-options" id="brAcceptedSubOptions" style="display: none;">
+                                <p class="sub-options-hint">Optionally specify the type of acceptance:</p>
+                                <label class="checkbox-item sub-option"><input type="checkbox" id="brSubAddon" value="add-on" /><span>Add-on to BSH standard product</span></label>
+                                <label class="checkbox-item sub-option"><input type="checkbox" id="brSubLocalOnly" value="local-only" /><span>Only local solution</span></label>
+                            </div>
+                            <label class="radio-item"><input type="radio" name="brDecision" value="accepted-with-restrictions" /><span>Accepted with restrictions</span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="brRestrictions">Specification of Restrictions</label>
+                        <textarea id="brRestrictions" rows="3" placeholder="Specify any restrictions…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brDecisionReason">Reason for Decision</label>
+                        <textarea id="brDecisionReason" rows="3" placeholder="Explain the reasoning behind the decision…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="brImplTargetDate">Target Date in Case of Implementation</label>
+                        <input type="date" id="brImplTargetDate" />
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 7: Costs / Savings / Charging ========== -->
+                <div class="br-form-step" id="br-step-7">
+                    <h3>Costs / Savings / Charging</h3>
+                    <p>By CHANGE Coordinator and Product Manager. <em>Pay back p.a. = Savings p.a. − Running costs p.a. &nbsp;|&nbsp; Pay back period = Initial costs ÷ Pay back p.a.</em></p>
+
+                    <div class="cost-table-wrapper">
+                        <table class="cost-table" id="brCostTable">
+                            <thead>
+                                <tr>
+                                    <th>IT Product</th>
+                                    <th>CHANGE CATS Nr</th>
+                                    <th>Initial Costs €</th>
+                                    <th>Running Costs p.a. €</th>
+                                    <th>Savings p.a. €</th>
+                                    <th>Pay back p.a. €</th>
+                                    <th>Pay back period (y)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="cost-input" data-field="itProduct" placeholder="–" /></td>
+                                    <td><input type="text" class="cost-input" data-field="catsnr" placeholder="–" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="initialCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="runningCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="savings" placeholder="0" /></td>
+                                    <td class="cost-calc" data-calc="payback">–</td>
+                                    <td class="cost-calc" data-calc="period">–</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="cost-input" data-field="itProduct" placeholder="–" /></td>
+                                    <td><input type="text" class="cost-input" data-field="catsnr" placeholder="–" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="initialCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="runningCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="savings" placeholder="0" /></td>
+                                    <td class="cost-calc" data-calc="payback">–</td>
+                                    <td class="cost-calc" data-calc="period">–</td>
+                                </tr>
+                                <tr>
+                                    <td><input type="text" class="cost-input" data-field="itProduct" placeholder="–" /></td>
+                                    <td><input type="text" class="cost-input" data-field="catsnr" placeholder="–" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="initialCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="runningCosts" placeholder="0" /></td>
+                                    <td><input type="number" class="cost-input cost-number" data-field="savings" placeholder="0" /></td>
+                                    <td class="cost-calc" data-calc="payback">–</td>
+                                    <td class="cost-calc" data-calc="period">–</td>
+                                </tr>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td><strong>Total</strong></td>
+                                    <td></td>
+                                    <td class="cost-total" data-total="initialCosts">–</td>
+                                    <td class="cost-total" data-total="runningCosts">–</td>
+                                    <td class="cost-total" data-total="savings">–</td>
+                                    <td class="cost-total" data-total="payback">–</td>
+                                    <td class="cost-total" data-total="period">–</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ========== BR Step 8: Review & Export ========== -->
+                <div class="br-form-step" id="br-step-8">
+                    <h3>Review & Export</h3>
+                    <p>Review your Business Requirement below, then export as a Word document.</p>
+
+                    <div class="review-panel" id="brReviewPanel">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <div class="cta-panel">
+                        <p>When you're satisfied, click <strong>Export .docx</strong> to download your Business Requirement document.</p>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="brEditFromReviewBtn">Edit Form</button>
+                            <button type="button" class="btn btn-primary" id="brExportBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export .docx
+                            </button>
+                            <button type="button" class="btn btn-ghost" id="brDownloadJsonBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                                Download JSON
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BR Navigation -->
+            <div class="form-navigation">
+                <div class="nav-left">
+                    <button type="button" class="btn btn-ghost btn-reset-link" id="brResetBtn">Reset Form</button>
+                </div>
+                <div class="nav-right">
+                    <button type="button" class="btn btn-secondary" id="brPrevBtn">Previous</button>
+                    <button type="button" class="btn btn-primary" id="brNextBtn">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loadingSpinner" class="loading-spinner">
+    <div class="spinner"></div>
+    <p>Generating Document...</p>
+</div>
+
+<!-- Info Modal -->
+<div id="infoModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <span class="close">&times;</span>
+            <h2>About Document Builder</h2>
+        </div>
+        <div class="modal-body">
+            <p>This tool supports two document types:</p>
+            <h4>Functional Specification</h4>
+            <p>Fill in each section step-by-step (User Story, Process, User, Problem, Solution, Design), review the summary, then export a ready-to-share Word document matching the official BSH template.</p>
+            <h4>Business Requirement</h4>
+            <p>Fill in General info, Responsibles, Description answers, and Benefits. Export a formatted BSH Business Requirement Word document with all fields populated.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/fs_br_document.js') }}"></script>
+{% endblock %}

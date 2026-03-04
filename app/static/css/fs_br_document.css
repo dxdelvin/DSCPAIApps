@@ -1,4 +1,4 @@
-/* Functional Specification – Spec Builder page styling
+/* FS & BR Document Builder – page styling
    Aligned to Signavio BPMN form style & common palette */
 
 .spec-container { padding: 10px 0 0; }
@@ -514,10 +514,277 @@ body.dark-mode .modal-content::-webkit-scrollbar-track { background: var(--navy-
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
+/* ══════════════════════════════════════════════════
+   Mode Tabs (same pattern as Audit Checker)
+   ══════════════════════════════════════════════════ */
+.mode-tabs {
+    display: inline-flex;
+    gap: 0;
+    padding: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: fit-content;
+}
+
+.mode-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 16px;
+    border: 1px solid transparent;
+    background: var(--card);
+    color: var(--slate-700);
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+    position: relative;
+    white-space: nowrap;
+    margin: 0;
+    flex: 1;
+    min-width: 120px;
+}
+
+.mode-tab:hover:not(.active) {
+    background: var(--bg);
+    border-color: var(--border);
+}
+
+.mode-tab.active {
+    background: var(--brand-orange);
+    color: white;
+    border-color: var(--brand-orange);
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(255, 95, 0, 0.15);
+}
+
+/* Mode Panels */
+.mode-panel {
+    display: none;
+}
+
+.mode-panel.active,
+.mode-panel[style*="display: block"] {
+    display: block;
+}
+
+/* ══════════════════════════════════════════════════
+   Business Requirement – Form Steps
+   ══════════════════════════════════════════════════ */
+.br-form-step { display: none; }
+.br-form-step.active { display: block; animation: fadeIn 0.2s ease; }
+.br-form-step h3 { margin-bottom: 6px; }
+.br-form-step > p { color: var(--slate-700); margin-bottom: 12px; }
+
+/* Two-column form rows */
+.form-row.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 0;
+}
+
+/* Responsible cards grid */
+.responsible-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.responsible-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    transition: border-color 0.2s ease;
+}
+.responsible-card:hover {
+    border-color: rgba(255, 95, 0, 0.3);
+}
+
+.responsible-card h4 {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--brand-orange);
+    margin: 0 0 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid var(--brand-orange);
+}
+
+body.dark-mode .responsible-card {
+    background: var(--surface-secondary);
+    border-color: var(--border);
+}
+
+/* BR date input styling */
+#business-req-mode input[type="date"] {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#business-req-mode input[type="date"]:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+}
+body.dark-mode #business-req-mode input[type="date"] {
+    background: var(--navy-800);
+    color: #e2e8f0;
+}
+
+/* BR hidden nav buttons */
+#brPrevBtn { display: none; }
+
+/* ── JSON Load Bar ──────────────────────────── */
+.json-load-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+}
+.json-load-bar .btn-sm { font-size: 13px; padding: 6px 12px; display: flex; align-items: center; gap: 6px; }
+.json-load-hint { font-size: 12px; color: var(--slate-500); }
+
+/* ── Radio Group ────────────────────────────── */
+.radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+.radio-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 14px;
+}
+.radio-item:hover {
+    border-color: rgba(255, 95, 0, 0.3);
+    background: rgba(255, 95, 0, 0.03);
+}
+.radio-item input[type="radio"] {
+    accent-color: var(--brand-orange);
+    width: 16px;
+    height: 16px;
+}
+.radio-item input[type="radio"]:checked + span { font-weight: 600; color: var(--brand-orange); }
+/* Accepted sub-options */
+.accepted-sub-options {
+    margin-left: 28px;
+    padding: 10px 14px;
+    background: rgba(255, 95, 0, 0.03);
+    border-left: 3px solid var(--brand-orange);
+    border-radius: 0 8px 8px 0;
+    animation: fadeIn 0.2s ease;
+}
+.sub-options-hint {
+    font-size: 12px;
+    color: var(--slate-500);
+    margin: 0 0 8px;
+    font-style: italic;
+}
+.checkbox-item.sub-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+.checkbox-item.sub-option input[type=\"checkbox\"] {
+    accent-color: var(--brand-orange);
+    width: 16px;
+    height: 16px;
+}
+/* ── Cost Table ─────────────────────────────── */
+.cost-table-wrapper {
+    overflow-x: auto;
+    margin-top: 8px;
+}
+.cost-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+.cost-table th,
+.cost-table td {
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    text-align: center;
+    white-space: nowrap;
+}
+.cost-table th {
+    background: var(--bg);
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--slate-700);
+}
+.cost-table tfoot td {
+    background: var(--bg);
+    font-weight: 700;
+}
+.cost-input {
+    width: 100%;
+    min-width: 70px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--card);
+    color: var(--text-primary);
+    text-align: center;
+    transition: border-color 0.15s ease;
+}
+.cost-input:focus {
+    outline: none;
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 2px rgba(255, 95, 0, 0.1);
+}
+.cost-number { min-width: 80px; }
+.cost-calc {
+    color: var(--slate-500);
+    font-weight: 600;
+}
+.cost-total { font-weight: 700; }
+
+body.dark-mode .cost-input {
+    background: var(--navy-800);
+    color: #e2e8f0;
+}
+body.dark-mode .radio-item {
+    background: var(--surface-secondary);
+    border-color: var(--border);
+}
+
 /* ── Responsive ─────────────────────────────── */
 @media (max-width: 768px) {
     .form-navigation { flex-direction: column; }
     .checkbox-grid.three-col { grid-template-columns: 1fr; }
     .review-row { flex-direction: column; gap: 2px; }
     .review-label { min-width: auto; }
+    .form-row.two-col { grid-template-columns: 1fr; }
+    .responsible-grid { grid-template-columns: 1fr; }
+    .mode-tabs { flex-direction: column; }
+    .mode-tab { min-width: auto; }
+    .json-load-bar { flex-direction: column; align-items: flex-start; }
+    .cost-table th, .cost-table td { padding: 6px 6px; font-size: 12px; }
+    .cost-input { min-width: 60px; font-size: 12px; }
 }

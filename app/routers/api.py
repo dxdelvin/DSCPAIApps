@@ -16,7 +16,7 @@ from app.services.audit_service import (
     continue_audit_chat,
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
-from app.services.functional_spec_service import generate_functional_spec_docx
+from app.services.fs_br_document_service import generate_functional_spec_docx, generate_br_docx
 from app.services.ppt_creator_service import (
     extract_pdf_content,
     refine_ppt_content,
@@ -349,6 +349,53 @@ async def export_functional_spec(
             content={
                 "status": "error",
                 "message": "Document generation failed",
+                "detail": str(e),
+            },
+        )
+
+
+# ============== Business Requirement Export ==============
+
+class BRExportRequest(BaseModel):
+    title: str = ""
+    project: str = ""
+    productOwner: str = ""
+    itProduct: str = ""
+    targetDate: str = ""
+    requestor: str = ""
+    requestorCompany: str = ""
+    createDate: str = ""
+    createdBy: str = ""
+    responsibles: dict = {}
+    description: dict = {}
+    benefits: dict = {}
+    signOff: dict = {}
+    decision: dict = {}
+    costs: dict = {}
+
+
+@router.post("/export-business-requirement")
+async def export_business_requirement(data: BRExportRequest):
+    """Generate a .docx Business Requirement document from form data."""
+    from fastapi.responses import StreamingResponse
+
+    try:
+        buffer = generate_br_docx(data.model_dump())
+        title = data.title or "Business_Requirement"
+        safe_name = "".join(c if c.isalnum() or c in "_ -" else "" for c in title).replace(" ", "_") or "Business_Requirement"
+        filename = f"{safe_name}_Business_Requirement.docx"
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "Business Requirement document generation failed",
                 "detail": str(e),
             },
         )
