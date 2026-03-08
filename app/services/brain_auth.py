@@ -19,7 +19,7 @@ async def get_brain_access_token():
         "grant_type": "client_credentials"
     }
     
-    # trust_env: False in dev, True in prod
+
     request_kwargs = {
         "verify": False,
         "trust_env": IS_PRODUCTION

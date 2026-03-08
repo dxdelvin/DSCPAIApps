@@ -307,36 +307,43 @@ async def bpmn_diagram_check(
 
 # ============== Functional Specification Export ==============
 
+class FSExportRequest(BaseModel):
+    title: str = ""
+    date: str = ""
+    version: str = ""
+    author: str = ""
+    responsibilities: dict = {}
+    projectGoal: str = ""
+    developerStatement: str = ""
+    solutionDesc: str = ""
+    improvementPotential: str = ""
+    delimitation: str = ""
+    previousSteps: list = []
+    functionality: str = ""
+    userView: str = ""
+    languageTopics: str = ""
+    dataStructures: str = ""
+    dataMaintenance: str = ""
+    interfaces: str = ""
+    authorization: str = ""
+    infoSecurity: str = ""
+    architecture: str = ""
+    risks: str = ""
+    openIssues: str = ""
+    migration: str = ""
+    glossary: list = []
+    docHistory: list = []
+
+
 @router.post("/export-functional-spec")
-async def export_functional_spec(
-    form_data: str = Form(...),
-    problem_screenshots: List[UploadFile] = File(default=[]),
-    solution_screenshots: List[UploadFile] = File(default=[]),
-):
-    """Generate a .docx Functional Specification document from form data + optional screenshots."""
+async def export_functional_spec(data: FSExportRequest):
+    """Generate a .docx Functional Specification document from form data."""
     from fastapi.responses import StreamingResponse
-    import json
 
     try:
-        data = json.loads(form_data)
-
-        # Read uploaded images into memory
-        problem_images = []
-        for f in problem_screenshots:
-            content = await f.read()
-            if content:
-                problem_images.append({"name": f.filename, "data": content, "type": f.content_type})
-
-        solution_images = []
-        for f in solution_screenshots:
-            content = await f.read()
-            if content:
-                solution_images.append({"name": f.filename, "data": content, "type": f.content_type})
-
-        buffer = generate_functional_spec_docx(data, problem_images, solution_images)
-        role = data.get("userStory", {}).get("role", "Functional_Spec")
-        safe_name = "".join(c if c.isalnum() or c in "_ -" else "" for c in role).replace(" ", "_") or "Functional_Spec"
-        filename = f"{safe_name}_Functional_Specification.docx"
+        buffer = generate_functional_spec_docx(data.dict())
+        safe_title = "".join(c if c.isalnum() or c in "_ -" else "" for c in data.title).replace(" ", "_") or "Functional_Spec"
+        filename = f"{safe_title}_Functional_Specification.docx"
 
         return StreamingResponse(
             buffer,

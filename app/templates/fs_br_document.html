@@ -36,228 +36,366 @@
              ═══════════════════════════════════════════════════════════ -->
         <div class="mode-panel active" id="functional-spec-mode">
             <!-- Step Indicator -->
-            <div class="step-indicator">
-                <div class="step step-active" data-step="1"><span class="step-number">1</span><span class="step-label">User Story</span></div>
-                <div class="step" data-step="2"><span class="step-number">2</span><span class="step-label">Process</span></div>
-                <div class="step" data-step="3"><span class="step-number">3</span><span class="step-label">User</span></div>
-                <div class="step" data-step="4"><span class="step-number">4</span><span class="step-label">Problem</span></div>
-                <div class="step" data-step="5"><span class="step-number">5</span><span class="step-label">Solution</span></div>
-                <div class="step" data-step="6"><span class="step-number">6</span><span class="step-label">Design</span></div>
-                <div class="step" data-step="7"><span class="step-number">7</span><span class="step-label">Review</span></div>
+            <div class="step-indicator" id="fs-step-indicator">
+                <div class="step step-active" data-fs-step="1"><span class="step-number">1</span><span class="step-label">Doc Info</span></div>
+                <div class="step" data-fs-step="2"><span class="step-number">2</span><span class="step-label">Responsibles</span></div>
+                <div class="step" data-fs-step="3"><span class="step-number">3</span><span class="step-label">Starting Point</span></div>
+                <div class="step" data-fs-step="4"><span class="step-number">4</span><span class="step-label">Solution Desc</span></div>
+                <div class="step" data-fs-step="5"><span class="step-number">5</span><span class="step-label">Prev Steps</span></div>
+                <div class="step" data-fs-step="6"><span class="step-number">6</span><span class="step-label">Definition 1</span></div>
+                <div class="step" data-fs-step="7"><span class="step-number">7</span><span class="step-label">Definition 2</span></div>
+                <div class="step" data-fs-step="8"><span class="step-number">8</span><span class="step-label">Risks &amp; Issues</span></div>
+                <div class="step" data-fs-step="9"><span class="step-number">9</span><span class="step-label">Glossary</span></div>
+                <div class="step" data-fs-step="10"><span class="step-number">10</span><span class="step-label">Review</span></div>
             </div>
 
-            <div class="form-container">
-                <!-- ========== Step 1: User Story ========== -->
-                <div class="form-step active" id="step-1">
-                    <h3>User Story</h3>
-                    <p>Describe the need from the user's perspective.</p>
+            <div class="form-container" id="fs-form-container">
+
+                <!-- ========== FS Step 1: Document Info ========== -->
+                <div class="form-step active" id="fs-step-1">
+                    <h3>Document Information</h3>
+                    <p>Provide the document header details.</p>
+
+                    <!-- Load from JSON -->
+                    <div class="json-load-bar">
+                        <button type="button" class="btn btn-ghost btn-sm" id="fsLoadJsonBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Load from JSON
+                        </button>
+                        <input type="file" id="fsJsonFileInput" accept=".json" hidden />
+                        <span class="json-load-hint">Resume a previously saved Functional Specification</span>
+                    </div>
+
                     <div class="form-group">
-                        <label for="userRole">I as a …</label>
-                        <input type="text" id="userRole" placeholder="e.g., Production Planner" />
+                        <label for="fsTitle">Document Title *</label>
+                        <input type="text" id="fsTitle" placeholder="e.g., Automated Order Rescheduling" />
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fsDate">Date *</label>
+                            <input type="date" id="fsDate" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fsVersion">Version</label>
+                            <input type="text" id="fsVersion" placeholder="e.g., 1.0" value="1.0" />
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="userWant">want to …</label>
-                        <input type="text" id="userWant" placeholder="e.g., automate the rescheduling of production orders" />
-                    </div>
-                    <div class="form-group">
-                        <label for="userAbility">to be able to …</label>
-                        <input type="text" id="userAbility" placeholder="e.g., reduce manual planning effort by 50 %" />
+                        <label for="fsAuthor">Author *</label>
+                        <input type="text" id="fsAuthor" placeholder="e.g., John Doe" />
                     </div>
                 </div>
 
-                <!-- ========== Step 2: Process ========== -->
-                <div class="form-step" id="step-2">
-                    <h3>Process</h3>
-                    <p>Select the applicable function, process area, and sub-area.</p>
+                <!-- ========== FS Step 2: Responsibilities ========== -->
+                <div class="form-step" id="fs-step-2">
+                    <h3>Responsibilities</h3>
+                    <p>Specify the responsible stakeholders for this specification.</p>
 
-                    <div class="checkbox-grid three-col">
-                        <!-- Function -->
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">Function</h4>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="Unser Interface" /><span>Unser Interface</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="MRP Planning" /><span>MRP Planning</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="Sequencing" /><span>Sequencing</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="Optimization" /><span>Optimization</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="System Interface" /><span>System Interface</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="function" value="Other" data-toggle-other="functionOther" /><span>Other</span></label>
-                            <input type="text" id="functionOther" class="other-input hidden" placeholder="Describe custom function…" />
-                        </div>
-
-                        <!-- Process Area -->
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">Process-Area</h4>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Demand-Plan" /><span>Demand-Plan</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="APPS" /><span>APPS</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="CSC" /><span>CSC</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Final-Assembly" /><span>Final-Assembly</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Pre-Assembly" /><span>Pre-Assembly</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="External-Procurement" /><span>External-Procurement</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processArea" value="Other" data-toggle-other="processAreaOther" /><span>Other</span></label>
-                            <input type="text" id="processAreaOther" class="other-input hidden" placeholder="Describe custom area…" />
-                        </div>
-
-                        <!-- Process Sub-Area -->
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">Process-Sub-Area <span class="optional-badge">optional</span></h4>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Series-Planning" /><span>Series-Planning</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Pre- & Zero-Series-Planning" /><span>Pre- & Zero-Series-Planning</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Manual Scheduling" /><span>Manual Scheduling</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Quotation" /><span>Quotation</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Subcontracting" /><span>Subcontracting</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Sample Orders" /><span>Sample Orders</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Co-Products" /><span>Co-Products</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Alerting & Exception Messages" /><span>Alerting & Exception Messages</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="processSubArea" value="Evaluations" /><span>Evaluations</span></label>
-                        </div>
-                    </div>
-
-                    <div class="describe-below">
-                        <p class="describe-hint">If you did not find a suitable <strong>Function</strong> and <strong>Area</strong>, please describe below:</p>
-                        <textarea id="processDescribeBelow" rows="3" placeholder="Describe your custom function and/or area here…"></textarea>
-                    </div>
-                </div>
-
-                <!-- ========== Step 3: User ========== -->
-                <div class="form-step" id="step-3">
-                    <h3>User Group</h3>
-                    <p>Who will use this feature?</p>
-
-                    <div class="checkbox-grid three-col">
-                        <div class="checkbox-column">
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Planner" /><span>Planner</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="MRP Controller" /><span>MRP Controller</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Management" /><span>Management</span></label>
-                        </div>
-                        <div class="checkbox-column">
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Shop Floor" /><span>Shop Floor</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Development" /><span>Development</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Purchasing" /><span>Purchasing</span></label>
-                        </div>
-                        <div class="checkbox-column">
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Key-Users" /><span>Key-Users</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="IT-Support" /><span>IT-Support</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="userGroup" value="Other" data-toggle-other="userGroupOther" /><span>Other</span></label>
-                            <input type="text" id="userGroupOther" class="other-input hidden" placeholder="Specify other user group…" />
-                        </div>
-                    </div>
-
-                    <div class="describe-below">
-                        <p class="describe-hint">If you did not find a suitable <strong>User-Group</strong>, please describe below:</p>
-                        <textarea id="userGroupDescribeBelow" rows="3" placeholder="Describe your custom user group here…"></textarea>
-                    </div>
-                </div>
-
-                <!-- ========== Step 4: Problem Description ========== -->
-                <div class="form-step" id="step-4">
-                    <h3>Actual Problem what should be solved</h3>
-                    <p>Describe the Problem in short words, provide screenshots if necessary.</p>
-                    <div class="form-group">
-                        <label for="problemDescription">Problem Description</label>
-                        <textarea id="problemDescription" rows="6" placeholder="Describe the problem in short words…"></textarea>
-                    </div>
-
-                    <div class="upload-section">
-                        <h4>Screenshots <span class="optional-badge">optional</span></h4>
-                        <div class="upload-area" id="problem-upload-area">
-                            <div class="upload-placeholder">
-                                <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                <p>Drag & drop images here or click to select</p>
-                                <p class="upload-hint">Supports JPG and PNG</p>
+                    <div class="responsible-grid">
+                        <div class="responsible-card">
+                            <h4>Global Business Responsible (Requestor)</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="fsRespGlobalBizName">Name</label>
+                                    <input type="text" id="fsRespGlobalBizName" placeholder="e.g., Jane Smith" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="fsRespGlobalBizDate">Date</label>
+                                    <input type="date" id="fsRespGlobalBizDate" />
+                                </div>
                             </div>
-                            <input type="file" id="problem-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
                         </div>
-                        <div class="files-list" id="problem-files-list"></div>
+                        <div class="responsible-card">
+                            <h4>Global Shape Responsible (BSH GDS)</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="fsRespGlobalShapeName">Name</label>
+                                    <input type="text" id="fsRespGlobalShapeName" placeholder="e.g., XXX GDS-IYSA" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="fsRespGlobalShapeDate">Date</label>
+                                    <input type="date" id="fsRespGlobalShapeDate" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="responsible-card">
+                            <h4>Developer</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="fsRespDevName">Name</label>
+                                    <input type="text" id="fsRespDevName" placeholder="e.g., Developer Name" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="fsRespDevDate">Date</label>
+                                    <input type="date" id="fsRespDevDate" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="responsible-card">
+                            <h4>Responsible Steward Group Leader</h4>
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label for="fsRespStewardName">Name</label>
+                                    <input type="text" id="fsRespStewardName" placeholder="e.g., Steward Name" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="fsRespStewardDate">Date</label>
+                                    <input type="date" id="fsRespStewardDate" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- ========== Step 5: Solution Description ========== -->
-                <div class="form-step" id="step-5">
+                <!-- ========== FS Step 3: Starting Point ========== -->
+                <div class="form-step" id="fs-step-3">
+                    <h3>Starting Point</h3>
+                    <p>Describe the related project goal and context.</p>
+                    <div class="form-group">
+                        <label for="fsProjectGoal">(Related) Project Goal *</label>
+                        <textarea id="fsProjectGoal" rows="5" placeholder="Within the project Digital Core (or similar) the basic objectives and processes were defined, which
+are the basics for the product XXXX."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsDeveloperStatement">1.2 Developer Statement</label>
+                        <textarea id="fsDeveloperStatement" rows="4">Herewith the assigned developer declares that the proposed solution will be implemented under total consideration of the given rules / requirements which are valid within BSH company, see Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki</textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FS Step 4: Solution Description ========== -->
+                <div class="form-step" id="fs-step-4">
                     <h3>Solution Description</h3>
-                    <p>Describe how could the solution look like in short words, provide screenshots if necessary.</p>
+                    <p>Describe the solution, improvement potential, and delimitation.</p>
                     <div class="form-group">
-                        <label for="solutionDescription">Solution Description</label>
-                        <textarea id="solutionDescription" rows="6" placeholder="Describe how the solution could look like…"></textarea>
+                        <label for="fsSolutionDesc">Solution Description *</label>
+                        <textarea id="fsSolutionDesc" rows="4" placeholder="Text from requirement specification…"></textarea>
                     </div>
-
-                    <div class="upload-section">
-                        <h4>Screenshots <span class="optional-badge">optional</span></h4>
-                        <div class="upload-area" id="solution-upload-area">
-                            <div class="upload-placeholder">
-                                <svg class="upload-icon-svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                                <p>Drag & drop images here or click to select</p>
-                                <p class="upload-hint">Supports JPG and PNG</p>
-                            </div>
-                            <input type="file" id="solution-file-input" multiple accept=".jpg,.jpeg,.png" hidden>
-                        </div>
-                        <div class="files-list" id="solution-files-list"></div>
+                    <div class="form-group">
+                        <label for="fsImprovementPotential">Improvement Potential</label>
+                        <textarea id="fsImprovementPotential" rows="3" placeholder="Describe the improvement potential…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsDelimitation">Delimitation of Solution</label>
+                        <textarea id="fsDelimitation" rows="3" placeholder="Define the boundaries / scope limits…"></textarea>
                     </div>
                 </div>
 
-                <!-- ========== Step 6: Solution Design ========== -->
-                <div class="form-step" id="step-6">
-                    <h3>Solution Design</h3>
-                    <p>Specify the development system, technical details, naming, and authorizations.</p>
+                <!-- ========== FS Step 5: Previous Steps ========== -->
+                <div class="form-step" id="fs-step-5">
+                    <h3>Previous Steps</h3>
+                    <p>Document the approval and previous steps for this specification.</p>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fsPrevStepsTable">
+                            <thead>
+                                <tr><th>Step</th><th>When</th><th>Where</th><th>Who</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., Approval of requirement" /></td>
+                                    <td><input type="date" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., INDSCP-XXXX" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., Global Steward Group" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fsPrevStepsTable" data-cols="4">+ Add Row</button>
+                    </div>
+                </div>
 
-                    <!-- Development System checkboxes -->
-                    <h4 class="subsection-title">Development System</h4>
-                    <div class="checkbox-grid three-col">
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">ERP</h4>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_060" /><span>M0D_060</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_160" /><span>M0D_160</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_260" /><span>M0D_260</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_360" /><span>M0D_360</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="M0D_460" /><span>M0D_460</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="erp" value="Other" data-toggle-other="erpOther" /><span>Other</span></label>
-                            <input type="text" id="erpOther" class="other-input hidden" placeholder="Specify other ERP…" />
-                        </div>
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">SCM / S4</h4>
-                            <label class="checkbox-item"><input type="checkbox" name="scm" value="P0D_060" /><span>P0D_060</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="scm" value="R4B_060" /><span>R4B_060</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="scm" value="Other" data-toggle-other="scmOther" /><span>Other</span></label>
-                            <input type="text" id="scmOther" class="other-input hidden" placeholder="Specify other SCM…" />
-                        </div>
-                        <div class="checkbox-column">
-                            <h4 class="col-heading">Cloud</h4>
-                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="IBP" /><span>IBP</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="CPI/SDI" /><span>CPI/SDI</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="SCP" /><span>SCP</span></label>
-                            <label class="checkbox-item"><input type="checkbox" name="cloud" value="Other" data-toggle-other="cloudOther" /><span>Other</span></label>
-                            <input type="text" id="cloudOther" class="other-input hidden" placeholder="Specify other Cloud…" />
-                        </div>
+                <!-- ========== FS Step 6: Solution Definition Part 1 ========== -->
+                <div class="form-step" id="fs-step-6">
+                    <h3>Solution Definition (Part 1)</h3>
+                    <p>Define the functional aspects of the solution.</p>
+                    <div class="form-group">
+                        <label for="fsFunctionality">Functionality *</label>
+                        <textarea id="fsFunctionality" rows="4" placeholder="Describe the functionality…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsUserView">
+                            User View / Dialog Execution
+                            <span class="info-icon" data-tooltip="To be able to call and authorize that solution a transaction has to be created – and afterwards implemented into the SAP menu as follows:
+e.g. SAP P4B menu → Logistics → Additional functions → Production …">ⓘ</span>
+                        </label>
+                        <textarea id="fsUserView" rows="3" placeholder="Describe user view and dialog execution…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsLanguageTopics">
+                            Language Topics
+                            <span class="info-icon" data-tooltip="It is recommended to do and transport necessary translations to other languages directly with the creation and transport of the proposed solution.
+This has to be done under agreement with the global responsible.">ⓘ</span>
+                        </label>
+                        <textarea id="fsLanguageTopics" rows="3">Development language is English.</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsDataStructures">Data Structures and Data Elements/Fields</label>
+                        <textarea id="fsDataStructures" rows="3" placeholder="Describe data structures and elements…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsDataMaintenance">Data Maintenance</label>
+                        <textarea id="fsDataMaintenance" rows="3" placeholder="Describe data maintenance aspects…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FS Step 7: Solution Definition Part 2 ========== -->
+                <div class="form-step" id="fs-step-7">
+                    <h3>Solution Definition (Part 2)</h3>
+                    <p>Define interfaces, authorization, security, and architecture.</p>
+                    <div class="form-group">
+                        <label for="fsInterfaces">Interfaces</label>
+                        <textarea id="fsInterfaces" rows="3" placeholder="Describe interfaces…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsAuthorization">Authorization – User Roles</label>
+                        <textarea id="fsAuthorization" rows="3" placeholder="Describe authorization and user role requirements…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsInfoSecurity">Information Security and Data Protection</label>
+                        <textarea id="fsInfoSecurity" rows="3" placeholder="Describe information security and data protection aspects…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsArchitecture">Architecture and Technology</label>
+                        <textarea id="fsArchitecture" rows="3" placeholder="The new solution has to be multi-plant-able (mehrwerksfähig)."></textarea>
                     </div>
 
-                    <div class="design-fields">
-                        <div class="form-group">
-                            <label for="technicalDetails">Technical Details</label>
-                            <textarea id="technicalDetails" rows="4" placeholder="Describe all objects which have to be adjusted or created. Tables, Programs, Transactions, Views, etc."></textarea>
+                    <!-- Standardization Info Button -->
+                    <div class="form-group" style="margin-top: 12px;">
+                        <button type="button" class="btn btn-ghost btn-sm btn-standardization" id="fsStdInfoBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            Information on Standardization
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Standardization Right Panel -->
+                <div class="std-panel-overlay" id="stdPanelOverlay"></div>
+                <div class="std-panel" id="stdPanel">
+                    <div class="std-panel-header">
+                        <h3>Standardization</h3>
+                        <button type="button" class="std-panel-close" id="stdPanelClose">&times;</button>
+                    </div>
+                    <div class="std-panel-body">
+                        <div class="std-section">
+                            <h4>2.9 Standardization</h4>
+                            <p>The topic standardization is described in the BSH standard. The following points have to be considered:</p>
                         </div>
-                        <div class="form-group">
-                            <label for="namesAndLanguage">Names and Language</label>
-                            <textarea id="namesAndLanguage" rows="4" placeholder="If you create new fields, columns, transactions etc. describe short and long-texts in all necessary languages."></textarea>
+                        <div class="std-section">
+                            <h4>2.9.1 Global Template</h4>
+                            <p>If the solution is running in Global Template (GT) the developer has to check whether the solution can be realized within the GT framework. This means:</p>
+                            <ul>
+                                <li>Usage of GT naming conventions</li>
+                                <li>Usage of GT enhancement spots / BAdIs</li>
+                                <li>Documentation in GT standard</li>
+                                <li>Transport via GT transport route</li>
+                            </ul>
                         </div>
-                        <div class="form-group">
-                            <label for="authorization">Authorization</label>
-                            <textarea id="authorization" rows="4" placeholder="Consider special authorization objects for specific user groups, e.g. Key-Users."></textarea>
+                        <div class="std-section">
+                            <h4>2.9.2 Naming Conventions</h4>
+                            <p>All development objects have to follow BSH naming conventions:</p>
+                            <ul>
+                                <li>Programs / Reports: Z + Module + Description</li>
+                                <li>Function modules: Z_FM_ + Module + Description</li>
+                                <li>Classes: ZCL_ + Module + Description</li>
+                                <li>Tables: Z + Module + T_ + Description</li>
+                                <li>Data elements: Z + Module + DE_ + Description</li>
+                                <li>Domains: Z + Module + DO_ + Description</li>
+                            </ul>
+                            <p>For detailed naming conventions refer to the BSH Development Standards document on the BSH Wiki.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- ========== Step 7: Review & Export ========== -->
-                <div class="form-step" id="step-7">
-                    <h3>Review & Export</h3>
+                <!-- ========== FS Step 8: Risks & Open Issues ========== -->
+                <div class="form-step" id="fs-step-8">
+                    <h3>Risks, Open Issues &amp; Migration</h3>
+                    <p>Document risks, open issues, and migration considerations.</p>
+                    <div class="form-group">
+                        <label for="fsRisks">Risks</label>
+                        <textarea id="fsRisks" rows="3" placeholder="Please create a link to the status document (which you should please set up according to the template)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsOpenIssues">List of Open Issues</label>
+                        <textarea id="fsOpenIssues" rows="3" placeholder="Please create a link to the status document (which you should please set up according to the template)."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fsMigration">
+                            Migration
+                            <span class="info-icon" data-tooltip="In case an existing report / solution will be migrated / took over it has to be analysed whether key parameters are &quot;hard coded&quot;. Key parameters are for example:
+• AUART – Order type
+• DISPO – MRP controller
+• LGORT – Storage location
+• MATNR – Material number
+• MTART – Material type
+• STEUS – Control key
+• WERKS – Plant
+
+This information has to be forwarded to the GDS responsible in order to decide / clarify whether they will be implemented as a select option to selection screen.">ⓘ</span>
+                        </label>
+                        <textarea id="fsMigration" rows="4" placeholder="Describe migration considerations…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FS Step 9: Glossary & Document History ========== -->
+                <div class="form-step" id="fs-step-9">
+                    <h3>Glossary &amp; Document History</h3>
+                    <p>Define abbreviations and track document versions.</p>
+
+                    <h4 class="subsection-title">Glossary</h4>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fsGlossaryTable">
+                            <thead>
+                                <tr><th>Abbreviation</th><th>Description</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., GDS" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., Global Digital Services" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fsGlossaryTable" data-cols="2">+ Add Row</button>
+                    </div>
+
+                    <h4 class="subsection-title" style="margin-top:2rem">Document History</h4>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fsDocHistoryTable">
+                            <thead>
+                                <tr><th>Version</th><th>Date</th><th>Actioned by</th><th>Description</th><th>Status</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" value="1.0" /></td>
+                                    <td><input type="date" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Author name" /></td>
+                                    <td><input type="text" class="dt-input" value="Creation of functional specification" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., Draft" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fsDocHistoryTable" data-cols="5">+ Add Row</button>
+                    </div>
+                </div>
+
+                <!-- ========== FS Step 10: Review & Export ========== -->
+                <div class="form-step" id="fs-step-10">
+                    <h3>Review &amp; Export</h3>
                     <p>Review your specification below, then export as a Word document.</p>
 
-                    <div class="review-panel" id="reviewPanel">
+                    <div class="review-panel" id="fsReviewPanel">
                         <!-- Populated by JS -->
                     </div>
 
                     <div class="cta-panel">
                         <p>When you're satisfied, click <strong>Export .docx</strong> to download your Functional Specification.</p>
                         <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" id="editFromReviewBtn">Edit Form</button>
-                            <button type="button" class="btn btn-primary" id="exportBtn">
+                            <button type="button" class="btn btn-secondary" id="fsEditFromReviewBtn">Edit Form</button>
+                            <button type="button" class="btn btn-ghost" id="fsDownloadJsonBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Save JSON
+                            </button>
+                            <button type="button" class="btn btn-primary" id="fsExportBtn">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                     <polyline points="7 10 12 15 17 10"/>
@@ -273,11 +411,11 @@
             <!-- Navigation -->
             <div class="form-navigation">
                 <div class="nav-left">
-                    <button type="button" class="btn btn-ghost btn-reset-link" id="resetBtn">Reset Form</button>
+                    <button type="button" class="btn btn-ghost btn-reset-link" id="fsResetBtn">Reset Form</button>
                 </div>
                 <div class="nav-right">
-                    <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
-                    <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                    <button type="button" class="btn btn-secondary" id="fsPrevBtn">Previous</button>
+                    <button type="button" class="btn btn-primary" id="fsNextBtn">Next</button>
                 </div>
             </div>
         </div>

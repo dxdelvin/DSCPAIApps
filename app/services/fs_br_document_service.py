@@ -14,7 +14,7 @@ from docx.oxml import OxmlElement
 
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "static", "docs",
-    "Functional_Specification_Template.docx",
+    "Functional_Specification_Template_en.docx",
 )
 
 BR_TEMPLATE_PATH = os.path.join(
@@ -30,56 +30,6 @@ BSH_GREY = RGBColor(0x64, 0x74, 0x8B)
 
 # ─── Low-level helpers ────────────────────────────────────
 
-def _get_cell_label(cell) -> str:
-    """Extract label text from a checkbox table cell (strips checkbox char and whitespace)."""
-    return cell.text.strip().lstrip("\u2610\u2612 ").strip()
-
-
-def _check_cell_checkbox(cell):
-    """Toggle a Word SDT checkbox inside a table cell to checked."""
-    for sdt in cell._element.iter(qn("w:sdt")):
-        # Set w14:checked val="1"
-        for elem in sdt.iter():
-            if elem.tag == f"{{{W14_NS}}}checked":
-                elem.set(f"{{{W14_NS}}}val", "1")
-        # Swap display glyph
-        for t_elem in sdt.iter(qn("w:t")):
-            if t_elem.text and "\u2610" in t_elem.text:
-                t_elem.text = t_elem.text.replace("\u2610", "\u2612")
-
-
-def _toggle_column_checkboxes(table, col_selections: dict, header_row: bool = True):
-    """
-    Check table cells per-column.
-    col_selections: {col_index: [selected_items]}
-    Handles 'Other' appearing in multiple columns without cross-contamination.
-    """
-    start_row = 1 if header_row else 0
-    for col_idx, selected in col_selections.items():
-        normalised = {s.strip().lower() for s in selected if s}
-        if not normalised:
-            continue
-        for row in table.rows[start_row:]:
-            if col_idx < len(row.cells):
-                cell = row.cells[col_idx]
-                label = _get_cell_label(cell)
-                if label and label.lower() in normalised:
-                    _check_cell_checkbox(cell)
-
-
-def _toggle_table_checkboxes(table, selected_items: list, header_row: bool = False):
-    """Check all cells whose label matches any item in selected_items (flat list)."""
-    start_row = 1 if header_row else 0
-    normalised = {s.strip().lower() for s in selected_items if s}
-    if not normalised:
-        return
-    for row in table.rows[start_row:]:
-        for cell in row.cells:
-            label = _get_cell_label(cell)
-            if label and label.lower() in normalised:
-                _check_cell_checkbox(cell)
-
-
 def _set_para_text(para, text: str):
     """Replace a paragraph's text, preserving the first run's formatting."""
     if para.runs:
@@ -90,308 +40,230 @@ def _set_para_text(para, text: str):
         para.add_run(text)
 
 
-def _remove_paragraph(para):
-    """Remove a paragraph element from the document body."""
-    p = para._element
-    parent = p.getparent()
-    if parent is not None:
-        parent.remove(p)
+def _set_table_cell(table, row_idx, col_idx, text: str):
+    """Write text into a table cell, preserving existing run formatting."""
+    cell = table.cell(row_idx, col_idx)
+    para = cell.paragraphs[0]
+    if para.runs:
+        para.runs[0].text = text
+        for r in para.runs[1:]:
+            r.text = ""
+    else:
+        para.add_run(text)
 
 
-def _insert_text_para_after(ref_element, text: str, bold=False, italic=False):
-    """Insert a new w:p with text after ref_element. Returns the new w:p element."""
-    new_p = OxmlElement("w:p")
-    new_r = OxmlElement("w:r")
-
-    rpr = OxmlElement("w:rPr")
-    if bold:
-        rpr.append(OxmlElement("w:b"))
-    if italic:
-        rpr.append(OxmlElement("w:i"))
-    new_r.append(rpr)
-
-    new_t = OxmlElement("w:t")
-    new_t.set(qn("xml:space"), "preserve")
-    new_t.text = text
-    new_r.append(new_t)
-    new_p.append(new_r)
-
-    ref_element.addnext(new_p)
-    return new_p
+def _find_heading_para(doc, heading_text: str):
+    """Find a paragraph whose text matches heading_text (case-insensitive prefix)."""
+    target = heading_text.strip().lower()
+    for p in doc.paragraphs:
+        if "Heading" in p.style.name and p.text.strip().lower().startswith(target):
+            return p
+    return None
 
 
-def _insert_images_after(doc, ref_element, images: list):
-    """Insert images into the document body right after ref_element."""
-    if not images:
-        return ref_element
-
-    body = doc.element.body
-    current_ref = ref_element
-
-    for img_info in images:
-        img_stream = io.BytesIO(img_info["data"])
-        try:
-            # Add picture to end of document (creates relationship + element)
-            doc.add_picture(img_stream, width=Inches(3.0))
-            pic_para = doc.paragraphs[-1]
-            pic_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
-
-            # Move the picture element to the correct position
-            pic_elem = pic_para._element
-            body.remove(pic_elem)
-            current_ref.addnext(pic_elem)
-            current_ref = pic_elem
-
-            # Add a caption paragraph after the picture
-            cap_p = OxmlElement("w:p")
-            # Center alignment
-            ppr = OxmlElement("w:pPr")
-            jc = OxmlElement("w:jc")
-            jc.set(qn("w:val"), "center")
-            ppr.append(jc)
-            cap_p.append(ppr)
-            # Caption run (italic, 9pt, grey)
-            cap_r = OxmlElement("w:r")
-            rpr = OxmlElement("w:rPr")
-            rpr.append(OxmlElement("w:i"))
-            sz = OxmlElement("w:sz")
-            sz.set(qn("w:val"), "18")  # 9pt in half-points
-            rpr.append(sz)
-            clr = OxmlElement("w:color")
-            clr.set(qn("w:val"), "64748B")
-            rpr.append(clr)
-            cap_r.append(rpr)
-            cap_t = OxmlElement("w:t")
-            cap_t.text = img_info.get("name", "Screenshot")
-            cap_r.append(cap_t)
-            cap_p.append(cap_r)
-
-            current_ref.addnext(cap_p)
-            current_ref = cap_p
-
-        except Exception:
-            err_p = _insert_text_para_after(
-                current_ref,
-                f"[Image: {img_info.get('name', 'unknown')} — could not be embedded]",
-                italic=True,
-            )
-            current_ref = err_p
-
-    return current_ref
+def _first_content_para_after(doc, heading_para):
+    """Return the first non-empty Normal paragraph after a heading."""
+    found = False
+    for p in doc.paragraphs:
+        if p._p is heading_para._p:
+            found = True
+            continue
+        if found:
+            if "Heading" in p.style.name:
+                return None  # next heading reached, no content
+            if p.text.strip():
+                return p
+    return None
 
 
-# ─── Main generator ───────────────────────────────────────
+# ─── Functional Specification generator ───────────────────
 
-def generate_functional_spec_docx(
-    data: dict,
-    problem_images: List[dict] = None,
-    solution_images: List[dict] = None,
-) -> io.BytesIO:
+
+def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     """
     Fill the BSH Functional Specification template with form data.
     Returns an in-memory BytesIO buffer ready for streaming.
 
-    Template paragraph-index map (Functional_Specification_Template.docx):
-      [ 0] Heading 1  "Functional Specification"
-      [ 1] spacer
-      [ 2] Heading 2  "User Story"
-      [ 3] Normal     "I as a ..."
-      [ 4] Normal     "want to ..."
-      [ 5] Normal     "to be able to ..."
-      [ 6] spacer
-      [ 7] Heading 2  "Process"
-      [ 8] spacer                       (before Table 0)
-          TABLE 0 -- Process checkboxes  (10 rows x 3 cols)
-      [ 9] spacer                       (after Table 0)
-      [10] Normal     "If you did not find a suitable Function and Area ..."
-      [11] spacer                       (describe-below placeholder)
-      [12] Heading 2  "User"
-      [13] spacer                       (before Table 1)
-          TABLE 1 -- User checkboxes     (3 rows x 3 cols, no header row)
-      [14] spacer                       (after Table 1)
-      [15] Normal     "If you did not find a suitable User-Group ..."
-      [16] spacer                       (describe-below placeholder)
-      [17] Heading 2  "Actual Problem what should be solved"
-      [18] Normal     "Describe the Problem ..."
-      [19-22] spacers                   (content area)
-      [23] Heading 2  "Solution Description"
-      [24] Normal     "Describe how could the solution ..."
-      [25-27] spacers                   (content area)
-      [28] Heading 1  "Solution Design"
-      [29] spacer
-      [30] Heading 2  "Development System"
-      [31] spacer                       (before Table 2)
-          TABLE 2 -- Dev System checkboxes (7 rows x 3 cols)
-      [32] spacer                       (after Table 2)
-      [33] Heading 2  "Technical Details"
-      [34] Normal     "Describe all objects ..."
-      [35-41] spacers                   (content area)
-      [42] Heading 2  "Names and Language"
-      [43] Normal     "If you create new fields ..."
-      [44-45] spacers                   (content area)
-      [46] Heading 2  "Authorization"
-      [47] Normal     "Consider special authorization objects ..."
-      [48-50] spacers                   (content area)
+    Template structure (Functional_Specification_Template_en.docx):
+      Page Header Table (2x3):
+        R0C2: Date / Version / Author  |  R1: Title (merged)
+      Body Tables:
+        Table 0 (5x4): Responsibilities - Function/Name/Date/Task
+        Table 1 (4x4): Previous Steps  - Step/When/Where/Who
+        Table 2 (8x2): Glossary        - Abbreviation/Description
+        Table 3 (4x5): Document History - Version/Date/Actioned by/Description/Status
+      Sections (Heading paragraphs):
+        1.  Starting point
+        1.1 (Related) project goal      -> P54
+        1.2 Developer statement          (boilerplate, kept)
+        2.  Solution description         -> P66
+        2.1 Improvement potential        -> P70
+        2.2 Delimitation of solution     -> P74
+        2.3 Previous steps               -> Table 1
+        3.  Solution definition
+        3.1 Functionality                -> P90
+        3.2 User view, dialog execution  -> P94
+        3.4 Data structures              -> P111
+        3.5 Data maintenance             -> P115
+        3.6 Interfaces                   -> P119
+        3.7 Authorization – user roles   -> P123
+        3.8 Information security         -> (after P130)
+        3.10 Architecture and technology -> P161
+        5.  Risks                        -> P175
+        6.  List of open issues          -> P179
+        7.  Migration                    -> P183
+        8.  Glossary                     -> Table 2
+        9.  Document history             -> Table 3
     """
     doc = Document(TEMPLATE_PATH)
-    paras = doc.paragraphs  # snapshot -- element refs stay valid after edits
-
-    process_table = doc.tables[0]
-    user_table = doc.tables[1]
-    dev_table = doc.tables[2]
+    tables = doc.tables
 
     # ================================================================
-    # 1. USER STORY (paras 3-5)
+    # 1. PAGE HEADER — Title, Date, Version, Author
     # ================================================================
-    user_story = data.get("userStory", {})
-    role = user_story.get("role", "").strip()
-    want = user_story.get("want", "").strip()
-    ability = user_story.get("ability", "").strip()
+    title = data.get("title", "").strip()
+    date_val = data.get("date", "").strip()
+    version = data.get("version", "").strip()
+    author = data.get("author", "").strip()
 
-    if role:
-        _set_para_text(paras[3], f"I as a {role}")
-    if want:
-        _set_para_text(paras[4], f"want to {want}")
-    if ability:
-        _set_para_text(paras[5], f"to be able to {ability}")
+    hdr_table = doc.sections[0].header.tables[0]
 
-    # ================================================================
-    # 2. PROCESS -- Table 0 checkboxes (per-column to avoid "Other" clash)
-    # ================================================================
-    process = data.get("process", {})
-    _toggle_column_checkboxes(process_table, {
-        0: process.get("function", {}).get("selected", []),
-        1: process.get("processArea", {}).get("selected", []),
-        2: process.get("processSubArea", {}).get("selected", []),
-    }, header_row=True)
+    # Row 0, Col 2 has runs: "Date" \t "xx.xx.xxxx" \n "Version" \t "1.0" \n "Author" \t
+    cell_r0c2 = hdr_table.cell(0, 2)
+    runs = cell_r0c2.paragraphs[0].runs
+    if len(runs) >= 7:
+        runs[2].text = date_val or "xx.xx.xxxx"   # date value
+        runs[4].text = f"\t{version}" if version else "\t1.0"  # version value
+        runs[6].text = f"\t{author}"    # author value
 
-    # Remove the instruction hint paragraph [10]
-    _remove_paragraph(paras[10])
-
-    # Process custom "Other" text and describe-below
-    custom_fn = process.get("function", {}).get("other", "").strip()
-    custom_pa = process.get("processArea", {}).get("other", "").strip()
-    process_desc = process.get("describeBelow", "").strip()
-
-    has_other = custom_fn or custom_pa or process_desc
-    if has_other:
-        parts = []
-        if custom_fn:
-            parts.append(f"Function Other: {custom_fn}")
-        if custom_pa:
-            parts.append(f"Area Other: {custom_pa}")
-        if process_desc:
-            parts.append(process_desc)
-        _set_para_text(paras[11], "Other: " + "  |  ".join(parts))
-    else:
-        _remove_paragraph(paras[11])
+    # Row 1 (merged): Title
+    if title:
+        for ci in range(3):
+            cell = hdr_table.cell(1, ci)
+            para = cell.paragraphs[0]
+            if para.runs:
+                para.runs[0].text = title
+                for r in para.runs[1:]:
+                    r.text = ""
 
     # ================================================================
-    # 3. USER -- Table 1 checkboxes (flat list, no header row)
+    # 2. RESPONSIBILITIES TABLE (Table 0)
     # ================================================================
-    user_section = data.get("user", {})
-    _toggle_table_checkboxes(user_table, user_section.get("selected", []), header_row=False)
+    resp_table = tables[0]
+    responsibilities = data.get("responsibilities", {})
 
-    # Remove the instruction hint paragraph [15]
-    _remove_paragraph(paras[15])
+    resp_map = {
+        1: "globalBusiness",
+        2: "globalShape",
+        3: "developer",
+        4: "steward",
+    }
 
-    # User custom "Other" text and describe-below
-    user_other = user_section.get("other", "").strip()
-    user_desc = user_section.get("describeBelow", "").strip()
-
-    has_user_other = user_other or user_desc
-    if has_user_other:
-        parts = []
-        if user_other:
-            parts.append(user_other)
-        if user_desc:
-            parts.append(user_desc)
-        _set_para_text(paras[16], "Other: " + "  |  ".join(parts))
-    else:
-        _remove_paragraph(paras[16])
+    for row_idx, key in resp_map.items():
+        entry = responsibilities.get(key, {})
+        name = entry.get("name", "").strip()
+        date_str = entry.get("date", "").strip()
+        if name:
+            _set_table_cell(resp_table, row_idx, 1, name)
+        if date_str:
+            _set_table_cell(resp_table, row_idx, 2, date_str)
 
     # ================================================================
-    # 4. PROBLEM DESCRIPTION (para 18 = instruction, 19 = first content slot)
+    # 3. SECTION CONTENT — Replace placeholder text after headings
     # ================================================================
-    _remove_paragraph(paras[18])  # Remove "Describe the Problem ..." instruction
+    # Map: (heading text prefix, data key)
+    section_map = [
+        ("(Related) project goal", "projectGoal"),
+        ("Developer statement", "developerStatement"),
+        ("Solution description", "solutionDesc"),         # Heading 1 "Solution description"
+        ("Improvement potential", "improvementPotential"),
+        ("Delimitation of solution", "delimitation"),
+        ("Functionality", "functionality"),
+        ("User view", "userView"),
+        ("Language topics", "languageTopics"),
+        ("Data structures", "dataStructures"),
+        ("Data maintenance", "dataMaintenance"),
+        ("Interfaces", "interfaces"),
+        ("Authorization", "authorization"),
+        ("Information security", "infoSecurity"),
+        ("Architecture and technology", "architecture"),
+        ("Risks", "risks"),
+        ("List of open issues", "openIssues"),
+        ("Migration", "migration"),
+    ]
 
-    problem_text = data.get("problemDescription", "").strip()
-    if problem_text:
-        _set_para_text(paras[19], problem_text)
-        for p in [paras[22], paras[21], paras[20]]:
-            _remove_paragraph(p)
-
-    problem_ref = paras[19]._element
-    _insert_images_after(doc, problem_ref, problem_images)
-
-    # ================================================================
-    # 5. SOLUTION DESCRIPTION (para 24 = instruction, 25 = content slot)
-    # ================================================================
-    _remove_paragraph(paras[24])  # Remove "Describe how could the solution ..." instruction
-
-    solution_text = data.get("solutionDescription", "").strip()
-    if solution_text:
-        _set_para_text(paras[25], solution_text)
-        for p in [paras[27], paras[26]]:
-            _remove_paragraph(p)
-
-    solution_ref = paras[25]._element
-    _insert_images_after(doc, solution_ref, solution_images)
-
-    # ================================================================
-    # 6. DEVELOPMENT SYSTEM -- Table 2 checkboxes (per-column)
-    # ================================================================
-    dev_system = data.get("developmentSystem", {})
-    _toggle_column_checkboxes(dev_table, {
-        0: dev_system.get("erp", {}).get("selected", []),
-        1: dev_system.get("scm", {}).get("selected", []),
-        2: dev_system.get("cloud", {}).get("selected", []),
-    }, header_row=True)
-
-    custom_erp = dev_system.get("erp", {}).get("other", "").strip()
-    custom_scm = dev_system.get("scm", {}).get("other", "").strip()
-    custom_cloud = dev_system.get("cloud", {}).get("other", "").strip()
-    if custom_erp or custom_scm or custom_cloud:
-        parts = []
-        if custom_erp:
-            parts.append(f"ERP: {custom_erp}")
-        if custom_scm:
-            parts.append(f"SCM: {custom_scm}")
-        if custom_cloud:
-            parts.append(f"Cloud: {custom_cloud}")
-        _set_para_text(paras[32], "Other: " + "  |  ".join(parts))
+    for heading_text, data_key in section_map:
+        user_text = data.get(data_key, "").strip()
+        if not user_text:
+            continue
+        heading_para = _find_heading_para(doc, heading_text)
+        if not heading_para:
+            continue
+        content_para = _first_content_para_after(doc, heading_para)
+        if content_para:
+            _set_para_text(content_para, user_text)
+        else:
+            # No content para exists — insert one after the heading
+            new_p = OxmlElement("w:p")
+            new_r = OxmlElement("w:r")
+            new_t = OxmlElement("w:t")
+            new_t.set(qn("xml:space"), "preserve")
+            new_t.text = user_text
+            new_r.append(new_t)
+            new_p.append(new_r)
+            heading_para._p.addnext(new_p)
 
     # ================================================================
-    # 7. TECHNICAL DETAILS (para 34 = instruction, 35 = content slot)
+    # 4. PREVIOUS STEPS TABLE (Table 1)
     # ================================================================
-    _remove_paragraph(paras[34])  # Remove "Describe all objects ..." instruction
-
-    tech_text = data.get("technicalDetails", "").strip()
-    if tech_text:
-        _set_para_text(paras[35], tech_text)
-        for p in [paras[41], paras[40], paras[39], paras[38], paras[37], paras[36]]:
-            _remove_paragraph(p)
-
-    # ================================================================
-    # 8. NAMES AND LANGUAGE (para 43 = instruction, 44 = content slot)
-    # ================================================================
-    _remove_paragraph(paras[43])  # Remove "If you create new fields ..." instruction
-
-    names_text = data.get("namesAndLanguage", "").strip()
-    if names_text:
-        _set_para_text(paras[44], names_text)
-        _remove_paragraph(paras[45])
+    prev_steps = data.get("previousSteps", [])
+    prev_table = tables[1]
+    for i, row_data in enumerate(prev_steps):
+        if i >= 3:
+            break  # template has 3 data rows (1-3)
+        row_idx = i + 1
+        for col_idx in range(min(len(row_data), 4)):
+            val = row_data[col_idx].strip() if row_data[col_idx] else ""
+            if val:
+                _set_table_cell(prev_table, row_idx, col_idx, val)
 
     # ================================================================
-    # 9. AUTHORIZATION (para 47 = instruction, 48 = content slot)
+    # 5. GLOSSARY TABLE (Table 2)
     # ================================================================
-    _remove_paragraph(paras[47])  # Remove "Consider special authorization ..." instruction
+    glossary = data.get("glossary", [])
+    glossary_table = tables[2]
+    for i, row_data in enumerate(glossary):
+        if i >= 7:
+            break  # template has 7 data rows (1-7)
+        row_idx = i + 1
+        for col_idx in range(min(len(row_data), 2)):
+            val = row_data[col_idx].strip() if row_data[col_idx] else ""
+            if val:
+                _set_table_cell(glossary_table, row_idx, col_idx, val)
 
-    auth_text = data.get("authorization", "").strip()
-    if auth_text:
-        _set_para_text(paras[48], auth_text)
-        for p in [paras[50], paras[49]]:
-            _remove_paragraph(p)
+    # ================================================================
+    # 6. DOCUMENT HISTORY TABLE (Table 3)
+    # ================================================================
+    doc_history = data.get("docHistory", [])
+    history_table = tables[3]
+    for i, row_data in enumerate(doc_history):
+        if i >= 3:
+            break  # template has 3 data rows (1-3)
+        row_idx = i + 1
+        for col_idx in range(min(len(row_data), 5)):
+            val = row_data[col_idx].strip() if row_data[col_idx] else ""
+            if val:
+                _set_table_cell(history_table, row_idx, col_idx, val)
+
+    # ================================================================
+    # 7. FOOTER — update title in footer
+    # ================================================================
+    if title:
+        footer = doc.sections[0].footer
+        if footer and not footer.is_linked_to_previous:
+            for p in footer.paragraphs:
+                if "Business Requirement" in p.text or "XXXX" in p.text:
+                    _set_para_text(p, f"\t\t\n{title}\tPage 1\tDate of printing: ")
 
     # -- Write to buffer --
     buffer = io.BytesIO()

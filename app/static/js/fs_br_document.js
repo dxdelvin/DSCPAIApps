@@ -1,8 +1,8 @@
 /**
  * FS & BR Document Builder
  * Handles mode switching between Functional Specification and Business Requirement,
- * multi-step form navigation for both, checkbox "Other" toggling,
- * screenshot uploads, review summary rendering, and .docx export via API.
+ * multi-step form navigation for both, dynamic tables, JSON save/load,
+ * review summary rendering, and .docx export via API.
  */
 
 // ═══════════════════════════════════════════════════
@@ -11,11 +11,9 @@
 let currentMode = 'functional-spec';  // 'functional-spec' | 'business-req'
 
 // ── Functional Spec state ──
-let currentStep = 1;
-const totalSteps = 7;
-let maxAccessibleStep = 1;
-let problemFiles = [];
-let solutionFiles = [];
+let fsCurrentStep = 1;
+const fsTotalSteps = 10;
+let fsMaxAccessibleStep = 1;
 
 // ── Business Requirement state ──
 let brCurrentStep = 1;
@@ -25,12 +23,11 @@ let brMaxAccessibleStep = 1;
 window.addEventListener('DOMContentLoaded', () => {
     initModeSwitch();
     // Functional Spec
-    initNavigation();
-    initCheckboxToggles();
-    initModalHandlers();
-    initUploadZone('problem');
-    initUploadZone('solution');
-    updateNav();
+    initFsNavigation();
+    initFsDynamicTables();
+    initFsJsonLoad();
+    initFsStdPanel();
+    updateFsNav();
     // Business Requirement
     initBrNavigation();
     initBrCostTable();
@@ -72,123 +69,199 @@ function switchMode(mode) {
    FUNCTIONAL SPEC — Navigation
    ═══════════════════════════════════════════════════ */
 
-function initNavigation() {
-    const nextBtn = document.getElementById('nextBtn');
-    const prevBtn = document.getElementById('prevBtn');
-    const resetBtn = document.getElementById('resetBtn');
-    const exportBtn = document.getElementById('exportBtn');
-    const editFromReviewBtn = document.getElementById('editFromReviewBtn');
+function initFsNavigation() {
+    const nextBtn = document.getElementById('fsNextBtn');
+    const prevBtn = document.getElementById('fsPrevBtn');
+    const resetBtn = document.getElementById('fsResetBtn');
+    const exportBtn = document.getElementById('fsExportBtn');
+    const editBtn = document.getElementById('fsEditFromReviewBtn');
+    const downloadJsonBtn = document.getElementById('fsDownloadJsonBtn');
 
-    if (nextBtn) nextBtn.addEventListener('click', nextStep);
-    if (prevBtn) prevBtn.addEventListener('click', prevStep);
+    if (nextBtn) nextBtn.addEventListener('click', fsNextStep);
+    if (prevBtn) prevBtn.addEventListener('click', fsPrevStep);
     if (resetBtn) resetBtn.addEventListener('click', () => {
         showConfirmation(
             'Reset Form?',
             'All your inputs will be cleared. This cannot be undone.',
-            () => { resetForm(); goToStep(1); },
+            () => { fsResetForm(); fsGoToStep(1); },
             { icon: '⚠️', confirmText: 'Reset', cancelText: 'Cancel' }
         );
     });
-    if (exportBtn) exportBtn.addEventListener('click', exportDocx);
-    if (editFromReviewBtn) editFromReviewBtn.addEventListener('click', () => goToStep(1));
+    if (exportBtn) exportBtn.addEventListener('click', exportFsDocx);
+    if (editBtn) editBtn.addEventListener('click', () => fsGoToStep(1));
+    if (downloadJsonBtn) downloadJsonBtn.addEventListener('click', downloadFsJson);
 
     // Allow clicking step indicators to jump (only to visited steps)
-    document.querySelectorAll('#functional-spec-mode .step-indicator .step').forEach(el => {
+    document.querySelectorAll('#fs-step-indicator .step').forEach(el => {
         el.addEventListener('click', () => {
-            const target = parseInt(el.dataset.step, 10);
-            if (target <= maxAccessibleStep) goToStep(target);
+            const target = parseInt(el.dataset.fsStep, 10);
+            if (target <= fsMaxAccessibleStep) fsGoToStep(target);
         });
     });
 }
 
-function nextStep() {
-    if (currentStep < totalSteps) {
-        if (!validateStep(currentStep)) return;
-        goToStep(currentStep + 1);
+function fsNextStep() {
+    if (fsCurrentStep < fsTotalSteps) {
+        if (!validateFsStep(fsCurrentStep)) return;
+        fsGoToStep(fsCurrentStep + 1);
     }
 }
 
-function prevStep() {
-    if (currentStep > 1) goToStep(currentStep - 1);
+function fsPrevStep() {
+    if (fsCurrentStep > 1) fsGoToStep(fsCurrentStep - 1);
 }
 
-function goToStep(n) {
-    if (n < 1 || n > totalSteps) return;
+function fsGoToStep(n) {
+    if (n < 1 || n > fsTotalSteps) return;
 
-    // Clear validation highlights when navigating
     document.querySelectorAll('#functional-spec-mode .field-error').forEach(el => el.classList.remove('field-error'));
-
-    // Hide current
     document.querySelectorAll('#functional-spec-mode .form-step').forEach(s => s.classList.remove('active'));
-    document.getElementById(`step-${n}`).classList.add('active');
+    const target = document.getElementById(`fs-step-${n}`);
+    if (target) target.classList.add('active');
 
-    currentStep = n;
-    if (n > maxAccessibleStep) maxAccessibleStep = n;
+    fsCurrentStep = n;
+    if (n > fsMaxAccessibleStep) fsMaxAccessibleStep = n;
 
-    // If landing on review step, build summary
-    if (n === totalSteps) buildReviewSummary();
+    if (n === fsTotalSteps) buildFsReviewSummary();
 
-    updateNav();
-    // Scroll form into view
-    document.querySelector('#functional-spec-mode .form-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    updateFsNav();
+    const container = document.querySelector('#fs-form-container');
+    if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-function updateNav() {
-    const prevBtn = document.getElementById('prevBtn');
-    const nextBtn = document.getElementById('nextBtn');
+function updateFsNav() {
+    const prevBtn = document.getElementById('fsPrevBtn');
+    const nextBtn = document.getElementById('fsNextBtn');
 
-    if (prevBtn) prevBtn.style.display = currentStep > 1 ? '' : 'none';
+    if (prevBtn) prevBtn.style.display = fsCurrentStep > 1 ? '' : 'none';
     if (nextBtn) {
-        nextBtn.style.display = currentStep < totalSteps ? '' : 'none';
-        nextBtn.textContent = currentStep === totalSteps - 1 ? 'Review' : 'Next';
+        nextBtn.style.display = fsCurrentStep < fsTotalSteps ? '' : 'none';
+        nextBtn.textContent = fsCurrentStep === fsTotalSteps - 1 ? 'Review' : 'Next';
     }
 
-    // Update step indicators
-    document.querySelectorAll('#functional-spec-mode .step-indicator .step').forEach(el => {
-        const s = parseInt(el.dataset.step, 10);
+    document.querySelectorAll('#fs-step-indicator .step').forEach(el => {
+        const s = parseInt(el.dataset.fsStep, 10);
         el.classList.remove('step-active', 'step-completed');
-        if (s === currentStep) el.classList.add('step-active');
-        else if (s < currentStep) el.classList.add('step-completed');
+        if (s === fsCurrentStep) el.classList.add('step-active');
+        else if (s < fsCurrentStep) el.classList.add('step-completed');
     });
 }
 
-function resetForm() {
-    // Clear all inputs
-    document.querySelectorAll('#functional-spec-mode input[type="text"], #functional-spec-mode textarea').forEach(el => { el.value = ''; });
-    document.querySelectorAll('#functional-spec-mode input[type="checkbox"]').forEach(el => { el.checked = false; });
-    // Re-hide all "other" inputs
-    document.querySelectorAll('#functional-spec-mode .other-input').forEach(el => el.classList.add('hidden'));
-    // Clear screenshots
-    problemFiles = [];
-    solutionFiles = [];
-    renderFileList('problem');
-    renderFileList('solution');
-    maxAccessibleStep = 1;
+function fsResetForm() {
+    document.querySelectorAll('#functional-spec-mode input[type="text"], #functional-spec-mode input[type="date"], #functional-spec-mode textarea').forEach(el => { el.value = ''; });
+    // Restore default values
+    const devStmt = document.getElementById('fsDeveloperStatement');
+    if (devStmt) devStmt.value = 'Herewith the assigned developer declares that the proposed solution will be implemented under total consideration of the given rules / requirements which are valid within BSH company, see Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki';
+    const langEl = document.getElementById('fsLanguageTopics');
+    if (langEl) langEl.value = 'Development language is English.';
+    // Reset dynamic tables to single empty row
+    const dtMeta = {
+        fsPrevStepsTable: { cols: 4, dateCols: [1] },
+        fsGlossaryTable: { cols: 2, dateCols: [] },
+        fsDocHistoryTable: { cols: 5, dateCols: [1] },
+    };
+    for (const [id, meta] of Object.entries(dtMeta)) {
+        const table = document.getElementById(id);
+        if (!table) continue;
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = _buildDynamicRow(meta.cols, meta.dateCols);
+        _bindRemoveButtons(tbody);
+    }
+    fsMaxAccessibleStep = 1;
     showToast('Form has been reset', 'info');
 }
 
 /* ═══════════════════════════════════════════════════
-   Checkbox "Other" Toggle
+   FS Dynamic Tables (Previous Steps, Glossary, Doc History)
    ═══════════════════════════════════════════════════ */
 
-function initCheckboxToggles() {
-    document.querySelectorAll('[data-toggle-other]').forEach(cb => {
-        cb.addEventListener('change', () => {
-            const target = document.getElementById(cb.dataset.toggleOther);
-            if (target) {
-                target.classList.toggle('hidden', !cb.checked);
-                if (cb.checked) target.focus();
-                else target.value = '';
-            }
+// Date column indices per table (0-based)
+const FS_DT_DATE_COLS = {
+    fsPrevStepsTable: [1],
+    fsDocHistoryTable: [1],
+};
+
+function initFsDynamicTables() {
+    // Add-row buttons
+    document.querySelectorAll('#functional-spec-mode .btn-add-row').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tableId = btn.dataset.table;
+            const cols = parseInt(btn.dataset.cols, 10);
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            const dateCols = FS_DT_DATE_COLS[tableId] || [];
+            tbody.insertAdjacentHTML('beforeend', _buildDynamicRow(cols, dateCols));
+            _bindRemoveButtons(tbody);
         });
     });
+
+    // Bind initial remove buttons
+    document.querySelectorAll('#functional-spec-mode .dynamic-table tbody').forEach(tbody => {
+        _bindRemoveButtons(tbody);
+    });
+}
+
+function _buildDynamicRow(cols, dateCols = []) {
+    let cells = '';
+    for (let i = 0; i < cols; i++) {
+        const inputType = dateCols.includes(i) ? 'date' : 'text';
+        cells += `<td><input type="${inputType}" class="dt-input" /></td>`;
+    }
+    cells += `<td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>`;
+    return `<tr>${cells}</tr>`;
+}
+
+function _bindRemoveButtons(tbody) {
+    tbody.querySelectorAll('.btn-remove-row').forEach(btn => {
+        btn.onclick = () => {
+            const row = btn.closest('tr');
+            if (tbody.rows.length > 1) {
+                row.remove();
+            } else {
+                // Don't remove last row, just clear it
+                row.querySelectorAll('input').forEach(inp => { inp.value = ''; });
+            }
+        };
+    });
+}
+
+function _collectDynamicTable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return [];
+    const rows = [];
+    table.querySelectorAll('tbody tr').forEach(tr => {
+        const cells = [];
+        tr.querySelectorAll('input').forEach(inp => cells.push(inp.value.trim()));
+        if (cells.some(c => c)) rows.push(cells);
+    });
+    return rows;
+}
+
+function _loadDynamicTable(tableId, data, cols) {
+    const table = document.getElementById(tableId);
+    if (!table || !data || !data.length) return;
+    const tbody = table.querySelector('tbody');
+    const dateCols = FS_DT_DATE_COLS[tableId] || [];
+    tbody.innerHTML = '';
+    data.forEach(rowData => {
+        let cells = '';
+        for (let i = 0; i < cols; i++) {
+            const v = (rowData[i] || '').replace(/"/g, '&quot;');
+            const inputType = dateCols.includes(i) ? 'date' : 'text';
+            cells += `<td><input type="${inputType}" class="dt-input" value="${v}" /></td>`;
+        }
+        cells += `<td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>`;
+        tbody.insertAdjacentHTML('beforeend', `<tr>${cells}</tr>`);
+    });
+    _bindRemoveButtons(tbody);
 }
 
 /* ═══════════════════════════════════════════════════
    FS Step Validation
    ═══════════════════════════════════════════════════ */
 
-function validateStep(step) {
+function validateFsStep(step) {
     document.querySelectorAll('#functional-spec-mode .field-error').forEach(el => el.classList.remove('field-error'));
 
     const missing = [];
@@ -201,50 +274,21 @@ function validateStep(step) {
         }
     };
 
-    const requireCheckboxGroup = (name, label) => {
-        if (!document.querySelectorAll(`input[name="${name}"]:checked`).length) {
-            document.querySelectorAll(`input[name="${name}"]`).forEach(cb => {
-                const col = cb.closest('.checkbox-column');
-                if (col) col.classList.add('field-error');
-            });
-            missing.push(label);
-        }
-    };
-
     switch (step) {
         case 1:
-            requireText('userRole', 'I as a');
-            requireText('userWant', 'want to');
-            requireText('userAbility', 'to be able to');
-            break;
-        case 2:
-            requireCheckboxGroup('function', 'Function');
-            requireCheckboxGroup('processArea', 'Process-Area');
+            requireText('fsTitle', 'Document Title');
+            requireText('fsDate', 'Date');
+            requireText('fsAuthor', 'Author');
             break;
         case 3:
-            requireCheckboxGroup('userGroup', 'User Group');
+            requireText('fsProjectGoal', 'Project Goal');
             break;
         case 4:
-            requireText('problemDescription', 'Problem Description');
+            requireText('fsSolutionDesc', 'Solution Description');
             break;
-        case 5:
-            requireText('solutionDescription', 'Solution Description');
+        case 6:
+            requireText('fsFunctionality', 'Functionality');
             break;
-        case 6: {
-            const anyDev = ['erp', 'scm', 'cloud'].some(n =>
-                document.querySelectorAll(`input[name="${n}"]:checked`).length > 0
-            );
-            if (!anyDev) {
-                document.querySelectorAll('#functional-spec-mode .checkbox-column').forEach(col => {
-                    if (col.closest('#step-6')) col.classList.add('field-error');
-                });
-                missing.push('at least one Development System');
-            }
-            requireText('technicalDetails', 'Technical Details');
-            requireText('namesAndLanguage', 'Names and Language');
-            requireText('authorization', 'Authorization');
-            break;
-        }
     }
 
     if (missing.length) {
@@ -257,323 +301,261 @@ function validateStep(step) {
 }
 
 /* ═══════════════════════════════════════════════════
-   Screenshot Upload — standalone per-zone logic
-   ═══════════════════════════════════════════════════ */
-
-function getFiles(prefix) { return prefix === 'problem' ? problemFiles : solutionFiles; }
-function setFiles(prefix, files) { if (prefix === 'problem') problemFiles = files; else solutionFiles = files; }
-
-function initUploadZone(prefix) {
-    const dropArea  = document.getElementById(`${prefix}-upload-area`);
-    const fileInput = document.getElementById(`${prefix}-file-input`);
-    if (!dropArea || !fileInput) return;
-
-    let dragCounter = 0;
-
-    dropArea.addEventListener('click', () => fileInput.click());
-
-    fileInput.addEventListener('change', () => {
-        addFiles(prefix, Array.from(fileInput.files));
-        fileInput.value = '';
-    });
-
-    dropArea.addEventListener('dragenter', e => {
-        e.preventDefault(); e.stopPropagation();
-        dragCounter++;
-        dropArea.classList.add('dragover');
-    });
-    dropArea.addEventListener('dragover', e => {
-        e.preventDefault(); e.stopPropagation();
-    });
-    dropArea.addEventListener('dragleave', e => {
-        e.preventDefault(); e.stopPropagation();
-        dragCounter--;
-        if (dragCounter <= 0) { dragCounter = 0; dropArea.classList.remove('dragover'); }
-    });
-    dropArea.addEventListener('drop', e => {
-        e.preventDefault(); e.stopPropagation();
-        dragCounter = 0;
-        dropArea.classList.remove('dragover');
-        const valid = Array.from(e.dataTransfer.files).filter(f => isValidImage(f));
-        if (valid.length) addFiles(prefix, valid);
-        else showToast('Only .jpg, .jpeg, .png files are supported', 'warning');
-    });
-}
-
-function isValidImage(file) {
-    const validTypes = ['image/jpeg', 'image/png'];
-    const validExts  = ['.jpg', '.jpeg', '.png'];
-    return validTypes.includes(file.type) || validExts.some(ext => file.name.toLowerCase().endsWith(ext));
-}
-
-function addFiles(prefix, newFiles) {
-    const files = getFiles(prefix);
-    const MAX = 10;
-    const MAX_SIZE = 5 * 1024 * 1024;
-
-    newFiles.forEach(file => {
-        if (files.length >= MAX) { showToast(`Maximum ${MAX} files allowed`, 'warning'); return; }
-        if (file.size > MAX_SIZE) { showToast(`${file.name} exceeds 5 MB limit`, 'warning'); return; }
-        if (!isValidImage(file)) { showToast(`${file.name} is not a supported file type`, 'warning'); return; }
-        if (files.some(f => f.name === file.name && f.size === file.size)) { showToast(`${file.name} already added`, 'warning'); return; }
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            files.push({ name: file.name, size: file.size, type: file.type, data: reader.result });
-            renderFileList(prefix);
-        };
-        reader.readAsDataURL(file);
-    });
-}
-
-function renderFileList(prefix) {
-    const files = getFiles(prefix);
-    const container = document.getElementById(`${prefix}-files-list`);
-    if (!container) return;
-    container.innerHTML = '';
-
-    let dragSrcIdx = null;
-
-    files.forEach((file, idx) => {
-        const item = document.createElement('div');
-        item.className = 'file-item';
-        item.draggable = true;
-
-        const isImg = file.type.startsWith('image/');
-        const preview = isImg ? `<img src="${file.data}" class="file-preview" alt="Preview">` : '';
-
-        item.innerHTML = `
-            <div class="file-item-content">
-                ${preview}
-                <div class="file-details">
-                    <p class="file-name">${escapeText(file.name)}</p>
-                    <p class="file-size">${fmtBytes(file.size)}</p>
-                </div>
-            </div>
-            <button type="button" class="btn-remove-file" title="Remove">✕</button>
-        `;
-
-        item.querySelector('.btn-remove-file').addEventListener('click', e => {
-            e.stopPropagation();
-            files.splice(idx, 1);
-            renderFileList(prefix);
-            showToast('File removed', 'info');
-        });
-
-        // Drag-to-reorder
-        item.addEventListener('dragstart', e => {
-            dragSrcIdx = idx;
-            item.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', '');
-        });
-        item.addEventListener('dragend', () => {
-            container.querySelectorAll('.file-item').forEach(el => el.classList.remove('dragging', 'drag-over'));
-            dragSrcIdx = null;
-        });
-        item.addEventListener('dragover', e => {
-            e.preventDefault();
-            if (dragSrcIdx !== null && dragSrcIdx !== idx) item.classList.add('drag-over');
-        });
-        item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
-        item.addEventListener('drop', e => {
-            e.preventDefault(); e.stopPropagation();
-            if (dragSrcIdx !== null && dragSrcIdx !== idx) {
-                const [moved] = files.splice(dragSrcIdx, 1);
-                files.splice(idx, 0, moved);
-                renderFileList(prefix);
-            }
-            container.querySelectorAll('.file-item').forEach(el => el.classList.remove('drag-over'));
-        });
-
-        container.appendChild(item);
-    });
-}
-
-function escapeText(text) {
-    if (!text) return '';
-    const d = document.createElement('div');
-    d.textContent = text;
-    return d.innerHTML;
-}
-
-function fmtBytes(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-/* ═══════════════════════════════════════════════════
-   Info Modal
-   ═══════════════════════════════════════════════════ */
-
-function initModalHandlers() {
-    const infoBtn = document.getElementById('infoBtn');
-    const modal = document.getElementById('infoModal');
-    const closeBtn = modal ? modal.querySelector('.close') : null;
-
-    if (infoBtn && modal) infoBtn.addEventListener('click', () => modal.style.display = 'block');
-    if (closeBtn && modal) closeBtn.addEventListener('click', () => modal.style.display = 'none');
-    if (modal) window.addEventListener('click', e => { if (e.target === modal) modal.style.display = 'none'; });
-}
-
-/* ═══════════════════════════════════════════════════
    FS Collect Form Data
    ═══════════════════════════════════════════════════ */
 
-function collectFormData() {
-    const checked = name => Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(cb => cb.value);
-
+function collectFsFormData() {
     return {
-        userStory: {
-            role: val('userRole'),
-            want: val('userWant'),
-            ability: val('userAbility'),
+        title: val('fsTitle'),
+        date: val('fsDate'),
+        version: val('fsVersion'),
+        author: val('fsAuthor'),
+        responsibilities: {
+            globalBusiness: { name: val('fsRespGlobalBizName'), date: val('fsRespGlobalBizDate') },
+            globalShape: { name: val('fsRespGlobalShapeName'), date: val('fsRespGlobalShapeDate') },
+            developer: { name: val('fsRespDevName'), date: val('fsRespDevDate') },
+            steward: { name: val('fsRespStewardName'), date: val('fsRespStewardDate') },
         },
-        process: {
-            function: { selected: checked('function'), other: val('functionOther') },
-            processArea: { selected: checked('processArea'), other: val('processAreaOther') },
-            processSubArea: { selected: checked('processSubArea') },
-            describeBelow: val('processDescribeBelow'),
-        },
-        user: {
-            selected: checked('userGroup'),
-            other: val('userGroupOther'),
-            describeBelow: val('userGroupDescribeBelow'),
-        },
-        problemDescription: val('problemDescription'),
-        solutionDescription: val('solutionDescription'),
-        developmentSystem: {
-            erp: { selected: checked('erp'), other: val('erpOther') },
-            scm: { selected: checked('scm'), other: val('scmOther') },
-            cloud: { selected: checked('cloud'), other: val('cloudOther') },
-        },
-        technicalDetails: val('technicalDetails'),
-        namesAndLanguage: val('namesAndLanguage'),
-        authorization: val('authorization'),
+        projectGoal: val('fsProjectGoal'),
+        developerStatement: val('fsDeveloperStatement'),
+        solutionDesc: val('fsSolutionDesc'),
+        improvementPotential: val('fsImprovementPotential'),
+        delimitation: val('fsDelimitation'),
+        previousSteps: _collectDynamicTable('fsPrevStepsTable'),
+        functionality: val('fsFunctionality'),
+        userView: val('fsUserView'),
+        languageTopics: val('fsLanguageTopics'),
+        dataStructures: val('fsDataStructures'),
+        dataMaintenance: val('fsDataMaintenance'),
+        interfaces: val('fsInterfaces'),
+        authorization: val('fsAuthorization'),
+        infoSecurity: val('fsInfoSecurity'),
+        architecture: val('fsArchitecture'),
+        risks: val('fsRisks'),
+        openIssues: val('fsOpenIssues'),
+        migration: val('fsMigration'),
+        glossary: _collectDynamicTable('fsGlossaryTable'),
+        docHistory: _collectDynamicTable('fsDocHistoryTable'),
     };
-}
-
-function val(id) {
-    const el = document.getElementById(id);
-    return el ? el.value.trim() : '';
 }
 
 /* ═══════════════════════════════════════════════════
    FS Review Summary Builder
    ═══════════════════════════════════════════════════ */
 
-function buildReviewSummary() {
-    const data = collectFormData();
-    const panel = document.getElementById('reviewPanel');
+function buildFsReviewSummary() {
+    const data = collectFsFormData();
+    const panel = document.getElementById('fsReviewPanel');
     if (!panel) return;
 
     let html = '';
 
-    html += section('User Story', [
-        row('I as a', data.userStory.role),
-        row('want to', data.userStory.want),
-        row('to be able to', data.userStory.ability),
+    // Document Info
+    html += section('Document Information', [
+        row('Title', data.title),
+        row('Date', data.date),
+        row('Version', data.version),
+        row('Author', data.author),
     ]);
 
-    const processRows = [
-        chipRow('Function', data.process.function.selected, data.process.function.other),
-        chipRow('Process-Area', data.process.processArea.selected, data.process.processArea.other),
-        chipRow('Sub-Area', data.process.processSubArea.selected),
-    ];
-    if (data.process.describeBelow) processRows.push(row('Additional Details', data.process.describeBelow));
-    html += section('Process', processRows);
+    // Responsibilities
+    const respLabels = {
+        globalBusiness: 'Global Business Responsible',
+        globalShape: 'Global Shape Responsible',
+        developer: 'Developer',
+        steward: 'Steward Group Leader',
+    };
+    const respRows = [];
+    for (const [key, label] of Object.entries(respLabels)) {
+        const r = data.responsibilities[key];
+        const parts = [r.name, r.date].filter(Boolean);
+        respRows.push(row(label, parts.join(' — ') || ''));
+    }
+    html += section('Responsibilities', respRows);
 
-    const userRows = [chipRow('Users', data.user.selected, data.user.other)];
-    if (data.user.describeBelow) userRows.push(row('Additional Details', data.user.describeBelow));
-    html += section('User Group', userRows);
+    // Starting Point
+    html += section('Starting Point', [
+        row('Project Goal', data.projectGoal),
+        row('Developer Statement', data.developerStatement),
+    ]);
 
-    const pFiles = problemFiles;
-    const problemRows = [row('Description', data.problemDescription)];
-    if (pFiles.length) problemRows.push(thumbnailRow('Screenshots', pFiles));
-    html += section('Problem', problemRows);
+    // Solution Description
+    html += section('Solution Description', [
+        row('Description', data.solutionDesc),
+        row('Improvement Potential', data.improvementPotential),
+        row('Delimitation', data.delimitation),
+    ]);
 
-    const sFiles = solutionFiles;
-    const solutionRows = [row('Description', data.solutionDescription)];
-    if (sFiles.length) solutionRows.push(thumbnailRow('Screenshots', sFiles));
-    html += section('Solution', solutionRows);
+    // Previous Steps
+    if (data.previousSteps.length) {
+        const psRows = data.previousSteps.map(r =>
+            row(r[0] || 'Step', [r[1], r[2], r[3]].filter(Boolean).join(' · '))
+        );
+        html += section('Previous Steps', psRows);
+    } else {
+        html += section('Previous Steps', [row('Steps', '')]);
+    }
 
-    html += section('Solution Design', [
-        chipRow('ERP', data.developmentSystem.erp.selected, data.developmentSystem.erp.other),
-        chipRow('SCM / S4', data.developmentSystem.scm.selected, data.developmentSystem.scm.other),
-        chipRow('Cloud', data.developmentSystem.cloud.selected, data.developmentSystem.cloud.other),
-        row('Technical Details', data.technicalDetails),
-        row('Names & Language', data.namesAndLanguage),
+    // Solution Definition 1
+    html += section('Solution Definition (Part 1)', [
+        row('Functionality', data.functionality),
+        row('User View / Dialog', data.userView),
+        row('Language Topics', data.languageTopics),
+        row('Data Structures', data.dataStructures),
+        row('Data Maintenance', data.dataMaintenance),
+    ]);
+
+    // Solution Definition 2
+    html += section('Solution Definition (Part 2)', [
+        row('Interfaces', data.interfaces),
         row('Authorization', data.authorization),
+        row('Info Security', data.infoSecurity),
+        row('Architecture', data.architecture),
     ]);
+
+    // Risks & Issues
+    html += section('Risks, Issues & Migration', [
+        row('Risks', data.risks),
+        row('Open Issues', data.openIssues),
+        row('Migration', data.migration),
+    ]);
+
+    // Glossary
+    if (data.glossary.length) {
+        const gRows = data.glossary.map(r => row(r[0] || '—', r[1] || ''));
+        html += section('Glossary', gRows);
+    }
+
+    // Doc History
+    if (data.docHistory.length) {
+        const hRows = data.docHistory.map(r =>
+            row(`v${r[0] || '?'}`, [r[1], r[2], r[3], r[4]].filter(Boolean).join(' · '))
+        );
+        html += section('Document History', hRows);
+    }
 
     panel.innerHTML = html;
 }
 
-// ── Review helpers ──
+/* ═══════════════════════════════════════════════════
+   FS JSON Save / Load
+   ═══════════════════════════════════════════════════ */
 
-function section(title, rows) {
-    return `<div class="review-section"><div class="review-section-title">${title}</div>${rows.join('')}</div>`;
+function downloadFsJson() {
+    const data = collectFsFormData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = (data.title || 'Functional_Spec').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+    a.download = `${safeName}_FS.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('JSON saved', 'success');
 }
 
-function row(label, value) {
-    const display = value || '<span class="review-empty">Not provided</span>';
-    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value">${escapeHtml(display)}</span></div>`;
+function initFsJsonLoad() {
+    const btn = document.getElementById('fsLoadJsonBtn');
+    const input = document.getElementById('fsJsonFileInput');
+    if (!btn || !input) return;
+
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const data = JSON.parse(reader.result);
+                loadFsFromJson(data);
+                showToast('Loaded from JSON successfully', 'success');
+            } catch {
+                showToast('Invalid JSON file', 'error');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
+    });
 }
 
-function chipRow(label, items, otherText) {
-    let chips = '';
-    if (items && items.length) {
-        chips = `<div class="review-chips">${items.map(i => `<span class="review-chip">${escapeHtml(i)}</span>`).join('')}</div>`;
+function loadFsFromJson(data) {
+    // Step 1: Doc Info
+    setVal('fsTitle', data.title);
+    setVal('fsDate', data.date);
+    setVal('fsVersion', data.version);
+    setVal('fsAuthor', data.author);
+
+    // Step 2: Responsibilities
+    const resp = data.responsibilities || {};
+    const rMap = {
+        globalBusiness: ['fsRespGlobalBizName', 'fsRespGlobalBizDate'],
+        globalShape: ['fsRespGlobalShapeName', 'fsRespGlobalShapeDate'],
+        developer: ['fsRespDevName', 'fsRespDevDate'],
+        steward: ['fsRespStewardName', 'fsRespStewardDate'],
+    };
+    for (const [key, ids] of Object.entries(rMap)) {
+        const entry = resp[key] || {};
+        setVal(ids[0], entry.name);
+        setVal(ids[1], entry.date);
     }
-    if (otherText) {
-        chips += `<div class="review-chips" style="margin-top:4px"><span class="review-chip">${escapeHtml(otherText)}</span></div>`;
-    }
-    if (!chips) chips = '<span class="review-empty">None selected</span>';
-    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value">${chips}</span></div>`;
+
+    // Step 3
+    setVal('fsProjectGoal', data.projectGoal);
+    setVal('fsDeveloperStatement', data.developerStatement);
+
+    // Step 4
+    setVal('fsSolutionDesc', data.solutionDesc);
+    setVal('fsImprovementPotential', data.improvementPotential);
+    setVal('fsDelimitation', data.delimitation);
+
+    // Step 5: Previous Steps
+    if (data.previousSteps) _loadDynamicTable('fsPrevStepsTable', data.previousSteps, 4);
+
+    // Step 6
+    setVal('fsFunctionality', data.functionality);
+    setVal('fsUserView', data.userView);
+    setVal('fsLanguageTopics', data.languageTopics);
+    setVal('fsDataStructures', data.dataStructures);
+    setVal('fsDataMaintenance', data.dataMaintenance);
+
+    // Step 7
+    setVal('fsInterfaces', data.interfaces);
+    setVal('fsAuthorization', data.authorization);
+    setVal('fsInfoSecurity', data.infoSecurity);
+    setVal('fsArchitecture', data.architecture);
+
+    // Step 8
+    setVal('fsRisks', data.risks);
+    setVal('fsOpenIssues', data.openIssues);
+    setVal('fsMigration', data.migration);
+
+    // Step 9: Glossary & Doc History
+    if (data.glossary) _loadDynamicTable('fsGlossaryTable', data.glossary, 2);
+    if (data.docHistory) _loadDynamicTable('fsDocHistoryTable', data.docHistory, 5);
 }
 
-function thumbnailRow(label, images) {
-    const thumbs = images.map(img => `<img class="review-thumb" src="${img.data}" alt="${escapeHtml(img.name)}">`).join('');
-    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value"><div class="review-thumbnails">${thumbs}</div><span style="font-size:12px;color:var(--text-secondary)">${images.length} image(s) attached</span></span></div>`;
-}
-
-function escapeHtml(text) {
-    if (!text) return '';
-    if (text.includes('<')) return text;
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+function setVal(id, v) {
+    const el = document.getElementById(id);
+    if (el && v != null) el.value = v;
 }
 
 /* ═══════════════════════════════════════════════════
    FS Export .docx via API
    ═══════════════════════════════════════════════════ */
 
-async function exportDocx() {
-    const data = collectFormData();
+async function exportFsDocx() {
+    const data = collectFsFormData();
     const spinner = document.getElementById('loadingSpinner');
 
     try {
         if (spinner) spinner.style.display = 'flex';
 
-        const formData = new FormData();
-        formData.append('form_data', JSON.stringify(data));
-
-        const pImgs = problemFiles;
-        for (const img of pImgs) {
-            const blob = await dataURLtoBlob(img.data);
-            formData.append('problem_screenshots', blob, img.name);
-        }
-        const sImgs = solutionFiles;
-        for (const img of sImgs) {
-            const blob = await dataURLtoBlob(img.data);
-            formData.append('solution_screenshots', blob, img.name);
-        }
-
         const response = await fetch('/api/export-functional-spec', {
             method: 'POST',
-            body: formData,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
         });
 
         if (!response.ok) {
@@ -586,8 +568,7 @@ async function exportDocx() {
         const a = document.createElement('a');
         a.href = url;
 
-        const role = data.userStory.role || 'Functional_Spec';
-        const safeName = role.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+        const safeName = (data.title || 'Functional_Spec').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
         a.download = `${safeName}_Functional_Specification.docx`;
 
         document.body.appendChild(a);
@@ -604,9 +585,57 @@ async function exportDocx() {
     }
 }
 
-async function dataURLtoBlob(dataURL) {
-    const res = await fetch(dataURL);
-    return res.blob();
+/* ═══════════════════════════════════════════════════
+   FS Standardization Panel
+   ═══════════════════════════════════════════════════ */
+
+function initFsStdPanel() {
+    const btn = document.getElementById('fsStdInfoBtn');
+    const panel = document.getElementById('stdPanel');
+    const overlay = document.getElementById('stdPanelOverlay');
+    const closeBtn = document.getElementById('stdPanelClose');
+
+    if (!btn || !panel) return;
+
+    const openPanel = () => {
+        panel.classList.add('open');
+        if (overlay) overlay.classList.add('open');
+    };
+    const closePanel = () => {
+        panel.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
+    };
+
+    btn.addEventListener('click', openPanel);
+    if (closeBtn) closeBtn.addEventListener('click', closePanel);
+    if (overlay) overlay.addEventListener('click', closePanel);
+}
+
+
+/* ═══════════════════════════════════════════════════
+   Shared Helpers
+   ═══════════════════════════════════════════════════ */
+
+function val(id) {
+    const el = document.getElementById(id);
+    return el ? el.value.trim() : '';
+}
+
+function section(title, rows) {
+    return `<div class="review-section"><div class="review-section-title">${title}</div>${rows.join('')}</div>`;
+}
+
+function row(label, value) {
+    const display = value || '<span class="review-empty">Not provided</span>';
+    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value">${escapeHtml(display)}</span></div>`;
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    if (text.includes('<')) return text;
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 
@@ -1224,7 +1253,3 @@ function loadBrFromJson(data) {
     brMaxAccessibleStep = brTotalSteps;
 }
 
-function setVal(id, value) {
-    const el = document.getElementById(id);
-    if (el && value !== undefined && value !== null) el.value = value;
-}
