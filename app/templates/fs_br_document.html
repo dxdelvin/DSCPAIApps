@@ -156,9 +156,27 @@
                         <textarea id="fsProjectGoal" rows="5" placeholder="Within the project Digital Core (or similar) the basic objectives and processes were defined, which
 are the basics for the product XXXX."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="fsDeveloperStatement">1.2 Developer Statement</label>
-                        <textarea id="fsDeveloperStatement" rows="4">Herewith the assigned developer declares that the proposed solution will be implemented under total consideration of the given rules / requirements which are valid within BSH company, see Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki</textarea>
+                    <!-- Developer Statement Info Button -->
+                    <div class="form-group" style="margin-top: 12px;">
+                        <button type="button" class="btn btn-ghost btn-sm btn-standardization" id="fsDevStmtBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                            1.2 Developer Statement
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Developer Statement Right Panel -->
+                <div class="std-panel-overlay" id="devStmtPanelOverlay"></div>
+                <div class="std-panel" id="devStmtPanel">
+                    <div class="std-panel-header">
+                        <h3>Developer Statement</h3>
+                        <button type="button" class="std-panel-close" id="devStmtPanelClose">&times;</button>
+                    </div>
+                    <div class="std-panel-body">
+                        <div class="std-section">
+                            <h4>1.2 Developer Statement</h4>
+                            <p>Herewith the assigned developer declares that the proposed solution will be implemented under total consideration of the given rules / requirements which are valid within BSH company, see Stream: <a href="https://confluence.bsh-group.com/spaces/DPS/pages/4008692138/Stream+SAP+Development+and+Test+Excelle" target="_blank" rel="noopener noreferrer" style="color: var(--brand-orange); text-decoration: underline;">SAP Development and Test Excellence - Digital Platform Services - BSH Wiki</a></p>
+                        </div>
                     </div>
                 </div>
 
@@ -207,6 +225,27 @@ are the basics for the product XXXX."></textarea>
                 <div class="form-step" id="fs-step-6">
                     <h3>Solution Definition (Part 1)</h3>
                     <p>Define the functional aspects of the solution.</p>
+
+                    <!-- Source Code Reference -->
+                    <div class="source-code-fields">
+                        <label class="source-code-heading">
+                            Solution Definition - 
+                            <span class="info-icon" data-tooltip="For detailed analysis of the single functions it is recommended to check – in case of migration / take over / adjustment of an existing solution – the source code of the following program:">ⓘ</span>
+                        </label>
+                        <div class="form-group">
+                            <label for="fsReport">Report</label>
+                            <input type="text" id="fsReport" value="e.g., /BSH4/FP_XXX; /BSHAP/FP_XXX; …" class="default-text" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fsTransaction">Transaction</label>
+                            <input type="text" id="fsTransaction" value="e.g., /BSH4/FP_XXX; /BSHAP/FP_XXX; …" class="default-text" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fsSourceSystem">Source System</label>
+                            <input type="text" id="fsSourceSystem" value="e.g., P4B_060; P0P_060; …" class="default-text" />
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label for="fsFunctionality">Functionality *</label>
                         <textarea id="fsFunctionality" rows="4" placeholder="Describe the functionality…"></textarea>
@@ -246,7 +285,14 @@ This has to be done under agreement with the global responsible.">ⓘ</span>
                         <textarea id="fsInterfaces" rows="3" placeholder="Describe interfaces…"></textarea>
                     </div>
                     <div class="form-group">
-                        <label for="fsAuthorization">Authorization – User Roles</label>
+                        <label for="fsAuthorization">
+                            Authorization – User Roles
+                            <span class="info-icon" data-tooltip="It has to be possible to separate the usage of this new solution at least by plant.
+
+Therefore an authorization check on plant level (normally on authorization object M_MATE_WRK) has to be implemented.
+
+Authorization objects which are implemented in that solution have to be assigned to the transaction which calls that new solution. This can be done via transaction SU24.">ⓘ</span>
+                        </label>
                         <textarea id="fsAuthorization" rows="3" placeholder="Describe authorization and user role requirements…"></textarea>
                     </div>
                     <div class="form-group">
@@ -277,30 +323,19 @@ This has to be done under agreement with the global responsible.">ⓘ</span>
                     <div class="std-panel-body">
                         <div class="std-section">
                             <h4>2.9 Standardization</h4>
-                            <p>The topic standardization is described in the BSH standard. The following points have to be considered:</p>
+                            <p>Please consider the given standardizations and rules within BSH company.</p>
                         </div>
                         <div class="std-section">
-                            <h4>2.9.1 Global Template</h4>
-                            <p>If the solution is running in Global Template (GT) the developer has to check whether the solution can be realized within the GT framework. This means:</p>
-                            <ul>
-                                <li>Usage of GT naming conventions</li>
-                                <li>Usage of GT enhancement spots / BAdIs</li>
-                                <li>Documentation in GT standard</li>
-                                <li>Transport via GT transport route</li>
-                            </ul>
+                            <h4>BSH Standardizations</h4>
+                            <p>To get information regarding standardization – please click here (link to BSH DPS CROSS standardization web):</p>
+                            <p><a href="https://confluence.bsh-group.com/spaces/DPS/pages/4008692138/Stream+SAP+Development+and+Test+Excelle" target="_blank" rel="noopener noreferrer" style="color: var(--brand-orange); text-decoration: underline;">Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki</a></p>
                         </div>
                         <div class="std-section">
-                            <h4>2.9.2 Naming Conventions</h4>
-                            <p>All development objects have to follow BSH naming conventions:</p>
-                            <ul>
-                                <li>Programs / Reports: Z + Module + Description</li>
-                                <li>Function modules: Z_FM_ + Module + Description</li>
-                                <li>Classes: ZCL_ + Module + Description</li>
-                                <li>Tables: Z + Module + T_ + Description</li>
-                                <li>Data elements: Z + Module + DE_ + Description</li>
-                                <li>Domains: Z + Module + DO_ + Description</li>
-                            </ul>
-                            <p>For detailed naming conventions refer to the BSH Development Standards document on the BSH Wiki.</p>
+                            <h4>BSH Naming Conventions</h4>
+                            <p>Please consider the following naming conventions for new developments see BSH DPS CROSS:</p>
+                            <p><a href="https://confluence.bsh-group.com/spaces/DPS/pages/4008692138/Stream+SAP+Development+and+Test+Excelle" target="_blank" rel="noopener noreferrer" style="color: var(--brand-orange); text-decoration: underline;">Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki</a></p>
+                            <p>For detailed information please send an email to:</p>
+                            <p><a href="mailto:BSH_GDS_DPS_Cross_SAPDevelopment@bshg.com" style="color: var(--brand-orange); text-decoration: underline;">BSH_GDS_DPS_Cross_SAPDevelopment@bshg.com</a></p>
                         </div>
                     </div>
                 </div>

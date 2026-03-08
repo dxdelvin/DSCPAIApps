@@ -314,11 +314,13 @@ class FSExportRequest(BaseModel):
     author: str = ""
     responsibilities: dict = {}
     projectGoal: str = ""
-    developerStatement: str = ""
     solutionDesc: str = ""
     improvementPotential: str = ""
     delimitation: str = ""
     previousSteps: list = []
+    report: str = ""
+    transaction: str = ""
+    sourceSystem: str = ""
     functionality: str = ""
     userView: str = ""
     languageTopics: str = ""

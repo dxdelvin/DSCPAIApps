@@ -76,6 +76,55 @@ def _first_content_para_after(doc, heading_para):
     return None
 
 
+def _get_content_paras_between_headings(doc, heading_para):
+    """Return ALL content paragraphs (empty or not) between heading_para and the next heading."""
+    paras = []
+    found = False
+    for p in doc.paragraphs:
+        if p._p is heading_para._p:
+            found = True
+            continue
+        if found:
+            if "Heading" in p.style.name:
+                break
+            paras.append(p)
+    return paras
+
+
+def _remove_paragraph(para):
+    """Remove a paragraph element from the document body."""
+    p_elem = para._element
+    parent = p_elem.getparent()
+    if parent is not None:
+        parent.remove(p_elem)
+
+
+def _clear_section_set_text(doc, heading_para, text: str):
+    """Remove ALL content paragraphs under a heading, then set text on the first one.
+    If text is empty, leave the section cleared with one blank paragraph.
+    """
+    content_paras = _get_content_paras_between_headings(doc, heading_para)
+    if not content_paras:
+        # No content paras — insert one
+        if text:
+            new_p = OxmlElement("w:p")
+            new_r = OxmlElement("w:r")
+            new_t = OxmlElement("w:t")
+            new_t.set(qn("xml:space"), "preserve")
+            new_t.text = text
+            new_r.append(new_t)
+            new_p.append(new_r)
+            heading_para._p.addnext(new_p)
+        return
+
+    # Set first paragraph to user text (or blank)
+    _set_para_text(content_paras[0], text if text else "")
+
+    # Remove all remaining content paragraphs
+    for p in content_paras[1:]:
+        _remove_paragraph(p)
+
+
 # ─── Functional Specification generator ───────────────────
 
 
@@ -171,28 +220,77 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     # ================================================================
     # 3. SECTION CONTENT — Replace placeholder text after headings
     # ================================================================
-    # Map: (heading text prefix, data key)
-    section_map = [
+
+    # Sections that need ALL content paragraphs cleared (multi-paragraph boilerplate)
+    # These sections have boilerplate text that must be fully replaced by user input.
+    multi_para_sections = [
+        ("User view", "userView"),
+        ("Language topics", "languageTopics"),
+        ("Authorization", "authorization"),
+        ("Migration", "migration"),
+    ]
+
+    for heading_text, data_key in multi_para_sections:
+        user_text = data.get(data_key, "").strip()
+        heading_para = _find_heading_para(doc, heading_text)
+        if not heading_para:
+            continue
+        _clear_section_set_text(doc, heading_para, user_text)
+
+    # ── Solution definition intro (Report / Transaction / Source System) ──
+    # P66-70: "For detailed analysis..." + Report + Transaction + Source system
+    # Clear boilerplate, replace with user's report/transaction/sourceSystem
+    sol_def_heading = _find_heading_para(doc, "Solution definition")
+    if sol_def_heading:
+        report = data.get("report", "").strip()
+        transaction = data.get("transaction", "").strip()
+        source_system = data.get("sourceSystem", "").strip()
+
+        content_paras = _get_content_paras_between_headings(doc, sol_def_heading)
+        if content_paras:
+            # First para (P66): "For detailed analysis..." → set Report value
+            if report:
+                _set_para_text(content_paras[0], f"Report:\t\t{report}")
+            else:
+                _set_para_text(content_paras[0], "")
+
+            # Remaining paragraphs: set Transaction, Source System, clear the rest
+            idx = 1
+            if idx < len(content_paras):
+                # Was P68 (Report): now becomes Transaction
+                if transaction:
+                    _set_para_text(content_paras[idx], f"Transaction:\t\t{transaction}")
+                else:
+                    _set_para_text(content_paras[idx], "")
+                idx += 1
+            if idx < len(content_paras):
+                # Was P69 (Transaction): now becomes Source system
+                if source_system:
+                    _set_para_text(content_paras[idx], f"Source system:\t{source_system}")
+                else:
+                    _set_para_text(content_paras[idx], "")
+                idx += 1
+            # Remove any remaining content paras
+            for p in content_paras[idx:]:
+                _remove_paragraph(p)
+
+    # Sections that only need the first content paragraph replaced (simple ones)
+    simple_sections = [
         ("(Related) project goal", "projectGoal"),
-        ("Developer statement", "developerStatement"),
-        ("Solution description", "solutionDesc"),         # Heading 1 "Solution description"
+        ("Solution description", "solutionDesc"),
         ("Improvement potential", "improvementPotential"),
         ("Delimitation of solution", "delimitation"),
         ("Functionality", "functionality"),
-        ("User view", "userView"),
-        ("Language topics", "languageTopics"),
         ("Data structures", "dataStructures"),
         ("Data maintenance", "dataMaintenance"),
         ("Interfaces", "interfaces"),
-        ("Authorization", "authorization"),
         ("Information security", "infoSecurity"),
         ("Architecture and technology", "architecture"),
         ("Risks", "risks"),
         ("List of open issues", "openIssues"),
-        ("Migration", "migration"),
     ]
 
-    for heading_text, data_key in section_map:
+    for heading_text, data_key in simple_sections:
         user_text = data.get(data_key, "").strip()
         if not user_text:
             continue
@@ -203,7 +301,6 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
         if content_para:
             _set_para_text(content_para, user_text)
         else:
-            # No content para exists — insert one after the heading
             new_p = OxmlElement("w:p")
             new_r = OxmlElement("w:r")
             new_t = OxmlElement("w:t")

@@ -26,7 +26,8 @@ window.addEventListener('DOMContentLoaded', () => {
     initFsNavigation();
     initFsDynamicTables();
     initFsJsonLoad();
-    initFsStdPanel();
+    initFsInfoPanels();
+    initFsDefaultTextInputs();
     updateFsNav();
     // Business Requirement
     initBrNavigation();
@@ -150,8 +151,6 @@ function updateFsNav() {
 function fsResetForm() {
     document.querySelectorAll('#functional-spec-mode input[type="text"], #functional-spec-mode input[type="date"], #functional-spec-mode textarea').forEach(el => { el.value = ''; });
     // Restore default values
-    const devStmt = document.getElementById('fsDeveloperStatement');
-    if (devStmt) devStmt.value = 'Herewith the assigned developer declares that the proposed solution will be implemented under total consideration of the given rules / requirements which are valid within BSH company, see Stream: SAP Development and Test Excellence - Digital Platform Services - BSH Wiki';
     const langEl = document.getElementById('fsLanguageTopics');
     if (langEl) langEl.value = 'Development language is English.';
     // Reset dynamic tables to single empty row
@@ -317,11 +316,13 @@ function collectFsFormData() {
             steward: { name: val('fsRespStewardName'), date: val('fsRespStewardDate') },
         },
         projectGoal: val('fsProjectGoal'),
-        developerStatement: val('fsDeveloperStatement'),
         solutionDesc: val('fsSolutionDesc'),
         improvementPotential: val('fsImprovementPotential'),
         delimitation: val('fsDelimitation'),
         previousSteps: _collectDynamicTable('fsPrevStepsTable'),
+        report: defaultVal('fsReport'),
+        transaction: defaultVal('fsTransaction'),
+        sourceSystem: defaultVal('fsSourceSystem'),
         functionality: val('fsFunctionality'),
         userView: val('fsUserView'),
         languageTopics: val('fsLanguageTopics'),
@@ -376,7 +377,6 @@ function buildFsReviewSummary() {
     // Starting Point
     html += section('Starting Point', [
         row('Project Goal', data.projectGoal),
-        row('Developer Statement', data.developerStatement),
     ]);
 
     // Solution Description
@@ -397,13 +397,18 @@ function buildFsReviewSummary() {
     }
 
     // Solution Definition 1
-    html += section('Solution Definition (Part 1)', [
+    const solDef1Rows = [];
+    if (data.report) solDef1Rows.push(row('Report', data.report));
+    if (data.transaction) solDef1Rows.push(row('Transaction', data.transaction));
+    if (data.sourceSystem) solDef1Rows.push(row('Source System', data.sourceSystem));
+    solDef1Rows.push(
         row('Functionality', data.functionality),
         row('User View / Dialog', data.userView),
         row('Language Topics', data.languageTopics),
         row('Data Structures', data.dataStructures),
         row('Data Maintenance', data.dataMaintenance),
-    ]);
+    );
+    html += section('Solution Definition (Part 1)', solDef1Rows);
 
     // Solution Definition 2
     html += section('Solution Definition (Part 2)', [
@@ -503,7 +508,6 @@ function loadFsFromJson(data) {
 
     // Step 3
     setVal('fsProjectGoal', data.projectGoal);
-    setVal('fsDeveloperStatement', data.developerStatement);
 
     // Step 4
     setVal('fsSolutionDesc', data.solutionDesc);
@@ -514,6 +518,13 @@ function loadFsFromJson(data) {
     if (data.previousSteps) _loadDynamicTable('fsPrevStepsTable', data.previousSteps, 4);
 
     // Step 6
+    setVal('fsReport', data.report);
+    setVal('fsTransaction', data.transaction);
+    setVal('fsSourceSystem', data.sourceSystem);
+    // Update default-text styling after loading
+    document.querySelectorAll('.default-text').forEach(el => {
+        el.classList.toggle('has-value', !!el.value && !el.dataset.defaultText?.includes(el.value));
+    });
     setVal('fsFunctionality', data.functionality);
     setVal('fsUserView', data.userView);
     setVal('fsLanguageTopics', data.languageTopics);
@@ -589,26 +600,58 @@ async function exportFsDocx() {
    FS Standardization Panel
    ═══════════════════════════════════════════════════ */
 
-function initFsStdPanel() {
-    const btn = document.getElementById('fsStdInfoBtn');
-    const panel = document.getElementById('stdPanel');
-    const overlay = document.getElementById('stdPanelOverlay');
-    const closeBtn = document.getElementById('stdPanelClose');
+function initFsInfoPanels() {
+    // Wire up each info panel: [buttonId, panelId, overlayId, closeId]
+    const panels = [
+        ['fsStdInfoBtn', 'stdPanel', 'stdPanelOverlay', 'stdPanelClose'],
+        ['fsDevStmtBtn', 'devStmtPanel', 'devStmtPanelOverlay', 'devStmtPanelClose'],
+    ];
 
-    if (!btn || !panel) return;
+    panels.forEach(([btnId, panelId, overlayId, closeId]) => {
+        const btn = document.getElementById(btnId);
+        const panel = document.getElementById(panelId);
+        const overlay = document.getElementById(overlayId);
+        const closeBtn = document.getElementById(closeId);
 
-    const openPanel = () => {
-        panel.classList.add('open');
-        if (overlay) overlay.classList.add('open');
-    };
-    const closePanel = () => {
-        panel.classList.remove('open');
-        if (overlay) overlay.classList.remove('open');
-    };
+        if (!btn || !panel) return;
 
-    btn.addEventListener('click', openPanel);
-    if (closeBtn) closeBtn.addEventListener('click', closePanel);
-    if (overlay) overlay.addEventListener('click', closePanel);
+        const openPanel = () => {
+            panel.classList.add('open');
+            if (overlay) overlay.classList.add('open');
+        };
+        const closePanel = () => {
+            panel.classList.remove('open');
+            if (overlay) overlay.classList.remove('open');
+        };
+
+        btn.addEventListener('click', openPanel);
+        if (closeBtn) closeBtn.addEventListener('click', closePanel);
+        if (overlay) overlay.addEventListener('click', closePanel);
+    });
+}
+
+/* ═══════════════════════════════════════════════════
+   FS Source Code Reference Toggle
+   ═══════════════════════════════════════════════════ */
+
+function initFsDefaultTextInputs() {
+    document.querySelectorAll('.default-text').forEach(input => {
+        const defaultVal = input.value;
+        input.dataset.defaultText = defaultVal;
+
+        input.addEventListener('focus', () => {
+            if (input.value === defaultVal) {
+                input.value = '';
+                input.classList.add('has-value');
+            }
+        });
+        input.addEventListener('blur', () => {
+            if (!input.value.trim()) {
+                input.value = defaultVal;
+                input.classList.remove('has-value');
+            }
+        });
+    });
 }
 
 
@@ -619,6 +662,14 @@ function initFsStdPanel() {
 function val(id) {
     const el = document.getElementById(id);
     return el ? el.value.trim() : '';
+}
+
+/** Return value only if it differs from the default text (i.e. user actually typed something). */
+function defaultVal(id) {
+    const el = document.getElementById(id);
+    if (!el) return '';
+    const v = el.value.trim();
+    return (el.dataset.defaultText && v === el.dataset.defaultText.trim()) ? '' : v;
 }
 
 function section(title, rows) {

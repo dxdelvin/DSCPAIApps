@@ -301,6 +301,92 @@ body.dark-mode select:focus {
     margin: 0 auto;
     padding: 12px 24px 36px;
     text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Supply Chain Decorations */
+.sc-decorations {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.sc-element {
+    position: absolute;
+    opacity: 0.08;
+    color: var(--brand-orange);
+    animation: float 20s ease-in-out infinite;
+}
+
+.sc-element svg {
+    filter: drop-shadow(0 2px 8px rgba(255, 95, 0, 0.15));
+}
+
+body.dark-mode .sc-element {
+    opacity: 0.12;
+}
+
+.sc-truck {
+    animation: float 15s ease-in-out infinite, slide 25s linear infinite;
+}
+
+.sc-package {
+    animation: float 18s ease-in-out infinite 2s, rotate 30s linear infinite;
+}
+
+.sc-warehouse {
+    animation: float 22s ease-in-out infinite 1s, pulse 8s ease-in-out infinite;
+}
+
+.sc-chart {
+    animation: float 16s ease-in-out infinite 3s, bounce 5s ease-in-out infinite;
+}
+
+.sc-globe {
+    animation: float 20s ease-in-out infinite 1.5s, spin 40s linear infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-15px); }
+}
+
+@keyframes slide {
+    0% { transform: translateX(0px); }
+    50% { transform: translateX(20px); }
+    100% { transform: translateX(0px); }
+}
+
+@keyframes rotate {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(10deg); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.08; }
+    50% { transform: scale(1.1); opacity: 0.12; }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0px); }
+    25% { transform: translateY(-8px); }
+    75% { transform: translateY(-5px); }
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* Ensure header content stays above decorations */
+.page-header > * {
+    position: relative;
+    z-index: 1;
 }
 
 .page-header .welcome-message {
@@ -473,50 +559,6 @@ body.dark-mode .app-card .match-highlight {
 
 .no-results p {
     font-size: 14px;
-}
-
-/* Floating Feedback Button */
-.floating-feedback-btn {
-    position: fixed;
-    bottom: 24px;
-    right: 24px;
-    z-index: 999;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: var(--brand-orange);
-    color: white;
-    border: none;
-    border-radius: 50px;
-    font-weight: 600;
-    font-size: 14px;
-    box-shadow: 0 4px 16px rgba(255, 95, 0, 0.3);
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.floating-feedback-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(255, 95, 0, 0.4);
-    background: var(--brand-orange-700);
-}
-
-body.dark-mode .floating-feedback-btn {
-    box-shadow: 0 4px 20px rgba(255, 95, 0, 0.4);
-}
-
-body.dark-mode .floating-feedback-btn:hover {
-    box-shadow: 0 6px 30px rgba(255, 95, 0, 0.5);
-}
-
-.floating-feedback-btn svg {
-    width: 18px;
-    height: 18px;
-}
-
-.view-roadmap {
-    white-space: nowrap;
 }
 
 /* Apps grid */
@@ -1158,6 +1200,32 @@ body.dark-mode .builder-title {
 .footer-text {
     font-size: 0.85rem;
     color: rgb(255, 255, 255);
+}
+
+.footer-credit {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.footer-credit p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+}
+
+.footer-credit a {
+    color: var(--brand-orange);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.footer-credit a:hover {
+    color: #ff8033;
+    text-decoration: underline;
 }
 
 /* ============================================
