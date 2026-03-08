@@ -280,6 +280,35 @@ body.dark-mode {
     cursor: not-allowed;
 }
 
+/* Warning Notice */
+.warning-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+    border-left: 3px solid #f59e0b;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.warning-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.warning-content {
+    font-size: 0.82rem;
+    line-height: 1.5;
+    color: var(--text-secondary, #64748b);
+}
+
+.warning-content strong {
+    color: var(--text-primary);
+}
+
 /* Info Panel */
 .info-panel {
     background: var(--card);
@@ -605,6 +634,16 @@ body.dark-mode .finding-item.info {
 body.dark-mode .finding-item.success {
     background: rgba(34, 197, 94, 0.1);
     border-left-color: #4ade80;
+}
+
+/* Dark Mode Warning Notice */
+body.dark-mode .warning-notice {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+body.dark-mode .warning-content {
+    color: var(--text-secondary);
 }
 
 .finding-item.highlight {
