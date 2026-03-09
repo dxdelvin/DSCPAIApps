@@ -96,7 +96,11 @@ function initFsNavigation() {
     document.querySelectorAll('#fs-step-indicator .step').forEach(el => {
         el.addEventListener('click', () => {
             const target = parseInt(el.dataset.fsStep, 10);
-            if (target <= fsMaxAccessibleStep) fsGoToStep(target);
+            if (target <= fsMaxAccessibleStep) {
+                fsGoToStep(target);
+            } else {
+                showToast('Complete previous steps before jumping ahead.', 'warning');
+            }
         });
     });
 }
@@ -720,7 +724,11 @@ function initBrNavigation() {
     document.querySelectorAll('#br-step-indicator .step').forEach(el => {
         el.addEventListener('click', () => {
             const target = parseInt(el.dataset.brStep, 10);
-            if (target <= brMaxAccessibleStep) brGoToStep(target);
+            if (target <= brMaxAccessibleStep) {
+                brGoToStep(target);
+            } else {
+                showToast('Complete previous steps before jumping ahead.', 'warning');
+            }
         });
     });
 }

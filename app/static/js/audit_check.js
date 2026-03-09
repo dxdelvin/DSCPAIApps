@@ -321,6 +321,16 @@ class AuditCheckApp {
             // Generate PDF
             const pdfDoc = await this.createPdf();
 
+            // Check generated PDF size (10MB limit)
+            const pdfBlob = pdfDoc.output('blob');
+            const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+            if (pdfBlob.size > MAX_PDF_SIZE) {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                showToast('Generated PDF exceeds 10MB limit. Please reduce the number of images or image sizes.', 'error');
+                return;
+            }
+
             // Display preview
             this.displayPdfPreview();
 
@@ -601,6 +611,13 @@ class AuditCheckApp {
 
         if (file.type !== 'application/pdf') {
             showToast('Please select a valid PDF file', 'error');
+            return;
+        }
+
+        // Check file size limit (10MB)
+        const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB in bytes
+        if (file.size > MAX_PDF_SIZE) {
+            showToast('PDF file size exceeds 10MB limit', 'error');
             return;
         }
 
