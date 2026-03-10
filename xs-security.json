@@ -1,5 +1,5 @@
 {
-  "xsappname": "dscp-ai-app",
+  "xsappname": "bsh_dscp_ai_apps",
   "tenant-mode": "dedicated",
   "scopes": [
     {
@@ -13,14 +13,14 @@
   ],
   "role-templates": [
     {
-      "name": "Viewer",
+      "name": "BT109D1_UD_DSCP_Apps_Viewer",
       "description": "Standard User Role",
       "scope-references": [
         "$XSAPPNAME.Display"
       ]
     },
     {
-      "name": "Administrator",
+      "name": "BT109D1_UD_DSCP_Apps_Admin",
       "description": "Admin Role",
       "scope-references": [
         "$XSAPPNAME.Display",
@@ -31,7 +31,9 @@
   "oauth2-configuration": {
     "token-validity": 3600,
     "redirect-uris": [
-        "https://dscpaiapps-shy-dog-rb.cfapps.eu10.hana.ondemand.com/**"
+        "https://dscpaiapps-shy-dog-rb.cfapps.eu10.hana.ondemand.com/**",
+        "https://bsh_dscp_ai_apps-turbulent-gorilla-az.cfapps.eu10.hana.ondemand.com/**",
+        "https://*.cfapps.eu10.hana.ondemand.com/**"
     ]
   }
 }

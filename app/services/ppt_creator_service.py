@@ -178,9 +178,11 @@ def _extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
         if not has_content:
             return None, "No readable text found in the PDF. The file may be image-based or scanned."
         full_text = "\n\n".join(pages)
+        full_text = re.sub(r'(--|#|\/\*|\*\/)', ' ', full_text)
+        full_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', full_text)
         # Limit to first 95K characters
-        if len(full_text) > 95000:
-            full_text = full_text[:95000] + "\n\n[Content truncated at 95K characters. Only first portion processed.]"
+        if len(full_text) > 90000:
+            full_text = full_text[:90000] + "\n\n[Content truncated at 90K characters. Only first portion processed.]"
         # Check if meaningful content was extracted (not just headers/footers)
         clean = re.sub(r'---\s*Page\s*\d+\s*---', '', full_text)
         clean = re.sub(r'\(No extractable text\)', '', clean).strip()

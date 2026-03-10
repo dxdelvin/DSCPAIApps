@@ -36,7 +36,7 @@ def _get_uaa_service():
     try:
         env = AppEnv()
         # Try to get by name first
-        service = env.get_service(name='dscp-ai-app')
+        service = env.get_service(name='bsh_dscp_ai_apps')
         if service:
             return service
         
@@ -45,7 +45,7 @@ def _get_uaa_service():
         if service:
             return service
             
-        print("Warning: No XSUAA service found by name 'dscp-ai-app' or label 'xsuaa'")
+        print("Warning: No XSUAA service found by name 'bsh_dscp_ai_apps' or label 'xsuaa'")
         return None
     except Exception as e:
         print(f"Error getting UAA service: {e}")
