@@ -22,6 +22,7 @@ let brMaxAccessibleStep = 1;
 
 window.addEventListener('DOMContentLoaded', () => {
     initModeSwitch();
+    initMobileStepJumpers();
     // Functional Spec
     initFsNavigation();
     initFsDynamicTables();
@@ -63,6 +64,96 @@ function switchMode(mode) {
         const isActive = panel.id === `${mode}-mode`;
         panel.classList.toggle('active', isActive);
         panel.style.display = isActive ? 'block' : 'none';
+    });
+
+    closeAllStepJumpMenus();
+}
+
+function initMobileStepJumpers() {
+    const configs = [
+        { indicatorId: 'fs-step-indicator', mode: 'fs', totalSteps: fsTotalSteps },
+        { indicatorId: 'br-step-indicator', mode: 'br', totalSteps: brTotalSteps },
+    ];
+
+    configs.forEach(cfg => {
+        const indicator = document.getElementById(cfg.indicatorId);
+        if (!indicator || indicator.querySelector('.mobile-step-jump')) return;
+
+        const jumpWrap = document.createElement('div');
+        jumpWrap.className = 'mobile-step-jump';
+
+        const jumpBtn = document.createElement('button');
+        jumpBtn.type = 'button';
+        jumpBtn.className = 'mobile-step-jump-btn';
+        jumpBtn.setAttribute('aria-label', 'Jump to step');
+        jumpBtn.setAttribute('aria-expanded', 'false');
+        jumpBtn.innerHTML = '<span aria-hidden="true">&#9776;</span>';
+
+        const jumpMenu = document.createElement('div');
+        jumpMenu.className = 'mobile-step-jump-menu';
+
+        const jumpMenuTitle = document.createElement('div');
+        jumpMenuTitle.className = 'mobile-step-jump-menu-title';
+        jumpMenuTitle.textContent = 'Jump to step';
+
+        const jumpList = document.createElement('div');
+        jumpList.className = 'mobile-step-jump-list';
+
+        for (let i = 1; i <= cfg.totalSteps; i++) {
+            const sourceStep = indicator.querySelector(`.step[data-${cfg.mode}-step="${i}"]`);
+            const stepLabel = sourceStep?.querySelector('.step-label')?.textContent?.trim() || `Step ${i}`;
+
+            const itemBtn = document.createElement('button');
+            itemBtn.type = 'button';
+            itemBtn.className = 'mobile-step-jump-item';
+            itemBtn.dataset.step = String(i);
+            itemBtn.innerHTML = `<span class="jump-item-number">${i}</span><span class="jump-item-label">${stepLabel}</span>`;
+
+            itemBtn.addEventListener('click', () => {
+                if (cfg.mode === 'fs') {
+                    if (i <= fsMaxAccessibleStep) fsGoToStep(i);
+                    else showToast('Complete previous steps before jumping ahead.', 'warning');
+                } else {
+                    if (i <= brMaxAccessibleStep) brGoToStep(i);
+                    else showToast('Complete previous steps before jumping ahead.', 'warning');
+                }
+                closeAllStepJumpMenus();
+            });
+
+            jumpList.appendChild(itemBtn);
+        }
+
+        jumpBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = jumpWrap.classList.contains('open');
+            closeAllStepJumpMenus();
+            if (!isOpen) {
+                jumpWrap.classList.add('open');
+                jumpBtn.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        jumpMenu.appendChild(jumpMenuTitle);
+        jumpMenu.appendChild(jumpList);
+        jumpWrap.appendChild(jumpBtn);
+        jumpWrap.appendChild(jumpMenu);
+        indicator.appendChild(jumpWrap);
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.mobile-step-jump')) closeAllStepJumpMenus();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeAllStepJumpMenus();
+    });
+}
+
+function closeAllStepJumpMenus() {
+    document.querySelectorAll('.mobile-step-jump.open').forEach(el => {
+        el.classList.remove('open');
+        const btn = el.querySelector('.mobile-step-jump-btn');
+        if (btn) btn.setAttribute('aria-expanded', 'false');
     });
 }
 
@@ -150,6 +241,8 @@ function updateFsNav() {
         if (s === fsCurrentStep) el.classList.add('step-active');
         else if (s < fsCurrentStep) el.classList.add('step-completed');
     });
+
+    updateMobileStepProgress('fs-step-indicator', fsCurrentStep, fsTotalSteps);
 }
 
 function fsResetForm() {
@@ -549,6 +642,10 @@ function loadFsFromJson(data) {
     // Step 9: Glossary & Doc History
     if (data.glossary) _loadDynamicTable('fsGlossaryTable', data.glossary, 2);
     if (data.docHistory) _loadDynamicTable('fsDocHistoryTable', data.docHistory, 5);
+
+    // Allow jumping to any step after importing saved JSON
+    fsMaxAccessibleStep = fsTotalSteps;
+    updateFsNav();
 }
 
 function setVal(id, v) {
@@ -776,6 +873,29 @@ function updateBrNav() {
         el.classList.remove('step-active', 'step-completed');
         if (s === brCurrentStep) el.classList.add('step-active');
         else if (s < brCurrentStep) el.classList.add('step-completed');
+    });
+
+    updateMobileStepProgress('br-step-indicator', brCurrentStep, brTotalSteps);
+}
+
+function updateMobileStepProgress(indicatorId, currentStep, totalSteps) {
+    const indicator = document.getElementById(indicatorId);
+    if (!indicator || totalSteps <= 0) return;
+
+    const progressPercent = Math.max(0, Math.min(100, (currentStep / totalSteps) * 100));
+    const activeStep = indicator.querySelector('.step.step-active');
+    const activeLabel = activeStep?.querySelector('.step-label')?.textContent?.trim() || `Step ${currentStep}`;
+
+    indicator.style.setProperty('--progress-percent', `${progressPercent}%`);
+    indicator.setAttribute('data-progress-label', `Step ${currentStep} of ${totalSteps}`);
+    indicator.setAttribute('data-step-title', activeLabel);
+
+    const maxAccessible = indicatorId === 'fs-step-indicator' ? fsMaxAccessibleStep : brMaxAccessibleStep;
+    indicator.querySelectorAll('.mobile-step-jump-item').forEach(item => {
+        const step = parseInt(item.dataset.step, 10);
+        item.classList.toggle('is-active', step === currentStep);
+        item.classList.toggle('is-locked', step > maxAccessible);
+        item.disabled = step > maxAccessible;
     });
 }
 
@@ -1310,5 +1430,6 @@ function loadBrFromJson(data) {
 
     // Allow jumping to any step
     brMaxAccessibleStep = brTotalSteps;
+    updateBrNav();
 }
 

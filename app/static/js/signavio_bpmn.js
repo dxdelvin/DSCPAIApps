@@ -5,8 +5,16 @@ const formData = {};
 let maxAccessibleStep = 1; // highest step allowed to jump to
 let chatHistoryId = null; // Track the current chat session
 
+// Upload mode state
+let currentMode = 'form'; // 'form' or 'upload'
+let uploadChatHistoryId = null;
+let uploadedFile = null;
+let uploadBpmnValid = false;
+
 window.addEventListener('DOMContentLoaded', () => {
     initializeFormHandlers();
+    initializeUploadHandlers();
+    initializeModeSwitch();
     updateFormNavigation();
 });
 
@@ -119,6 +127,309 @@ function initializeFormHandlers() {
             if (targetBtn && targetBtn.style.display !== 'none') targetBtn.click();
         }
     });
+}
+
+// ============== Mode Switching ==============
+function initializeModeSwitch() {
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            const mode = tab.getAttribute('data-mode');
+            if (mode === currentMode) return;
+            switchMode(mode);
+        });
+    });
+}
+
+function switchMode(mode) {
+    currentMode = mode;
+    // Update tab active state
+    document.querySelectorAll('.mode-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`.mode-tab[data-mode="${mode}"]`)?.classList.add('active');
+    // Toggle panels
+    document.querySelectorAll('.mode-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById(`${mode}-mode`)?.classList.add('active');
+}
+
+// ============== Upload Mode Handlers ==============
+function initializeUploadHandlers() {
+    const uploadArea = document.getElementById('bpmn-upload-area');
+    const fileInput = document.getElementById('bpmn-file-input');
+    const removeBtn = document.getElementById('removeFileBtn');
+    const analyzeBtn = document.getElementById('uploadAnalyzeBtn');
+    const modifyBtn = document.getElementById('uploadModifyBtn');
+    const refreshBtn = document.getElementById('uploadRefreshBtn');
+    const generateBtn = document.getElementById('uploadGenerateBtn');
+
+    if (uploadArea && fileInput) {
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) handleUploadFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) handleUploadFile(fileInput.files[0]);
+        });
+    }
+
+    if (removeBtn) removeBtn.addEventListener('click', clearUploadFile);
+    if (analyzeBtn) analyzeBtn.addEventListener('click', analyzeUploadedFile);
+    if (modifyBtn) modifyBtn.addEventListener('click', () => toggleUploadOverride(true));
+    if (refreshBtn) refreshBtn.addEventListener('click', refreshUploadAnalysis);
+    if (generateBtn) generateBtn.addEventListener('click', generateUploadBPMN);
+
+    // Ctrl+Enter in upload override
+    const uploadOverride = document.getElementById('uploadOverride');
+    if (uploadOverride) {
+        uploadOverride.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                refreshUploadAnalysis();
+            }
+        });
+    }
+}
+
+function handleUploadFile(file) {
+    const allowed = ['image/png', 'image/jpeg', 'application/pdf'];
+    if (!allowed.includes(file.type)) {
+        showToast('Please upload a PNG, JPG, or PDF file.', 'warning');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        showToast('File size must be under 5 MB.', 'warning');
+        return;
+    }
+    uploadedFile = file;
+    // Show file info
+    const infoEl = document.getElementById('upload-file-info');
+    const nameEl = document.getElementById('upload-file-name');
+    const sizeEl = document.getElementById('upload-file-size');
+    const areaEl = document.getElementById('bpmn-upload-area');
+    if (infoEl) infoEl.style.display = 'flex';
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = formatFileSize(file.size);
+    if (areaEl) areaEl.style.display = 'none';
+    // Enable analyze button
+    const btn = document.getElementById('uploadAnalyzeBtn');
+    if (btn) btn.disabled = false;
+}
+
+function clearUploadFile() {
+    uploadedFile = null;
+    uploadChatHistoryId = null;
+    uploadBpmnValid = false;
+    const infoEl = document.getElementById('upload-file-info');
+    const areaEl = document.getElementById('bpmn-upload-area');
+    const fileInput = document.getElementById('bpmn-file-input');
+    const analyzeBtn = document.getElementById('uploadAnalyzeBtn');
+    const modifyBtn = document.getElementById('uploadModifyBtn');
+    const generateBtn = document.getElementById('uploadGenerateBtn');
+    const panel = document.getElementById('upload-analysis-panel');
+    const ctaPanel = document.getElementById('upload-cta-panel');
+    const overrideContainer = document.getElementById('uploadOverrideContainer');
+    if (infoEl) infoEl.style.display = 'none';
+    if (areaEl) areaEl.style.display = '';
+    if (fileInput) fileInput.value = '';
+    if (analyzeBtn) analyzeBtn.disabled = true;
+    if (modifyBtn) modifyBtn.disabled = true;
+    if (generateBtn) generateBtn.disabled = true;
+    if (panel) panel.style.display = 'none';
+    if (ctaPanel) ctaPanel.style.display = 'none';
+    if (overrideContainer) overrideContainer.style.display = 'none';
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+async function analyzeUploadedFile() {
+    if (!uploadedFile) {
+        showToast('Please select a file first.', 'warning');
+        return;
+    }
+
+    const panel = document.getElementById('upload-analysis-panel');
+    const statusEl = document.getElementById('uploadAnalysisStatus');
+    const contentEl = document.getElementById('uploadAnalysisContent');
+    const generateBtn = document.getElementById('uploadGenerateBtn');
+    const ctaPanel = document.getElementById('upload-cta-panel');
+
+    if (panel) panel.style.display = '';
+    if (statusEl) statusEl.textContent = 'Analyzing...';
+    if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Analyzing your file...</div>';
+    if (generateBtn) generateBtn.disabled = true;
+    if (ctaPanel) ctaPanel.style.display = '';
+
+    try {
+        const fd = new FormData();
+        fd.append('file', uploadedFile);
+
+        const response = await fetch('/api/bpmn/upload-analyze', {
+            method: 'POST',
+            body: fd,
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== 'success') {
+            if (statusEl) statusEl.textContent = 'Error';
+            if (contentEl) contentEl.innerHTML = `<div class="analysis-error"><p>Failed to analyze file</p><p class="error-detail">${escapeHtml(result.detail || 'Please try again.')}</p></div>`;
+            return;
+        }
+
+        uploadChatHistoryId = result.chatHistoryId;
+        uploadBpmnValid = result.bpmn_valid;
+
+        if (statusEl) statusEl.textContent = uploadBpmnValid ? '✓ Complete' : '⚠ Not BPMN';
+        if (contentEl) {
+            let html = formatAnalysisResponse(result.analysis || 'No analysis returned.');
+            if (!uploadBpmnValid) {
+                html += `<div class="not-bpmn-warning">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                        <line x1="12" y1="9" x2="12" y2="13"></line>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
+                    This content is not a BPMN diagram or process-related. BPMN generation is disabled.
+                </div>`;
+            }
+            contentEl.innerHTML = html;
+        }
+        const modifyBtn = document.getElementById('uploadModifyBtn');
+        if (generateBtn) generateBtn.disabled = !uploadBpmnValid;
+        if (modifyBtn) modifyBtn.disabled = !uploadBpmnValid;
+
+    } catch (error) {
+        console.error('Upload analysis error:', error);
+        if (statusEl) statusEl.textContent = 'Error';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+    }
+}
+
+function toggleUploadOverride(forceShow = false) {
+    const container = document.getElementById('uploadOverrideContainer');
+    const textarea = document.getElementById('uploadOverride');
+    if (!container) return;
+    const shouldShow = forceShow || container.style.display === 'none';
+    container.style.display = shouldShow ? 'block' : 'none';
+    if (shouldShow && textarea) textarea.focus();
+}
+
+async function refreshUploadAnalysis() {
+    if (!uploadChatHistoryId) {
+        showToast('Please analyze a file first.', 'warning');
+        return;
+    }
+
+    const statusEl = document.getElementById('uploadAnalysisStatus');
+    const contentEl = document.getElementById('uploadAnalysisContent');
+    const generateBtn = document.getElementById('uploadGenerateBtn');
+    const overrideBox = document.getElementById('uploadOverride');
+
+    const overrideText = (overrideBox?.value || '').trim();
+    const message = overrideText.length > 0
+        ? `Please update the analysis based on my feedback:\n\n${overrideText}`
+        : 'Please refresh the analysis.';
+
+    if (statusEl) statusEl.textContent = 'Analyzing...';
+    if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Updating analysis…</div>';
+    if (generateBtn) generateBtn.disabled = true;
+
+    try {
+        const response = await fetch('/api/bpmn/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chatHistoryId: uploadChatHistoryId,
+                message,
+                formData: null,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status !== 'success') {
+            if (statusEl) statusEl.textContent = 'Error';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to refresh analysis</p><p class="error-detail">Please try again.</p></div>';
+            return;
+        }
+
+        if (statusEl) statusEl.textContent = '✓ Complete';
+        if (contentEl) contentEl.innerHTML = formatAnalysisResponse(result.response || 'No analysis returned.');
+        if (generateBtn) generateBtn.disabled = !uploadBpmnValid;
+        // Clear override after success
+        if (overrideBox && overrideText.length > 0) overrideBox.value = '';
+
+    } catch (error) {
+        console.error('Refresh upload analysis error:', error);
+        if (statusEl) statusEl.textContent = 'Error';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+    }
+}
+
+async function generateUploadBPMN() {
+    if (!uploadBpmnValid) {
+        showToast('This content is not BPMN-related. Cannot generate BPMN.', 'warning');
+        return;
+    }
+
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    if (loadingSpinner) loadingSpinner.style.display = 'flex';
+
+    try {
+        showToast('Consulting BRAIN for BPMN generation...', 'info');
+
+        const payload = {
+            chatHistoryId: uploadChatHistoryId,
+            processName: uploadedFile?.name?.replace(/\.[^.]+$/, '') || 'uploaded_bpmn',
+        };
+
+        const response = await fetch('/api/generate-bpmn', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            const detail = sanitizeDetail(result.detail);
+            showToast(`${result.message}: ${detail}`, 'error', 5000);
+            return;
+        }
+
+        const blob = new Blob([result.xml], { type: 'application/xml' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = result.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast('BPMN generated and downloaded successfully.', 'success');
+
+    } catch (error) {
+        showToast('Connection failed. Please check if the server is running.', 'error');
+    } finally {
+        if (loadingSpinner) loadingSpinner.style.display = 'none';
+    }
+}
+
+function escapeHtml(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
 }
 
 // Lane Management Functions

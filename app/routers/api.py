@@ -10,6 +10,7 @@ from app.services.signavio_service import (
     get_signavio_bpmn_xml,
     analyze_process,
     continue_chat as signavio_continue_chat,
+    analyze_uploaded_bpmn,
 )
 from app.services.audit_service import (
     check_audit_document,
@@ -148,6 +149,43 @@ async def bpmn_chat(data: BPMNChatRequest):
         "status": "success",
         "chatHistoryId": data.chatHistoryId,
         "response": response.get("result")
+    }
+
+
+@router.post("/bpmn/upload-analyze")
+async def bpmn_upload_analyze(file: UploadFile = File(...)):
+    """Analyze an uploaded BPMN diagram or process image/PDF."""
+    allowed_types = [
+        "image/png", "image/jpeg", "image/jpg",
+        "application/pdf",
+    ]
+    if not file.content_type or file.content_type not in allowed_types:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Invalid file type",
+                "detail": "Please upload a PNG, JPG, or PDF file.",
+            },
+        )
+
+    result = await analyze_uploaded_bpmn(file)
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Connection to Brain failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "analysis": result.get("result"),
+        "chatHistoryId": result.get("chatHistoryId"),
+        "bpmn_valid": result.get("bpmn_valid", False),
     }
 
 

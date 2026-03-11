@@ -10,7 +10,7 @@
 {% endblock %}
 
 {% block content %}
-<section class="builder-hero">
+<section class="builder-hero bpmn-hero">
     <div>
         <p class="eyebrow">BSH | BPMN Journey</p>
         <h1>BPMN Builder</h1>
@@ -26,6 +26,11 @@
                 <h2 class="builder-title">BPMN Builder</h2>
             </div>
             <div class="builder-actions">
+                <!-- Mode Tabs -->
+                <div class="mode-tabs">
+                    <button class="mode-tab active" data-mode="form">Form Builder</button>
+                    <button class="mode-tab" data-mode="upload">Upload & Analyze</button>
+                </div>
                 <button class="btn btn-icon-help" type="button" id="infoBtn" title="View guide and tips">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="10"></circle>
@@ -35,6 +40,8 @@
             </div>
         </div>
 
+        <!-- Form Builder Mode -->
+        <div class="mode-panel active" id="form-mode">
         <!-- Step Indicator -->
         <div class="step-indicator">
             <div class="step step-active" data-step="1"><span class="step-number">1</span><span class="step-label">Context</span></div>
@@ -184,6 +191,85 @@
                 <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
             </div>
         </div>
+        </div><!-- /form-mode -->
+
+        <!-- Upload & Analyze Mode -->
+        <div class="mode-panel" id="upload-mode">
+            <div class="upload-section">
+                <h3>Upload BPMN Diagram or Process Document</h3>
+                <p>Upload a PNG, JPG, or PDF file containing a BPMN diagram or process description for AI analysis.</p>
+
+                <div class="upload-area" id="bpmn-upload-area">
+                    <div class="upload-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <p>Drag & drop your file here or click to select</p>
+                        <p class="upload-hint">Supports PNG, JPG, and PDF files</p>
+                    </div>
+                    <input type="file" id="bpmn-file-input" accept=".png,.jpg,.jpeg,.pdf" hidden>
+                </div>
+
+                <div id="upload-file-info" class="upload-file-info" style="display:none;">
+                    <div class="file-info-details">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                        </svg>
+                        <span id="upload-file-name">file.png</span>
+                        <span id="upload-file-size" class="file-size"></span>
+                    </div>
+                    <button type="button" class="btn-icon btn-remove-file" id="removeFileBtn" title="Remove file">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="uploadAnalyzeBtn" disabled>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    Analyze File
+                </button>
+            </div>
+
+            <!-- Upload Analysis Results -->
+            <div class="analysis-panel" id="upload-analysis-panel" style="display:none;">
+                <div class="analysis-header">
+                    <h4>AI Analysis</h4>
+                    <span id="uploadAnalysisStatus" class="analysis-status">Ready</span>
+                </div>
+                <div id="uploadAnalysisContent" class="analysis-content">
+                    <div class="analysis-placeholder">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <p>Upload a file and click "Analyze File" to begin</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Upload override editor for modify inputs -->
+            <div id="uploadOverrideContainer" class="inline-override" style="display:none; margin-top:16px;">
+                <label for="uploadOverride" class="override-label">Modify Inputs (free text)</label>
+                <textarea id="uploadOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis."></textarea>
+                <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
+            </div>
+
+            <div class="cta-panel" id="upload-cta-panel" style="display:none;">
+                <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="uploadModifyBtn">Modify Inputs</button>
+                    <button type="button" class="btn btn-ghost" id="uploadRefreshBtn">Refresh Analysis</button>
+                    <button type="button" class="btn btn-primary" id="uploadGenerateBtn" disabled>Generate BPMN</button>
+                </div>
+            </div>
+        </div><!-- /upload-mode -->
     </div>
 </div>
 

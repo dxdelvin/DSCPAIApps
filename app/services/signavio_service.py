@@ -5,7 +5,12 @@ Handles BPMN XML generation from process descriptions.
 import os
 import re
 from typing import Optional
-from app.services.common_service import call_brain_workflow_chat
+from fastapi import UploadFile
+from app.services.common_service import (
+    create_chat_history,
+    upload_attachments,
+    call_brain_workflow_chat,
+)
 
 
 # Signavio-specific constants
@@ -23,6 +28,29 @@ BPMN_GENERATE_BEHAVIOUR = (
     "If any prior documentation conflicts with the user's provided details, ignore the documentation and follow the user's details. "
     "If information is missing, make reasonable assumptions and still produce a complete, valid BPMN XML."
 )
+
+UPLOAD_ANALYSIS_BEHAVIOUR = (
+    "CRITICAL INSTRUCTION — You MUST follow this exactly. "
+    "You are analyzing an uploaded file (image or PDF). "
+    "Step 1: Determine if the content is a BPMN diagram, a flowchart, or text describing a business process. "
+    "Step 2: Based on your determination, your VERY FIRST LINE must be one of these two tags — no exceptions: "
+    "  • If it is NOT a BPMN diagram and NOT a business process description, your first line MUST be exactly: [NOT_BPMN] "
+    "  • If it IS a BPMN diagram OR a business process description, your first line MUST be exactly: [BPMN_VALID] "
+    "After the tag line, if NOT_BPMN: explain what the content actually is. Do NOT offer to create a BPMN. Do NOT ask for process details. "
+    "After the tag line, if BPMN_VALID: provide a structured analysis of the process as-is, including participants, activities, gateways, events, and flow. "
+    "Do NOT generate any XML. Do NOT try to improve or modify the process. "
+    "Format the analysis body with clear sections using markdown headers."
+)
+
+# Fallback heuristics when the AI ignores prefix tags
+_NOT_BPMN_INDICATORS = [
+    "not a bpmn", "not bpmn", "not related to bpmn", "not a business process",
+    "does not contain a bpmn", "does not include a bpmn", "no bpmn",
+    "not process-related", "not a process", "photograph", "photo of",
+    "does not appear to be", "cannot be used for bpmn", "unrelated to bpmn",
+    "is not a flowchart", "not a flowchart", "does not depict a process",
+    "i am ready to help you create", "please provide the following",
+]
 
 
 def _extract_xml(text: str) -> str:
@@ -134,3 +162,86 @@ async def continue_chat(chat_history_id: str, message: str, form_data: dict = No
     )
     
     return response
+
+
+async def analyze_uploaded_bpmn(file: UploadFile) -> dict:
+    """Analyze an uploaded BPMN diagram (PNG/PDF) using the Brain.
+    
+    Returns analysis with a bpmn_valid flag indicating if the content is BPMN-related.
+    """
+    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+
+    if not brain_id:
+        return {
+            "error": True,
+            "message": "API Not Active",
+            "detail": "SIGNAVIO_BRAIN_ID is not configured.",
+        }
+
+    # Create a chat history for this upload session
+    chat_result = await create_chat_history(brain_id)
+    if chat_result.get("error"):
+        return chat_result
+
+    chat_history_id = chat_result.get("chatHistoryId")
+    if not chat_history_id:
+        return {
+            "error": True,
+            "message": "Failed to create chat session",
+            "detail": "Chat history ID is empty or null.",
+        }
+
+    # Upload the file as an attachment
+    upload_result = await upload_attachments(brain_id, [file])
+    if upload_result.get("error"):
+        return upload_result
+
+    attachment_ids = upload_result.get("attachmentIds", [])
+    if not attachment_ids:
+        return {
+            "error": True,
+            "message": "Attachment upload failed",
+            "detail": "No attachment IDs returned from upload.",
+        }
+
+    prompt = (
+        f"Analyze this uploaded file: {file.filename}. "
+        "Is this a BPMN diagram, flowchart, or business process description? "
+        "Remember: your first line MUST be [BPMN_VALID] or [NOT_BPMN]. "
+        "Then provide your analysis."
+    )
+
+    response = await call_brain_workflow_chat(
+        brain_id,
+        prompt,
+        chat_history_id=chat_history_id,
+        attachment_ids=attachment_ids,
+        custom_behaviour=UPLOAD_ANALYSIS_BEHAVIOUR,
+        workflow_id=SIGNAVIO_WORKFLOW_ID,
+    )
+
+    if response.get("error"):
+        return response
+
+    result_text = response.get("result", "")
+    stripped = result_text.strip()
+
+    # Primary detection: explicit prefix tags
+    if stripped.startswith("[NOT_BPMN]"):
+        bpmn_valid = False
+    elif stripped.startswith("[BPMN_VALID]"):
+        bpmn_valid = True
+    else:
+        # Fallback: scan the response for non-BPMN indicator phrases
+        lower_text = stripped.lower()
+        has_not_bpmn_signal = any(ind in lower_text for ind in _NOT_BPMN_INDICATORS)
+        bpmn_valid = not has_not_bpmn_signal
+
+    # Strip the prefix tag from the displayed result
+    clean_result = re.sub(r'^\[(?:NOT_BPMN|BPMN_VALID)\]\s*', '', stripped)
+
+    return {
+        "result": clean_result,
+        "chatHistoryId": chat_history_id,
+        "bpmn_valid": bpmn_valid,
+    }

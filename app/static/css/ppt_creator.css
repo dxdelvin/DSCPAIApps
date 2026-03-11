@@ -535,9 +535,7 @@ body.dark-mode .result-error .error-title {
     animation: spin 0.8s linear infinite;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+/* @keyframes spin now in common.css */
 
 /* ═══════════════════════════════════════════════════════════
    Dark Mode
@@ -569,18 +567,7 @@ body.dark-mode .file-item.total-size .file-size {
     color: var(--text-primary);
 }
 
-body.dark-mode .warning-notice {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
-    border-color: rgba(245, 158, 11, 0.4);
-}
-
-body.dark-mode .warning-content {
-    color: var(--text-secondary);
-}
-
-body.dark-mode .warning-content strong {
-    color: var(--text-primary);
-}
+/* dark-mode .warning-notice now in common.css */
 
 body.dark-mode .stat-item {
     background: var(--navy-800, #1e293b);

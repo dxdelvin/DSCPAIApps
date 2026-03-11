@@ -280,34 +280,8 @@ body.dark-mode {
     cursor: not-allowed;
 }
 
-/* Warning Notice */
-.warning-notice {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.65rem;
-    padding: 0.85rem 1rem;
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
-    border: 1px solid rgba(245, 158, 11, 0.3);
-    border-left: 3px solid #f59e0b;
-    border-radius: 8px;
-    margin-top: 1rem;
-}
-
-.warning-icon {
-    font-size: 1.2rem;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.warning-content {
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: var(--text-secondary, #64748b);
-}
-
-.warning-content strong {
-    color: var(--text-primary);
-}
+/* Warning Notice: base styles in common.css */
+.warning-notice { margin-top: 1rem; }
 
 /* Info Panel */
 .info-panel {
@@ -426,9 +400,7 @@ body.dark-mode {
     margin-bottom: 1.5rem;
 }
 
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
+/* @keyframes spin now in common.css */
 
 .loading-state h4 {
     font-size: 1.1rem;
@@ -636,15 +608,7 @@ body.dark-mode .finding-item.success {
     border-left-color: #4ade80;
 }
 
-/* Dark Mode Warning Notice */
-body.dark-mode .warning-notice {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.08));
-    border-color: rgba(245, 158, 11, 0.4);
-}
-
-body.dark-mode .warning-content {
-    color: var(--text-secondary);
-}
+/* Dark mode warning notice now in common.css */
 
 .finding-item.highlight {
     animation: highlightPulse 0.6s ease-in-out;
