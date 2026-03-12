@@ -6,6 +6,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // App Search Functionality
     initAppSearch();
     
+    // Character Counters
+    initCharacterCounters();
+    
     // Theme Toggle Functionality
     const themeToggle = document.getElementById('themeToggle');
     const sunIcon = document.querySelector('.sun-icon');
@@ -465,4 +468,52 @@ function initAppSearch() {
         const existing = document.getElementById('noResultsMessage');
         if (existing) existing.remove();
     }
+}
+
+/**
+ * Character Counters Functionality
+ * Automatically adds a character counter below any textarea that has a maxlength attribute
+ */
+function initCharacterCounters() {
+    const textareas = document.querySelectorAll('textarea[maxlength]');
+    
+    textareas.forEach(ta => {
+        const maxLength = parseInt(ta.getAttribute('maxlength'), 10);
+        if (isNaN(maxLength)) return;
+
+        // Create character counter element
+        const counter = document.createElement('div');
+        counter.className = 'char-counter';
+        
+        // Wrap textarea in a position relative container if not already to place the counter cleanly
+        // Better yet, just insert it seamlessly beneath the textarea.
+        if (ta.nextSibling) {
+            ta.parentNode.insertBefore(counter, ta.nextSibling);
+        } else {
+            ta.parentNode.appendChild(counter);
+        }
+
+        const updateCounter = () => {
+            const currentLength = ta.value.length;
+            counter.textContent = `${currentLength} / ${maxLength}`;
+            
+            // Calculate usage percentage
+            const ratio = currentLength / maxLength;
+            
+            // Remove previous semantic classes
+            counter.classList.remove('char-safe', 'char-warn', 'char-danger');
+            
+            if (ratio > 0.95) {
+                counter.classList.add('char-danger');
+            } else if (ratio > 0.80) {
+                counter.classList.add('char-warn');
+            } else {
+                counter.classList.add('char-safe');
+            }
+        };
+
+        // Initialize and bind
+        updateCounter();
+        ta.addEventListener('input', updateCounter);
+    });
 }

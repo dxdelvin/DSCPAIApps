@@ -167,7 +167,7 @@
                 <!-- Inline override editor for quick changes on Review step -->
                 <div id="inlineOverrideContainer" class="inline-override" style="display: none; margin-top: 16px;">
                     <label for="reviewOverride" class="override-label">Modify Inputs (free text)</label>
-                    <textarea id="reviewOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis."></textarea>
+                    <textarea id="reviewOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
                     <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
                 </div>
 
@@ -257,7 +257,7 @@
             <!-- Upload override editor for modify inputs -->
             <div id="uploadOverrideContainer" class="inline-override" style="display:none; margin-top:16px;">
                 <label for="uploadOverride" class="override-label">Modify Inputs (free text)</label>
-                <textarea id="uploadOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis."></textarea>
+                <textarea id="uploadOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
                 <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
             </div>
 

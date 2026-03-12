@@ -761,8 +761,10 @@ body.dark-mode .empty-icon {
     }
 
     .builder-head {
-        flex-direction: column;
-        gap: 1rem;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
     }
 
     .builder-actions {
@@ -790,12 +792,15 @@ body.dark-mode .empty-icon {
     }
 
     .mode-tabs {
-        padding: 1rem;
-        flex-direction: column;
+        width: auto;
+        padding: 4px;
+        flex-direction: row;
+        gap: 0;
     }
 
     .mode-tab {
-        width: 100%;
+        width: auto;
+        min-width: 110px;
         justify-content: center;
     }
 
@@ -1100,7 +1105,10 @@ body.dark-mode .chat-divider::after {
     }
 
     .builder-head {
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
         padding: 1.25rem;
     }
 
@@ -1133,15 +1141,16 @@ body.dark-mode .chat-divider::after {
     }
 
     .mode-tabs {
-        width: 100%;
-        padding: 6px;
-        flex-direction: column;
+        width: auto;
+        padding: 4px;
+        flex-direction: row;
+        gap: 0;
     }
 
     .mode-tab {
-        width: 100%;
-        min-width: 0;
-        min-height: 44px;
+        width: auto;
+        min-width: 110px;
+        min-height: 40px;
         justify-content: center;
     }
 
@@ -1246,6 +1255,46 @@ body.dark-mode .chat-divider::after {
         max-height: 220px;
         padding: 6px;
     }
+
+    /* Start Builder Head UX Polish */
+    .builder-head .eyebrow {
+        display: none;
+    }
+    .builder-head > div:first-child {
+        min-width: 0;
+        flex: 1;
+        margin-right: 8px;
+    }
+    .builder-title {
+        font-size: 1.1rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+    .mode-tabs {
+        padding: 2px;
+    }
+    .mode-tab {
+        min-width: 0;
+        min-height: 32px;
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        letter-spacing: -0.02em;
+    }
+    .mode-tab[data-mode="upload"],
+    .mode-tab[data-mode="generate"] {
+        font-size: 0;
+    }
+    .mode-tab[data-mode="upload"]::after {
+        content: "Upload";
+        font-size: 0.75rem;
+    }
+    .mode-tab[data-mode="generate"]::after {
+        content: "Data Flow";
+        font-size: 0.75rem;
+    }
+    /* End Builder Head UX Polish */
 }
 
 @media (max-width: 480px) {

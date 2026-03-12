@@ -23,7 +23,15 @@
 
 .builder-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .builder-title { margin: 0; }
-.builder-actions { display: flex; gap: 10px; }
+.builder-actions { display: flex; gap: 10px; align-items: center; }
+.builder-actions .mode-tabs {
+    background: var(--slate-100);
+    border-color: var(--border);
+}
+body.dark-mode .builder-actions .mode-tabs {
+    background: var(--surface-secondary);
+    border-color: var(--border);
+}
 
 .step-indicator {
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
@@ -31,7 +39,8 @@
 
 .form-container { background: var(--bg); border: 1px dashed var(--border); border-radius: 14px; padding: 16px; }
 
-.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 12px; row-gap: 18px; }
+.form-container .form-group label { margin-bottom: 4px; }
 
 .review-summary { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: grid; gap: 10px; }
 .review-item { padding-bottom: 8px; border-bottom: 1px solid var(--border); }
@@ -65,7 +74,7 @@ body.dark-mode .review-value {
     .bpmn-hero { padding: 2rem 1rem; }
     .bpmn-hero h1 { font-size: 2rem; }
     .bpmn-hero .lede { font-size: 1rem; }
-    .builder-head { flex-direction: column; align-items: flex-start; }
+    .builder-head { flex-direction: row; align-items: center; justify-content: space-between; flex-wrap: nowrap; }
     .form-navigation { flex-direction: column; }
 }
 
@@ -1018,7 +1027,8 @@ body.dark-mode .not-bpmn-warning {
 
 @media (max-width: 768px) {
     .mode-tabs {
-        width: 100%;
+        width: auto;
+        max-width: 100%;
     }
     .mode-tab {
         flex: 1;
@@ -1043,12 +1053,13 @@ body.dark-mode .not-bpmn-warning {
 
     .builder-head {
         margin-bottom: 10px;
-        align-items: flex-start;
+        align-items: center;
+        justify-content: space-between;
         gap: 10px;
     }
 
     .builder-actions {
-        width: 100%;
+        width: auto;
         justify-content: space-between;
     }
 
@@ -1092,27 +1103,29 @@ body.dark-mode .not-bpmn-warning {
     }
 
     .builder-head {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
     }
 
     .builder-actions {
-        width: 100%;
+        width: auto;
         flex-wrap: nowrap;
         align-items: center;
         gap: 8px;
     }
 
     .builder-actions .mode-tabs {
-        flex: 1;
+        flex: 0 1 auto;
     }
 
     .mode-tabs {
-        width: 100%;
+        width: auto;
         padding: 5px;
     }
 
     .mode-tab {
+        min-width: 0;
         min-height: 42px;
         font-size: 0.85rem;
         padding: 9px 10px;
@@ -1130,15 +1143,19 @@ body.dark-mode .not-bpmn-warning {
         overflow-x: auto;
         gap: 8px;
         margin: 14px 0 14px;
-        padding: 0 0 6px;
-        scrollbar-width: thin;
+        padding: 0;
+        scrollbar-width: none;
         -webkit-overflow-scrolling: touch;
+    }
+
+    .step-indicator::-webkit-scrollbar {
+        display: none;
     }
 
     .step {
         min-width: 86px;
         flex: 0 0 auto;
-        padding: 8px 6px;
+        padding: 10px 8px;
     }
 
     .step-number {
@@ -1162,38 +1179,56 @@ body.dark-mode .not-bpmn-warning {
     }
 
     .form-navigation {
-        flex-direction: column;
-        align-items: stretch;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
     }
 
     .nav-left,
     .nav-right {
-        width: 100%;
+        width: auto;
     }
 
     .nav-right {
-        flex-direction: column;
+        flex-direction: row;
         gap: 8px;
     }
 
-    .nav-right .btn,
     .btn-reset-link {
-        width: 100%;
+        width: auto;
         min-width: 0;
     }
 
-    .lane-input-group {
-        flex-wrap: wrap;
+    .nav-right .btn {
+        width: auto;
+        min-width: 130px;
+        padding: 12px 20px;
+    }
+
+    .lane-input-group,
+    .sublane-item {
+        flex-wrap: nowrap;
     }
 
     .lane-input,
     .sublane-input {
         min-width: 0;
+        flex: 1;
     }
 
-    .lane-input-group .btn-icon {
-        flex: 1 1 calc(50% - 4px);
+    .lane-input-group .btn-icon,
+    .sublane-item .btn-icon {
+        flex: 0 0 auto;
         justify-content: center;
+        min-height: 42px;
+        min-width: 42px;
+        padding: 0 12px;
+    }
+    
+    .lane-input-group .btn-icon.btn-add-sublane,
+    .sublane-item .btn-icon.btn-add-sublane {
+        flex: 0 0 auto;
     }
 
     .sublanes-container {
@@ -1279,9 +1314,63 @@ body.dark-mode .not-bpmn-warning {
         padding: 10px;
     }
 
+    .builder-head {
+        align-items: center;
+        gap: 8px;
+    }
+
+    .builder-head .eyebrow {
+        display: none;
+    }
+
+    .builder-head > div:first-child {
+        min-width: 0;
+        flex: 1;
+        margin-right: 8px;
+    }
+
+    .builder-title {
+        font-size: 1.1rem;
+        line-height: 1.2;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        overflow: hidden;
+    }
+
+    .builder-actions {
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .mode-tabs {
+        padding: 2px;
+    }
+
     .mode-tab {
-        font-size: 0.8rem;
-        padding: 8px 8px;
+        min-width: 0;
+        min-height: 32px;
+        font-size: 0.75rem;
+        padding: 4px 8px;
+        letter-spacing: -0.02em;
+    }
+
+    /* Keep the title beside the actions but shorten the tab text to fit gracefully */
+    .mode-tab[data-mode="upload"],
+    .mode-tab[data-mode="form"] {
+        font-size: 0;
+    }
+    .mode-tab[data-mode="upload"]::after {
+        content: "Upload";
+        font-size: 0.75rem;
+    }
+    .mode-tab[data-mode="form"]::after {
+        content: "Form";
+        font-size: 0.75rem;
+    }
+
+    .btn-icon-help {
+        width: 36px;
+        height: 36px;
     }
 
     .step {

@@ -131,7 +131,7 @@ class PptCreatorApp {
         });
 
         document.getElementById('extract-btn').addEventListener('click', () => this.extractContent());
-        document.getElementById('reset-btn').addEventListener('click', ()   => this.resetAll());
+        document.getElementById('reset-btn').addEventListener('click', ()   => this.handleResetRequest());
         document.getElementById('download-btn').addEventListener('click', () => this.downloadPptx());
 
         document.getElementById('chat-send-btn').addEventListener('click', () => this.sendChatMessage());
@@ -413,6 +413,25 @@ class PptCreatorApp {
 
     hideLoading() {
         document.getElementById('loading-state').style.display = 'none';
+    }
+
+    handleResetRequest() {
+        if (typeof showConfirmation === 'function') {
+            showConfirmation(
+                'Clear All Data?',
+                'Are you sure you want to reset uploaded files and generated content? This cannot be undone.',
+                () => this.resetAll(),
+                {
+                    icon: '⚠️',
+                    confirmText: 'Clear Data',
+                    cancelText: 'Cancel'
+                }
+            );
+            return;
+        }
+
+        // Fallback for pages where the shared modal helper is unavailable.
+        this.resetAll();
     }
 
     resetAll() {
