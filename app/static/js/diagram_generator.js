@@ -186,9 +186,10 @@ class DiagramGeneratorApp {
             const data = await res.json();
 
             if (!res.ok || data.error || data.status === 'error') {
+                AppLogger.error('Diagram analysis failed', { message: data.message, detail: data.detail });
                 this.hideLoading();
                 const title = data.message || 'Analysis Failed';
-                const detail = data.detail || 'The AI could not analyze the uploaded PDF.';
+                const detail = 'The AI service could not process your document. Please try again later.';
                 this.showNoContentError(title, detail, data.title);
                 return;
             }
@@ -211,8 +212,9 @@ class DiagramGeneratorApp {
             this.showSuggestions();
             showToast('PDF analyzed! Select diagrams to generate.', 'success');
         } catch (err) {
+            AppLogger.error('Diagram analysis connection error:', err);
             this.hideLoading();
-            this.showError('Connection Error', 'Could not reach the server. Please check your connection and try again.');
+            this.showError('Connection Error', 'Unable to connect to the server. Please check your connection and try again.');
         }
     }
 
@@ -292,8 +294,9 @@ class DiagramGeneratorApp {
             const data = await res.json();
 
             if (!res.ok || data.error || data.status === 'error') {
+                AppLogger.error('Diagram generation failed', { message: data.message, detail: data.detail });
                 this.hideLoading();
-                this.showError(data.message || 'Generation Failed', data.detail || 'Could not generate diagrams.');
+                this.showError(data.message || 'Generation Failed', 'The AI service could not generate diagrams. Please try again later.');
                 return;
             }
 
@@ -309,8 +312,9 @@ class DiagramGeneratorApp {
             this.showChatPanel();
             showToast(`${this.diagrams.length} diagram${this.diagrams.length > 1 ? 's' : ''} generated!`, 'success');
         } catch (err) {
+            AppLogger.error('Diagram generation connection error:', err);
             this.hideLoading();
-            this.showError('Connection Error', 'Could not reach the server. Please try again.');
+            this.showError('Connection Error', 'Unable to connect to the server. Please try again.');
         }
     }
 
@@ -358,7 +362,8 @@ class DiagramGeneratorApp {
             if (thinkingEl) thinkingEl.remove();
 
             if (data.error || data.status === 'error') {
-                this.appendChat('assistant', `Error: ${data.message || 'Refinement failed.'}`);
+                AppLogger.error('Diagram refinement failed:', data.message);
+                this.appendChat('assistant', 'Something went wrong while updating the diagram. Please try again.');
                 return;
             }
 
@@ -373,7 +378,8 @@ class DiagramGeneratorApp {
             }
         } catch (err) {
             if (thinkingEl) thinkingEl.remove();
-            this.appendChat('assistant', 'Error: ' + err.message);
+            AppLogger.error('Diagram chat error:', err);
+            this.appendChat('assistant', 'Unable to connect to the server. Please try again.');
         }
     }
 
@@ -580,7 +586,8 @@ class DiagramGeneratorApp {
 
             if (!res.ok) {
                 const err = await res.json();
-                showToast(err.message || 'Download failed', 'error');
+                AppLogger.error('Diagram download failed:', err.message || err.detail);
+                showToast('Download failed. Please try again.', 'error');
                 return;
             }
 
@@ -595,7 +602,8 @@ class DiagramGeneratorApp {
                 showToast('Browser blocked automatic download.', 'warning');
             }
         } catch (err) {
-            showToast('Download error: ' + err.message, 'error');
+            AppLogger.error('Diagram download error:', err);
+            showToast('Download failed. Please try again.', 'error');
         } finally {
             if (btn) { btn.disabled = false; btn.textContent = '⬇ Download'; }
         }
@@ -694,3 +702,4 @@ class DiagramGeneratorApp {
         return (bytes / 1048576).toFixed(1) + ' MB';
     }
 }
+

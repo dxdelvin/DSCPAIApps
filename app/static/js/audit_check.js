@@ -342,7 +342,7 @@ class AuditCheckApp {
             showToast('PDF generated and audit check completed', 'success');
 
         } catch (error) {
-            console.error('Error generating PDF:', error);
+            AppLogger.error('Error generating PDF:', error);
             showToast('Error generating PDF', 'error');
             document.getElementById('generate-pdf-btn').disabled = false;
         }
@@ -428,7 +428,7 @@ class AuditCheckApp {
                     yPosition += imgHeight + 15;
 
                 } catch (error) {
-                    console.error('Error adding image:', error);
+                    AppLogger.error('Error adding image:', error);
                 }
             }
 
@@ -508,9 +508,9 @@ class AuditCheckApp {
             if (!response.ok || result.status !== 'success') {
                 statusBadge.className = 'status-badge error';
                 statusBadge.textContent = 'Error';
-                resultsContent.innerHTML = `<div class="result-item error">Failed to analyze document. ${result.detail || ''}</div>`;
-                const detail = sanitizeDetail(result.detail);
-                showToast(detail || 'Audit Brain error', 'error');
+                AppLogger.error('Audit analysis failed:', result.detail || result.message || response.status);
+                resultsContent.innerHTML = '<div class="result-item error">Failed to analyze document. The AI service is temporarily unavailable.</div>';
+                showToast('The AI service is temporarily unavailable. Please try again later.', 'error');
                 return;
             }
 
@@ -521,11 +521,11 @@ class AuditCheckApp {
             statusBadge.className = 'status-badge success';
             statusBadge.textContent = 'Complete';
         } catch (error) {
-            console.error('Error sending PDF to Audit Brain:', error);
+            AppLogger.error('Error sending PDF to Audit Brain:', error);
             statusBadge.className = 'status-badge error';
             statusBadge.textContent = 'Error';
-            resultsContent.innerHTML = '<div class="result-item error">Connection failed. Please try again.</div>';
-            showToast('Error sending PDF to Audit Brain', 'error');
+            resultsContent.innerHTML = '<div class="result-item error">Unable to connect to the server. Please check your connection and try again.</div>';
+            showToast('Unable to connect to the server. Please try again later.', 'error');
         }
     }
     
@@ -675,8 +675,8 @@ class AuditCheckApp {
 
             if (!response.ok || result.status !== 'success') {
                 this.displayCheckError('Error');
-                const detail = sanitizeDetail(result.detail);
-                showToast(detail || 'Audit Brain error', 'error');
+                AppLogger.error('Audit check failed:', result.detail || result.message || response.status);
+                showToast('The AI service is temporarily unavailable. Please try again later.', 'error');
                 btn.innerHTML = originalText;
                 btn.disabled = false;
                 return;
@@ -688,9 +688,9 @@ class AuditCheckApp {
             showToast('PDF analysis completed', 'success');
 
         } catch (error) {
-            console.error('Error checking PDF:', error);
-            this.displayCheckError('Not Authenticated');
-            showToast('Error checking PDF', 'error');
+            AppLogger.error('Error checking PDF:', error);
+            this.displayCheckError('Error');
+            showToast('Unable to connect to the server. Please try again later.', 'error');
             document.getElementById('check-pdf-btn').disabled = false;
         }
     }
@@ -775,3 +775,4 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize app
     window.auditApp = new AuditCheckApp();
 });
+

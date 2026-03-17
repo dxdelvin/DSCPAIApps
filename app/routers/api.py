@@ -64,6 +64,27 @@ class BPMNGenerateRequest(BaseModel):
     reviewOverride: str = ""
 
 
+class ClientLogRequest(BaseModel):
+    level: str = "error"
+    message: str = ""
+    metadata: Optional[str] = None
+    path: Optional[str] = None
+    userAgent: Optional[str] = None
+    ts: Optional[str] = None
+
+
+@router.post("/client-log")
+async def client_log(payload: ClientLogRequest, request: Request):
+    """Collect frontend logs for production diagnostics."""
+    level = (payload.level or "error").upper()
+    path = payload.path or request.url.path
+    ip = request.client.host if request.client else "unknown"
+    print(f"[CLIENT][{level}] {path} {payload.message} | ip={ip}")
+    if payload.metadata:
+        print(f"[CLIENT][META] {payload.metadata}")
+    return {"status": "ok"}
+
+
 # ============== BPMN Chat Flow API Endpoints ==============
 
 @router.post("/bpmn/start-session")

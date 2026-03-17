@@ -181,13 +181,14 @@ class BPMNCheckerApp {
                 this.displayResults(result.analysis, result.analysisStructured);
                 showToast('Diagram analysis complete!', 'success');
             } else {
+                AppLogger.error('BPMN check failed:', result.message || result.detail);
                 this.showEmptyState();
-                showToast(result.message || 'Failed to analyze diagram.', 'error');
+                showToast('The AI service is temporarily unavailable. Please try again later.', 'error');
             }
         } catch (error) {
-            console.error('Error checking diagram:', error);
+            AppLogger.error('Error checking diagram:', error);
             this.showEmptyState();
-            showToast('An error occurred while analyzing the diagram.', 'error');
+            showToast('Unable to connect to the server. Please check your connection and try again.', 'error');
         }
     }
 
@@ -575,3 +576,4 @@ class BPMNCheckerApp {
 document.addEventListener('DOMContentLoaded', () => {
     window.bpmnCheckerApp = new BPMNCheckerApp();
 });
+

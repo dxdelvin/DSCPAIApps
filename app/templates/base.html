@@ -134,6 +134,13 @@
         </div>
     </footer>
 
+    <script>
+        window.APP_CONFIG = {
+            env: "{{ app_env | default('dev') }}",
+            clientLoggingEnabled: {{ 'true' if client_logging_enabled else 'false' }},
+            clientLogLevel: "{{ client_log_level | default('error') }}"
+        };
+    </script>
     <script src="{{ url_for('static', path='js/common.js') }}"></script>
     {% block extra_js %}{% endblock %}
 </body>

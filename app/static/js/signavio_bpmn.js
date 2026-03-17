@@ -280,8 +280,9 @@ async function analyzeUploadedFile() {
         const result = await response.json();
 
         if (!response.ok || result.status !== 'success') {
+            AppLogger.error('Upload analysis failed:', result.detail || result.message || response.status);
             if (statusEl) statusEl.textContent = 'Error';
-            if (contentEl) contentEl.innerHTML = `<div class="analysis-error"><p>Failed to analyze file</p><p class="error-detail">${escapeHtml(result.detail || 'Please try again.')}</p></div>`;
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to analyze file</p><p class="error-detail">The AI service is temporarily unavailable. Please try again later.</p></div>';
             return;
         }
 
@@ -308,9 +309,9 @@ async function analyzeUploadedFile() {
         if (modifyBtn) modifyBtn.disabled = !uploadBpmnValid;
 
     } catch (error) {
-        console.error('Upload analysis error:', error);
+        AppLogger.error('Upload analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
-        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Unable to connect to the server. Please check your connection and try again.</p></div>';
     }
 }
 
@@ -357,8 +358,9 @@ async function refreshUploadAnalysis() {
         const result = await response.json();
 
         if (!response.ok || result.status !== 'success') {
+            AppLogger.error('Refresh analysis failed:', result.detail || result.message || response.status);
             if (statusEl) statusEl.textContent = 'Error';
-            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to refresh analysis</p><p class="error-detail">Please try again.</p></div>';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to refresh analysis</p><p class="error-detail">The AI service is temporarily unavailable. Please try again later.</p></div>';
             return;
         }
 
@@ -369,9 +371,9 @@ async function refreshUploadAnalysis() {
         if (overrideBox && overrideText.length > 0) overrideBox.value = '';
 
     } catch (error) {
-        console.error('Refresh upload analysis error:', error);
+        AppLogger.error('Refresh upload analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
-        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Unable to connect to the server. Please check your connection and try again.</p></div>';
     }
 }
 
@@ -401,8 +403,8 @@ async function generateUploadBPMN() {
         const result = await response.json();
 
         if (!response.ok) {
-            const detail = sanitizeDetail(result.detail);
-            showToast(`${result.message}: ${detail}`, 'error', 5000);
+            AppLogger.error('Upload BPMN generation failed', { message: result.message, detail: result.detail });
+            showToast('The AI service is temporarily unavailable. Please try again later.', 'error', 5000);
             return;
         }
 
@@ -419,7 +421,8 @@ async function generateUploadBPMN() {
         showToast('BPMN generated and downloaded successfully.', 'success');
 
     } catch (error) {
-        showToast('Connection failed. Please check if the server is running.', 'error');
+        AppLogger.error('Upload BPMN generation error:', error);
+        showToast('Unable to connect to the server. Please check your connection and try again.', 'error');
     } finally {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
     }
@@ -768,8 +771,9 @@ async function fetchBrainAnalysis() {
         const result = await response.json();
 
         if (!response.ok || result.status !== 'success') {
+            AppLogger.error('Brain analysis session failed:', result.detail || result.message || response.status);
             if (statusEl) statusEl.textContent = 'Error';
-            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Failed to connect to AI Brain</p><p class="error-detail">Please check your configuration and try again.</p></div>';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to connect to AI Brain</p><p class="error-detail">The AI service is temporarily unavailable. Please try again later.</p></div>';
             updateGenerateButtonState();
             return;
         }
@@ -785,9 +789,9 @@ async function fetchBrainAnalysis() {
         updateGenerateButtonState();
         
     } catch (error) {
-        console.error('Analysis error:', error);
+        AppLogger.error('Analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
-        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Unable to connect to the server. Please check your connection and try again.</p></div>';
         updateGenerateButtonState();
     }
 }
@@ -925,8 +929,9 @@ async function refreshAnalysis() {
 
         const result = await response.json();
         if (!response.ok || result.status !== 'success') {
+            AppLogger.error('Refresh analysis failed:', result.detail || result.message || response.status);
             if (statusEl) statusEl.textContent = 'Error';
-            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Failed to refresh analysis</p><p class="error-detail">Please check your configuration and try again.</p></div>';
+            if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Failed to refresh analysis</p><p class="error-detail">The AI service is temporarily unavailable. Please try again later.</p></div>';
             updateGenerateButtonState();
             return;
         }
@@ -940,9 +945,9 @@ async function refreshAnalysis() {
             formData.reviewOverride = '';
         }
     } catch (error) {
-        console.error('Refresh analysis error:', error);
+        AppLogger.error('Refresh analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
-        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>❌ Connection failed</p><p class="error-detail">Please check your network connection.</p></div>';
+        if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Unable to connect to the server. Please check your connection and try again.</p></div>';
         updateGenerateButtonState();
     }
 }
@@ -990,9 +995,8 @@ async function generateBPMN() {
         const result = await response.json();
 
         if (!response.ok) {
-            // Displays the "API Not Active" error and details in the toast
-            const detail = sanitizeDetail(result.detail);
-            showToast(`${result.message}: ${detail}`, 'error', 5000);
+            AppLogger.error('BPMN generation failed', { message: result.message, detail: result.detail });
+            showToast('The AI service is temporarily unavailable. Please try again later.', 'error', 5000);
             return;
         }
 
@@ -1016,7 +1020,8 @@ async function generateBPMN() {
         showToast('BPMN generated and downloaded successfully.', 'success');
         
     } catch (error) {
-        showToast('Connection failed. Please check if the server is running.', 'error');
+        AppLogger.error('BPMN generation error:', error);
+        showToast('Unable to connect to the server. Please check your connection and try again.', 'error');
     } finally {
         if (loadingSpinner) loadingSpinner.style.display = 'none';
     }

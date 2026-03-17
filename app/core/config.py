@@ -11,6 +11,9 @@ CSS_VERSION = "2.5.0"
 
 # Environment Configuration
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "dev").lower() == "prod"
+APP_ENV = "prod" if IS_PRODUCTION else "dev"
+CLIENT_LOGGING_ENABLED = os.getenv("CLIENT_LOGGING_ENABLED", "true").lower() == "true"
+CLIENT_LOG_LEVEL = os.getenv("CLIENT_LOG_LEVEL", "error" if IS_PRODUCTION else "debug").lower()
 
 # Brain API Configuration
 BRAIN_API_BASE_URL = os.getenv("BRAIN_API_BASE_URL", "https://ews-emea.api.bosch.com:443/it/application/dia-brain/v1/api")

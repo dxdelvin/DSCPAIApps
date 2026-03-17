@@ -690,8 +690,8 @@ async function exportFsDocx() {
 
         showToast('Document exported successfully!', 'success');
     } catch (err) {
-        console.error('Export error:', err);
-        showToast(err.message || 'Failed to export document', 'error');
+        AppLogger.error('FS Export error:', err);
+        showToast('Document export failed. Please try again.', 'error');
     } finally {
         if (spinner) spinner.style.display = 'none';
     }
@@ -1207,8 +1207,8 @@ async function exportBrDocx() {
 
         showToast('Business Requirement exported successfully!', 'success');
     } catch (err) {
-        console.error('BR Export error:', err);
-        showToast(err.message || 'Failed to export document', 'error');
+        AppLogger.error('BR Export error:', err);
+        showToast('Document export failed. Please try again.', 'error');
     } finally {
         if (spinner) spinner.style.display = 'none';
     }
@@ -1432,4 +1432,5 @@ function loadBrFromJson(data) {
     brMaxAccessibleStep = brTotalSteps;
     updateBrNav();
 }
+
 

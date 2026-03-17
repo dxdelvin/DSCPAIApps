@@ -172,9 +172,10 @@ class PptCreatorApp {
             const data = await res.json();
 
             if (!res.ok || data.error || data.status === 'error') {
+                AppLogger.error('PPT extraction failed', { message: data.message, detail: data.detail });
                 this.hideLoading();
                 const title = data.message || 'Extraction Failed';
-                const detail = data.detail || 'The AI could not process the uploaded PDF. Try a different file or add more instructions.';
+                const detail = 'The AI service could not process your document. Please try again later.';
                 this.showError(title, detail);
                 return;
             }
@@ -196,8 +197,9 @@ class PptCreatorApp {
             document.getElementById('chat-container').style.display = 'block';
             showToast('Presentation generated successfully!', 'success');
         } catch (err) {
+            AppLogger.error('PPT extraction connection error:', err);
             this.hideLoading();
-            this.showError('Connection Error', 'Could not reach the server. Please check your connection and try again.');
+            this.showError('Connection Error', 'Unable to connect to the server. Please check your connection and try again.');
         }
     }
 
@@ -229,7 +231,8 @@ class PptCreatorApp {
             if (thinkingEl) thinkingEl.remove();
 
             if (data.error) {
-                this.appendChat('assistant', `Error: ${data.message}`);
+                AppLogger.error('PPT refinement failed:', data.message);
+                this.appendChat('assistant', 'Something went wrong while updating the presentation. Please try again.');
                 return;
             }
 
@@ -243,7 +246,8 @@ class PptCreatorApp {
             }
         } catch (err) {
             if (thinkingEl) thinkingEl.remove();
-            this.appendChat('assistant', 'Error: ' + err.message);
+            AppLogger.error('PPT chat error:', err);
+            this.appendChat('assistant', 'Unable to connect to the server. Please try again.');
         }
     }
 
@@ -382,7 +386,8 @@ class PptCreatorApp {
 
             if (!res.ok) {
                 const err = await res.json();
-                showToast(err.message || 'Download failed', 'error');
+                AppLogger.error('PPT download failed:', err.message || err.detail);
+                showToast('Download failed. Please try again.', 'error');
                 return;
             }
 
@@ -397,7 +402,8 @@ class PptCreatorApp {
             URL.revokeObjectURL(url);
             showToast('Download started!', 'success');
         } catch (err) {
-            showToast('Download error: ' + err.message, 'error');
+            AppLogger.error('PPT download error:', err);
+            showToast('Download failed. Please try again.', 'error');
         }
     }
 
@@ -463,3 +469,4 @@ class PptCreatorApp {
         return (bytes / 1048576).toFixed(1) + ' MB';
     }
 }
+

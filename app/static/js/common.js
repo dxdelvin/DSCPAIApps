@@ -188,6 +188,104 @@ const Utils = {
     }
 };
 
+const AppLogger = {
+    LEVELS: {
+        debug: 10,
+        info: 20,
+        warn: 30,
+        error: 40,
+    },
+    getConfig() {
+        const cfg = window.APP_CONFIG || {};
+        const env = (cfg.env || 'dev').toLowerCase();
+        return {
+            env,
+            isProd: env === 'prod',
+            enabled: cfg.clientLoggingEnabled !== false,
+            minLevel: (cfg.clientLogLevel || (env === 'prod' ? 'error' : 'debug')).toLowerCase(),
+        };
+    },
+    shouldLog(level) {
+        const cfg = this.getConfig();
+        if (!cfg.enabled) return false;
+        const current = this.LEVELS[level] || this.LEVELS.error;
+        const min = this.LEVELS[cfg.minLevel] || this.LEVELS.error;
+        return current >= min;
+    },
+    shouldUseConsole(level) {
+        const cfg = this.getConfig();
+        if (!cfg.enabled) return false;
+        if (!cfg.isProd) return true;
+        return level === 'error';
+    },
+    sanitizeMeta(meta) {
+        if (meta === undefined || meta === null) return null;
+        const raw = typeof meta === 'string' ? meta : this.safeStringify(meta);
+        if (!raw) return null;
+        return raw.slice(0, 2000);
+    },
+    safeStringify(value) {
+        try {
+            return JSON.stringify(value);
+        } catch {
+            return '[unserializable]';
+        }
+    },
+    sendToServer(level, message, meta) {
+        const payload = {
+            level,
+            message: String(message || 'Unknown client error').slice(0, 500),
+            metadata: this.sanitizeMeta(meta),
+            path: window.location.pathname,
+            userAgent: navigator.userAgent,
+            ts: new Date().toISOString(),
+        };
+
+        const endpoint = '/api/client-log';
+        const body = JSON.stringify(payload);
+
+        if (navigator.sendBeacon) {
+            const blob = new Blob([body], { type: 'application/json' });
+            navigator.sendBeacon(endpoint, blob);
+            return;
+        }
+
+        fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body,
+            keepalive: true,
+        }).catch(() => {});
+    },
+    write(level, message, meta) {
+        if (!this.shouldLog(level)) return;
+
+        if (this.shouldUseConsole(level)) {
+            const fn = console[level] || console.error;
+            if (meta !== undefined) fn.call(console, message, meta);
+            else fn.call(console, message);
+        }
+
+        if (level === 'error') {
+            this.sendToServer(level, message, meta);
+        }
+    },
+    debug(message, meta) {
+        this.write('debug', message, meta);
+    },
+    info(message, meta) {
+        this.write('info', message, meta);
+    },
+    warn(message, meta) {
+        this.write('warn', message, meta);
+    },
+    error(message, meta) {
+        this.write('error', message, meta);
+    },
+};
+
+window.AppLogger = AppLogger;
+
 const DOM = {
     select: (sel, parent = document) => parent.querySelector(sel),
     selectAll: (sel, parent = document) => parent.querySelectorAll(sel),

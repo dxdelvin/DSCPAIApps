@@ -2,11 +2,24 @@ import os
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import TEMPLATES_DIR, CSS_VERSION
+from app.core.config import TEMPLATES_DIR, CSS_VERSION, APP_ENV, CLIENT_LOGGING_ENABLED, CLIENT_LOG_LEVEL
 from app.services.auth_service import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+
+def _template_context(request: Request, extra: dict | None = None):
+    context = {
+        "request": request,
+        "css_version": CSS_VERSION,
+        "app_env": APP_ENV,
+        "client_logging_enabled": CLIENT_LOGGING_ENABLED,
+        "client_log_level": CLIENT_LOG_LEVEL,
+    }
+    if extra:
+        context.update(extra)
+    return context
 
 @router.get("/")
 async def home(request: Request):
@@ -14,53 +27,33 @@ async def home(request: Request):
     user_info = get_current_user(request)
     username = user_info.get("user", "Guest")
     
-    return templates.TemplateResponse("index.html", {
-        "request": request,
+    return templates.TemplateResponse("index.html", _template_context(request, {
         "username": username,
-        "css_version": CSS_VERSION,
-    })
+    }))
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
-    return templates.TemplateResponse("signavio_bpmn.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("signavio_bpmn.html", _template_context(request))
 
 @router.get("/audit-check")
 async def audit_check(request: Request):
-    return templates.TemplateResponse("audit_check.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("audit_check.html", _template_context(request))
 
 @router.get("/bpmn-checker")
 async def bpmn_checker(request: Request):
-    return templates.TemplateResponse("bpmn_checker.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("bpmn_checker.html", _template_context(request))
 
 @router.get("/spec-builder")
 async def spec_builder(request: Request):
-    return templates.TemplateResponse("fs_br_document.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("fs_br_document.html", _template_context(request))
 
 @router.get("/ppt-creator")
 async def ppt_creator(request: Request):
-    return templates.TemplateResponse("ppt_creator.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("ppt_creator.html", _template_context(request))
 
 @router.get("/diagram-generator")
 async def diagram_generator(request: Request):
-    return templates.TemplateResponse("diagram_generator.html", {
-        "request": request,
-        "css_version": CSS_VERSION,
-    })
+    return templates.TemplateResponse("diagram_generator.html", _template_context(request))
 
 @router.get("/health")
 async def health_check():
