@@ -23,6 +23,12 @@ from app.services.ppt_creator_service import (
     refine_ppt_content,
     generate_pptx_file,
 )
+from app.services.diagram_generator_service import (
+    analyze_pdf_content as diagram_analyze_pdf,
+    generate_diagrams,
+    refine_diagram,
+    build_drawio_download,
+)
 
 router = APIRouter()
 
@@ -504,6 +510,159 @@ async def ppt_extract(
         "content": result.get("content"),
         "chatHistoryId": result.get("chatHistoryId"),
     }
+
+
+# ============== Diagram Generator API Endpoints ==============
+
+@router.post("/diagram/analyze")
+async def diagram_analyze(
+    files: List[UploadFile] = File(...),
+    instructions: Optional[str] = Form(None),
+):
+    """Upload PDF files → AI analyzes content and suggests diagram types."""
+    MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total
+    file_bytes_list = []
+    total_size = 0
+
+    for f in files:
+        if not f.filename.lower().endswith(".pdf"):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Invalid file type",
+                    "detail": f"'{f.filename}' is not a PDF file. Only .pdf files are supported.",
+                },
+            )
+        content = await f.read()
+        total_size += len(content)
+
+        if total_size > MAX_TOTAL_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "status": "error",
+                    "message": "Total upload size too large",
+                    "detail": f"Combined file size exceeds the 10 MB limit. Current total: {total_size / (1024*1024):.1f} MB.",
+                },
+            )
+
+        file_bytes_list.append((f.filename, content))
+
+    result = await diagram_analyze_pdf(file_bytes_list, instructions or "")
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Connection to Brain failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "analysis": result.get("analysis"),
+        "chatHistoryId": result.get("chatHistoryId"),
+        "extractedText": result.get("extractedText"),
+    }
+
+
+class DiagramGenerateRequest(BaseModel):
+    chatHistoryId: str
+    analysis: dict
+    extractedText: str
+    selectedIndices: Optional[List[int]] = None
+
+
+@router.post("/diagram/generate")
+async def diagram_generate(data: DiagramGenerateRequest):
+    """Generate draw.io XML diagrams from analysed content."""
+    result = await generate_diagrams(
+        data.chatHistoryId,
+        data.analysis,
+        data.extractedText,
+        data.selectedIndices,
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Brain request failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "diagrams": result.get("diagrams"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
+
+
+class DiagramRefineRequest(BaseModel):
+    chatHistoryId: str
+    message: str
+    currentXml: str = ""
+    diagramName: str = ""
+
+
+@router.post("/diagram/refine")
+async def diagram_refine(data: DiagramRefineRequest):
+    """Refine a specific diagram based on user feedback."""
+    result = await refine_diagram(
+        data.chatHistoryId,
+        data.message,
+        data.currentXml,
+        data.diagramName,
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Brain request failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "xml": result.get("xml"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
+
+
+class DiagramDownloadRequest(BaseModel):
+    diagrams: list
+
+
+@router.post("/diagram/download")
+async def diagram_download(data: DiagramDownloadRequest):
+    """Build and download a .drawio file from generated diagrams."""
+    from fastapi.responses import Response
+
+    if not data.diagrams:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "No diagrams provided",
+                "detail": "Please generate diagrams first.",
+            },
+        )
+
+    drawio_content = build_drawio_download(data.diagrams)
+
+    return Response(
+        content=drawio_content,
+        media_type="application/xml",
+        headers={"Content-Disposition": 'attachment; filename="diagrams.drawio"'},
+    )
 
 
 class PptRefineRequest(BaseModel):

@@ -30,7 +30,7 @@ BPMN_GENERATE_BEHAVIOUR = (
 )
 
 UPLOAD_ANALYSIS_BEHAVIOUR = (
-    "CRITICAL INSTRUCTION — You MUST follow this exactly. "
+    "CRITICAL INSTRUCTION — You MUST follow this exactly. and provide same to same level of detail in your analysis seen in the uploaded content."
     "You are analyzing an uploaded file (image or PDF). "
     "Step 1: Determine if the content is a BPMN diagram, a flowchart, or text describing a business process. "
     "Step 2: Based on your determination, your VERY FIRST LINE must be one of these two tags — no exceptions: "
@@ -40,6 +40,7 @@ UPLOAD_ANALYSIS_BEHAVIOUR = (
     "After the tag line, if BPMN_VALID: provide a structured analysis of the process as-is, including participants, activities, gateways, events, and flow. "
     "Do NOT generate any XML. Do NOT try to improve or modify the process. "
     "Format the analysis body with clear sections using markdown headers."
+    "Do not try to improve, modify, or suggest changes to the process. Just analyze and describe what you see based on the uploaded content. (Very Important)"
 )
 
 # Fallback heuristics when the AI ignores prefix tags

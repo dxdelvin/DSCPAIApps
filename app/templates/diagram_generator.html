@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Diagram Generator - BSH DSCP AI{% endblock %}
+
+{% block page_name %}Diagram Generator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/diagram_generator.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">draw.io | Diagram Generator</p>
+        <h1>AI Diagram Generator</h1>
+        <p class="lede">Upload PDF documents, let AI analyze the content and create professional draw.io diagrams automatically.</p>
+    </div>
+</section>
+
+<div class="container dg-container">
+    <div class="dg-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Diagram Tools</p>
+                <h2 class="builder-title">Create Diagrams from PDF</h2>
+            </div>
+        </div>
+
+        <div class="dg-content">
+            <!-- Left: Upload & Controls -->
+            <div class="builder-left">
+                <div class="form-container">
+                    <h3>Upload PDF Document</h3>
+                    <p>Upload a PDF file. AI will analyze the content and suggest the best diagram types.</p>
+
+                    <!-- File Upload Area -->
+                    <div class="upload-section">
+                        <h4>PDF File (.pdf)</h4>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">📄</span>
+                                <p>Drag &amp; drop a PDF file here or click to select</p>
+                                <p class="upload-hint">Supports .pdf files only (max 10 MB)</p>
+                            </div>
+                            <input type="file" id="file-input" accept=".pdf" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Uploaded Files List -->
+                    <div class="files-list-section" id="files-list-section" style="display:none">
+                        <h4>Uploaded File</h4>
+                        <div class="files-list" id="files-list"></div>
+                    </div>
+
+                    <!-- Diagram Type Preference -->
+                    <div class="form-group">
+                        <label>Diagram Type Preference</label>
+                        <p class="type-hint">Select one or more types, or leave "AI Decides" for automatic detection.</p>
+                        <div class="type-picker" id="type-picker">
+                            <button class="type-chip active" data-type="auto">🤖 AI Decides</button>
+                            <button class="type-chip" data-type="flowchart">🔀 Flowchart</button>
+                            <button class="type-chip" data-type="mind_map">🧠 Mind Map</button>
+                            <button class="type-chip" data-type="sequence">🔄 Sequence Diagram</button>
+                            <button class="type-chip" data-type="er_diagram">🗃️ ER Diagram</button>
+                            <button class="type-chip" data-type="org_chart">🏢 Org Chart</button>
+                            <button class="type-chip" data-type="swimlane">🏊 Swimlane</button>
+                            <button class="type-chip" data-type="block_diagram">🧱 Block Diagram</button>
+                            <button class="type-chip" data-type="class_diagram">📦 Class Diagram</button>
+                            <button class="type-chip" data-type="state_diagram">⚡ State Diagram</button>
+                            <button class="type-chip" data-type="network">🌐 Network / Architecture</button>
+                            <button class="type-chip" data-type="timeline">📅 Timeline</button>
+                            <button class="type-chip" data-type="tree">🌲 Tree / Hierarchy</button>
+                            <button class="type-chip" data-type="data_flow">📈 Data Flow</button>
+                            <button class="type-chip" data-type="use_case">👤 Use Case</button>
+                            <button class="type-chip" data-type="component">🔧 Component Diagram</button>
+                            <button class="type-chip" data-type="deployment">🚀 Deployment</button>
+                            <button class="type-chip" data-type="activity">🎯 Activity Diagram</button>
+                            <button class="type-chip" data-type="venn">⭕ Venn Diagram</button>
+                            <button class="type-chip" data-type="gantt">📊 Gantt Chart</button>
+                            <button class="type-chip" data-type="wireframe">🖼️ Wireframe</button>
+                        </div>
+                    </div>
+
+                    <!-- Warning Notice -->
+                    <div class="warning-notice">
+                        <span class="warning-icon">⚠️</span>
+                        <div class="warning-content">
+                            <strong>Important:</strong> Only text content is extracted from PDFs. Images, charts, and graphics within the PDF will not be processed. For best results, use text-based PDFs.
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="analyze-btn" disabled>
+                            Analyze PDF
+                        </button>
+                        <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Chat / Refine Panel -->
+                <div class="chat-container" id="chat-container" style="display:none">
+                    <h3>Refine Diagram</h3>
+                    <p>Ask AI to modify the diagram structure, add elements, or change layout.</p>
+                    <div class="refine-target">
+                        <label for="refine-select">Refining:</label>
+                        <select id="refine-select" class="refine-dropdown"></select>
+                    </div>
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <textarea id="chat-input" rows="2" placeholder="E.g. Add a decision point after step 3..."></textarea>
+                        <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Result & Download -->
+            <div class="builder-right">
+                <div class="results-container">
+                    <h3>Result</h3>
+
+                    <!-- Diagram Suggestions (appears after analysis) -->
+                    <div class="selection-container" id="selection-container" style="display:none">
+                        <h4>AI Diagram Suggestions</h4>
+                        <p class="selection-summary" id="analysis-summary"></p>
+
+                        <div class="diagram-suggestions" id="diagram-suggestions"></div>
+
+                        <div class="form-actions selection-actions">
+                            <button class="btn btn-primary" id="generate-btn">
+                                Generate Selected Diagrams
+                            </button>
+                            <button class="btn btn-secondary" id="select-all-btn">Select All</button>
+                        </div>
+                    </div>
+
+                    <!-- Result Panel -->
+                    <div class="result-panel" id="result-panel" style="display:none">
+                        <div class="result-info" id="result-info"></div>
+                        <div class="diagram-cards" id="diagram-cards"></div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div class="empty-state" id="empty-state">
+                        <span class="empty-icon">📊</span>
+                        <p>Upload a PDF and click Analyze to generate diagrams</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div class="loading-state" id="loading-state" style="display:none">
+                        <div class="spinner"></div>
+                        <p id="loading-text">Analyzing PDF content...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/diagram_generator.js') }}?v={{ css_version }}"></script>
+{% endblock %}

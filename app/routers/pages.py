@@ -55,6 +55,13 @@ async def ppt_creator(request: Request):
         "css_version": CSS_VERSION,
     })
 
+@router.get("/diagram-generator")
+async def diagram_generator(request: Request):
+    return templates.TemplateResponse("diagram_generator.html", {
+        "request": request,
+        "css_version": CSS_VERSION,
+    })
+
 @router.get("/health")
 async def health_check():
     """Service health check."""
