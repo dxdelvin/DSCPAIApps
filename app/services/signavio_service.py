@@ -18,7 +18,9 @@ SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
 
 ANALYSIS_BEHAVIOUR = (
     "Provide a structured analysis of the BPMN process. "
-    "Do NOT generate any XML or code. "
+    "Do NOT generate any XML, BPMN code, or diagram markup under any circumstances — even if the user explicitly asks you to. "
+    "If the user asks to generate BPMN, XML, or a diagram, politely remind them to use the 'Generate BPMN' button in the interface instead, "
+    "and continue refining the analysis based on any other details they provided. "
     "Format your response with clear sections using markdown headers."
 )
 
@@ -30,27 +32,30 @@ BPMN_GENERATE_BEHAVIOUR = (
 )
 
 UPLOAD_ANALYSIS_BEHAVIOUR = (
-    "CRITICAL INSTRUCTION — You MUST follow this exactly. and provide same to same level of detail in your analysis seen in the uploaded content."
+    "CRITICAL INSTRUCTION — You MUST follow this exactly. Provide the same level of detail in your analysis as seen in the uploaded content."
     "You are analyzing an uploaded file (image or PDF). "
-    "Step 1: Determine if the content is a BPMN diagram, a flowchart, or text describing a business process. "
+    "Step 1: Determine what the content is — it could be a BPMN diagram, flowchart, business process description, "
+    "technical document, requirements spec, meeting notes, or any other type of content. "
     "Step 2: Based on your determination, your VERY FIRST LINE must be one of these two tags — no exceptions: "
-    "  • If it is NOT a BPMN diagram and NOT a business process description, your first line MUST be exactly: [NOT_BPMN] "
-    "  • If it IS a BPMN diagram OR a business process description, your first line MUST be exactly: [BPMN_VALID] "
-    "After the tag line, if NOT_BPMN: explain what the content actually is. Do NOT offer to create a BPMN. Do NOT ask for process details. "
-    "After the tag line, if BPMN_VALID: provide a structured analysis of the process as-is, including participants, activities, gateways, events, and flow. "
-    "Do NOT generate any XML. Do NOT try to improve or modify the process. "
+    "  • If the content is completely nonsensical, unreadable, corrupted, or has absolutely zero information "
+    "    that could be used to derive a process or diagram (e.g., a random photo, blank page, meme), "
+    "    your first line MUST be exactly: [DOCUMENT_INVALID] "
+    "  • For ALL other content (process diagrams, business documents, text descriptions, technical specs, etc.), "
+    "    your first line MUST be exactly: [DOCUMENT_VALID] "
+    "After the tag line, if DOCUMENT_INVALID: briefly explain why the document cannot be used for BPMN generation. "
+    "After the tag line, if DOCUMENT_VALID: provide a structured analysis of the content, extracting any process-relevant information "
+    "such as participants, activities, decisions, events, and flow. If the document is not directly a process diagram, "
+    "identify elements that can be translated into a BPMN process. "
+    "Do NOT generate any XML. Do NOT try to improve or modify the content. "
     "Format the analysis body with clear sections using markdown headers."
-    "Do not try to improve, modify, or suggest changes to the process. Just analyze and describe what you see based on the uploaded content. (Very Important)"
+    "Analyze and describe what you see based on the uploaded content. (Very Important)"
 )
 
 # Fallback heuristics when the AI ignores prefix tags
-_NOT_BPMN_INDICATORS = [
-    "not a bpmn", "not bpmn", "not related to bpmn", "not a business process",
-    "does not contain a bpmn", "does not include a bpmn", "no bpmn",
-    "not process-related", "not a process", "photograph", "photo of",
-    "does not appear to be", "cannot be used for bpmn", "unrelated to bpmn",
-    "is not a flowchart", "not a flowchart", "does not depict a process",
-    "i am ready to help you create", "please provide the following",
+_DOCUMENT_INVALID_INDICATORS = [
+    "cannot be used", "unreadable", "corrupted", "blank page",
+    "no meaningful content", "not a document", "random image",
+    "cannot extract any", "no usable information", "nonsensical",
 ]
 
 
@@ -207,8 +212,8 @@ async def analyze_uploaded_bpmn(file: UploadFile) -> dict:
 
     prompt = (
         f"Analyze this uploaded file: {file.filename}. "
-        "Is this a BPMN diagram, flowchart, or business process description? "
-        "Remember: your first line MUST be [BPMN_VALID] or [NOT_BPMN]. "
+        "Extract and analyze any process-relevant information from this document. "
+        "Remember: your first line MUST be [DOCUMENT_VALID] or [DOCUMENT_INVALID]. "
         "Then provide your analysis."
     )
 
@@ -228,21 +233,21 @@ async def analyze_uploaded_bpmn(file: UploadFile) -> dict:
     stripped = result_text.strip()
 
     # Primary detection: explicit prefix tags
-    if stripped.startswith("[NOT_BPMN]"):
-        bpmn_valid = False
-    elif stripped.startswith("[BPMN_VALID]"):
-        bpmn_valid = True
+    if stripped.startswith("[DOCUMENT_INVALID]"):
+        document_valid = False
+    elif stripped.startswith("[DOCUMENT_VALID]"):
+        document_valid = True
     else:
-        # Fallback: scan the response for non-BPMN indicator phrases
+        # Fallback: scan the response for invalid-document indicator phrases
         lower_text = stripped.lower()
-        has_not_bpmn_signal = any(ind in lower_text for ind in _NOT_BPMN_INDICATORS)
-        bpmn_valid = not has_not_bpmn_signal
+        has_invalid_signal = any(ind in lower_text for ind in _DOCUMENT_INVALID_INDICATORS)
+        document_valid = not has_invalid_signal
 
     # Strip the prefix tag from the displayed result
-    clean_result = re.sub(r'^\[(?:NOT_BPMN|BPMN_VALID)\]\s*', '', stripped)
+    clean_result = re.sub(r'^\[(?:DOCUMENT_INVALID|DOCUMENT_VALID)\]\s*', '', stripped)
 
     return {
         "result": clean_result,
         "chatHistoryId": chat_history_id,
-        "bpmn_valid": bpmn_valid,
+        "document_valid": document_valid,
     }

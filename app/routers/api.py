@@ -212,7 +212,7 @@ async def bpmn_upload_analyze(file: UploadFile = File(...)):
         "status": "success",
         "analysis": result.get("result"),
         "chatHistoryId": result.get("chatHistoryId"),
-        "bpmn_valid": result.get("bpmn_valid", False),
+        "document_valid": result.get("document_valid", True),
     }
 
 

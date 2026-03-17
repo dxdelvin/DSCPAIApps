@@ -9,7 +9,7 @@ let chatHistoryId = null; // Track the current chat session
 let currentMode = 'form'; // 'form' or 'upload'
 let uploadChatHistoryId = null;
 let uploadedFile = null;
-let uploadBpmnValid = false;
+let uploadDocumentValid = true;
 
 window.addEventListener('DOMContentLoaded', () => {
     initializeFormHandlers();
@@ -201,8 +201,8 @@ function handleUploadFile(file) {
         showToast('Please upload a PNG, JPG, or PDF file.', 'warning');
         return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-        showToast('File size must be under 5 MB.', 'warning');
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('File size must be under 10 MB.', 'warning');
         return;
     }
     uploadedFile = file;
@@ -223,7 +223,7 @@ function handleUploadFile(file) {
 function clearUploadFile() {
     uploadedFile = null;
     uploadChatHistoryId = null;
-    uploadBpmnValid = false;
+    uploadDocumentValid = true;
     const infoEl = document.getElementById('upload-file-info');
     const areaEl = document.getElementById('bpmn-upload-area');
     const fileInput = document.getElementById('bpmn-file-input');
@@ -287,26 +287,26 @@ async function analyzeUploadedFile() {
         }
 
         uploadChatHistoryId = result.chatHistoryId;
-        uploadBpmnValid = result.bpmn_valid;
+        uploadDocumentValid = result.document_valid !== false;
 
-        if (statusEl) statusEl.textContent = uploadBpmnValid ? '✓ Complete' : '⚠ Not BPMN';
+        if (statusEl) statusEl.textContent = uploadDocumentValid ? '✓ Complete' : '⚠ Invalid Document';
         if (contentEl) {
             let html = formatAnalysisResponse(result.analysis || 'No analysis returned.');
-            if (!uploadBpmnValid) {
+            if (!uploadDocumentValid) {
                 html += `<div class="not-bpmn-warning">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    This content is not a BPMN diagram or process-related. BPMN generation is disabled.
+                    Document Invalid — The uploaded content does not contain meaningful information for process diagram generation.
                 </div>`;
             }
             contentEl.innerHTML = html;
         }
         const modifyBtn = document.getElementById('uploadModifyBtn');
-        if (generateBtn) generateBtn.disabled = !uploadBpmnValid;
-        if (modifyBtn) modifyBtn.disabled = !uploadBpmnValid;
+        if (generateBtn) generateBtn.disabled = !uploadDocumentValid;
+        if (modifyBtn) modifyBtn.disabled = false;
 
     } catch (error) {
         AppLogger.error('Upload analysis error:', error);
@@ -366,7 +366,7 @@ async function refreshUploadAnalysis() {
 
         if (statusEl) statusEl.textContent = '✓ Complete';
         if (contentEl) contentEl.innerHTML = formatAnalysisResponse(result.response || 'No analysis returned.');
-        if (generateBtn) generateBtn.disabled = !uploadBpmnValid;
+        if (generateBtn) generateBtn.disabled = !uploadDocumentValid;
         // Clear override after success
         if (overrideBox && overrideText.length > 0) overrideBox.value = '';
 
@@ -378,8 +378,8 @@ async function refreshUploadAnalysis() {
 }
 
 async function generateUploadBPMN() {
-    if (!uploadBpmnValid) {
-        showToast('This content is not BPMN-related. Cannot generate BPMN.', 'warning');
+    if (!uploadDocumentValid) {
+        showToast('Document invalid — cannot generate BPMN from this content.', 'warning');
         return;
     }
 

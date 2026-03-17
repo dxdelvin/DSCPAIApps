@@ -139,8 +139,16 @@ EXTRACT_BEHAVIOUR = (
     "- smart_art: title + smart_art object (type + items + optional colors)\n"
     "- content_with_image / image_with_content: title + bullets + image_description\n"
     "- two_columns / three_columns / four_quadrants: title + columns\n"
-    "- full_image: title + image_description\n"
-    "- Return ONLY the JSON, no markdown fences, no explanation."
+    "- full_image: title + image_description\n\n"
+    "CRITICAL — USER INSTRUCTIONS OVERRIDE:\n"
+    "If the user provides additional instructions (e.g., color preferences, slide count like 'one pager', "
+    "specific themes, layout preferences, or any other customisation), you MUST follow them and they take "
+    "HIGHEST PRIORITY over all other rules above. For example:\n"
+    "- 'one pager' or 'single slide' = produce only 1-2 slides max with all key content condensed.\n"
+    "- Color requests = apply the requested colors via smart_art.colors arrays and adjust content tone.\n"
+    "- Slide count requests = strictly respect the requested number of slides.\n"
+    "- Style/tone requests = adapt language, bullet length, and layout choices accordingly.\n\n"
+    "Return ONLY the JSON, no markdown fences, no explanation."
 )
 
 REFINE_BEHAVIOUR = (
@@ -988,16 +996,24 @@ async def extract_pdf_content(
 
     combined_text = "\n\n".join(all_text_parts)
 
-    prompt = (
-        "Below is text content extracted from uploaded PDF documents.\n"
-        "Create a professional PowerPoint presentation from this content.\n"
-        "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
-        "Include image placeholder slides where visuals would enhance the message.\n\n"
-        f"{combined_text}"
-    )
-
     if user_instructions:
-        prompt += f"\n\nAdditional user instructions:\n{user_instructions}"
+        prompt = (
+            f"⚠️ USER INSTRUCTIONS (HIGHEST PRIORITY — follow these strictly):\n{user_instructions}\n\n"
+            "---\n\n"
+            "Below is text content extracted from uploaded PDF documents.\n"
+            "Create a professional PowerPoint presentation from this content.\n"
+            "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
+            "Include image placeholder slides where visuals would enhance the message.\n\n"
+            f"{combined_text}"
+        )
+    else:
+        prompt = (
+            "Below is text content extracted from uploaded PDF documents.\n"
+            "Create a professional PowerPoint presentation from this content.\n"
+            "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
+            "Include image placeholder slides where visuals would enhance the message.\n\n"
+            f"{combined_text}"
+        )
 
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
