@@ -23,6 +23,7 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from app.services.common_service import (
     create_chat_history,
     call_brain_pure_llm_chat,
+    upload_attachments,
 )
 
 TEMPLATE_PATH = os.path.join(
@@ -968,9 +969,11 @@ async def extract_pdf_content(
     pdf_bytes_list: list[tuple[str, bytes]],
     user_instructions: str = "",
     username: str = "Unknown User",
+    image_files: list = None,
 ) -> dict:
     """
-    Extract text from uploaded PDF files, send to AI for structuring into slides.
+    Extract text from uploaded PDFs and/or process uploaded images via AI vision,
+    then structure content into presentation slides.
     Returns dict with 'content' (parsed JSON), 'chatHistoryId', or 'error'.
     """
     brain_id = os.getenv("DSCP_BRAIN_ID")
@@ -986,34 +989,37 @@ async def extract_pdf_content(
         elif text:
             all_text_parts.append(f"=== File: {fname} ===\n{text}")
 
-    if not all_text_parts:
-        detail = "\n".join(errors) if errors else "No readable text could be extracted from the uploaded files."
+    has_text = bool(all_text_parts)
+    has_images = bool(image_files)
+
+    if not has_text and not has_images:
+        detail = "\n".join(errors) if errors else "No readable content could be extracted from the uploaded files."
         return {
             "error": True,
-            "message": "PDF Extraction Failed",
+            "message": "Extraction Failed",
             "detail": detail,
         }
 
-    combined_text = "\n\n".join(all_text_parts)
+    combined_text = "\n\n".join(all_text_parts) if has_text else ""
+
+    base_task = (
+        "Create a professional PowerPoint presentation from this content.\n"
+        "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
+        "Include image placeholder slides where visuals would enhance the message."
+    )
+
+    if has_text:
+        body = f"Below is text content extracted from uploaded documents.\n{base_task}\n\n{combined_text}"
+    else:
+        body = f"Analyze the uploaded image(s) and {base_task}"
 
     if user_instructions:
         prompt = (
-            f"⚠️ USER INSTRUCTIONS (HIGHEST PRIORITY — follow these strictly):\n{user_instructions}\n\n"
-            "---\n\n"
-            "Below is text content extracted from uploaded PDF documents.\n"
-            "Create a professional PowerPoint presentation from this content.\n"
-            "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
-            "Include image placeholder slides where visuals would enhance the message.\n\n"
-            f"{combined_text}"
+            f"\u26a0\ufe0f USER INSTRUCTIONS (HIGHEST PRIORITY \u2014 follow these strictly):\n{user_instructions}\n\n"
+            f"---\n\n{body}"
         )
     else:
-        prompt = (
-            "Below is text content extracted from uploaded PDF documents.\n"
-            "Create a professional PowerPoint presentation from this content.\n"
-            "Use varied slide layouts and SmartArt diagrams to make it visually engaging.\n"
-            "Include image placeholder slides where visuals would enhance the message.\n\n"
-            f"{combined_text}"
-        )
+        prompt = body
 
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
@@ -1021,15 +1027,20 @@ async def extract_pdf_content(
 
     chat_history_id = chat_result.get("chatHistoryId")
 
+    attachment_ids = []
+    if has_images:
+        upload_result = await upload_attachments(brain_id, image_files)
+        if upload_result.get("error"):
+            return upload_result
+        attachment_ids = upload_result.get("attachmentIds", [])
+
     response = await call_brain_pure_llm_chat(
         brain_id,
         prompt,
         chat_history_id=chat_history_id,
+        attachment_ids=attachment_ids or None,
         custom_behaviour=EXTRACT_BEHAVIOUR,
     )
-
-    if response.get("error"):
-        return response
 
     raw = response.get("result", "")
     parsed = _parse_json_response(raw)

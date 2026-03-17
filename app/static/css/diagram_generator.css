@@ -982,3 +982,187 @@ body.dark-mode .refine-dropdown {
         font-size: 1.5rem;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Guide Link Button (inline in type-hint text)
+   ═══════════════════════════════════════════════════════════ */
+.guide-link-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--brand-orange, #ff5f00);
+    font-size: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.guide-link-btn:hover {
+    opacity: 0.8;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Diagram Guide Modal
+   ═══════════════════════════════════════════════════════════ */
+.dg-guide-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    backdrop-filter: blur(4px);
+}
+
+.dg-guide-modal {
+    background: var(--card, #ffffff);
+    border-radius: var(--radius, 12px);
+    box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+    width: 100%;
+    max-width: 900px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.dg-guide-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem 0.75rem;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    flex-shrink: 0;
+}
+
+.dg-guide-header h2 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--text-primary, #0f172a);
+    margin: 0;
+}
+
+.dg-guide-close {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    line-height: 1;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+}
+
+.dg-guide-close:hover {
+    color: var(--text-primary, #0f172a);
+    background: var(--bg, #f8fafc);
+}
+
+.dg-guide-subtitle {
+    font-size: 0.82rem;
+    color: var(--text-muted, #94a3b8);
+    padding: 0.6rem 1.5rem 0;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.dg-guide-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.85rem;
+    padding: 1rem 1.5rem 1.5rem;
+    overflow-y: auto;
+}
+
+.dg-guide-card {
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: var(--bg, #f8fafc);
+    overflow: visible;
+    transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.dg-guide-card:hover {
+    border-color: var(--brand-orange, #ff5f00);
+    box-shadow: 0 4px 16px rgba(255, 95, 0, 0.1);
+}
+
+.dg-guide-preview {
+    background: var(--card, #fff);
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 0.6rem;
+    min-height: 110px;
+    overflow: hidden;
+}
+
+.dg-guide-preview svg {
+    width: 120px;
+    height: 90px;
+    overflow: visible;
+    flex-shrink: 0;
+}
+
+.dg-guide-info {
+    padding: 0.6rem 0.75rem 0.75rem;
+}
+
+.dg-guide-chip {
+    display: inline-block;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-primary, #0f172a);
+    margin-bottom: 0.3rem;
+}
+
+.dg-guide-info p {
+    font-size: 0.75rem;
+    color: var(--text-muted, #64748b);
+    margin: 0;
+    line-height: 1.45;
+}
+
+/* Dark mode */
+body.dark-mode .dg-guide-modal {
+    background: var(--navy-900, #0f172a);
+}
+
+body.dark-mode .dg-guide-header {
+    border-bottom-color: var(--border);
+}
+
+body.dark-mode .dg-guide-header h2 {
+    color: var(--text-primary);
+}
+
+body.dark-mode .dg-guide-close:hover {
+    background: var(--navy-800, #1e293b);
+    color: var(--text-primary);
+}
+
+body.dark-mode .dg-guide-card {
+    background: var(--navy-800, #1e293b);
+    border-color: var(--border);
+}
+
+body.dark-mode .dg-guide-preview {
+    background: var(--navy-900, #0f172a);
+    border-bottom-color: var(--border);
+}
+
+body.dark-mode .dg-guide-chip {
+    color: var(--text-primary);
+}
+
+@media (max-width: 600px) {
+    .dg-guide-grid {
+        grid-template-columns: 1fr;
+    }
+}

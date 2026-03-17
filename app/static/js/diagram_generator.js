@@ -25,6 +25,7 @@ class DiagramGeneratorApp {
         this.setupUpload();
         this.setupTypePicker();
         this.setupEventListeners();
+        this.setupGuide();
     }
 
     /* ── Upload handling ──────────────────────────────── */
@@ -57,8 +58,12 @@ class DiagramGeneratorApp {
     }
 
     setFile(f) {
-        if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
-            showToast('Only PDF files are accepted.', 'warning');
+        const nameLower = f.name.toLowerCase();
+        const isPdf  = f.type === 'application/pdf' || nameLower.endsWith('.pdf');
+        const isImage = ['image/png', 'image/jpeg'].includes(f.type)
+                     || nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg');
+        if (!isPdf && !isImage) {
+            showToast('Only PDF, PNG, JPG, or JPEG files are accepted.', 'warning');
             return;
         }
         if (f.size > this.MAX_FILE_SIZE) {
@@ -78,9 +83,10 @@ class DiagramGeneratorApp {
             return;
         }
         section.style.display = 'block';
+        const isImg = !this.file.name.toLowerCase().endsWith('.pdf') && this.file.type !== 'application/pdf';
         list.innerHTML = `
             <div class="file-item">
-                <span class="file-icon">📄</span>
+                <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
                 <span class="file-name">${this.esc(this.file.name)}</span>
                 <span class="file-size">${this.formatSize(this.file.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" id="remove-file-btn">✕</button>
@@ -139,6 +145,23 @@ class DiagramGeneratorApp {
         const types = [...chips].map(c => c.dataset.type);
         if (types.includes('auto') || types.length === 0) return [];
         return types;
+    }
+
+    /* ── Diagram Guide ────────────────────────────────── */
+
+    setupGuide() {
+        const overlay   = document.getElementById('diagramGuideOverlay');
+        const openBtn   = document.getElementById('openDiagramGuideBtn');
+        const closeBtn  = document.getElementById('closeDiagramGuideBtn');
+        if (!overlay || !openBtn || !closeBtn) return;
+        openBtn.addEventListener('click', () => { overlay.style.display = 'flex'; });
+        closeBtn.addEventListener('click', () => { overlay.style.display = 'none'; });
+        overlay.addEventListener('click', e => {
+            if (e.target === overlay) overlay.style.display = 'none';
+        });
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape' && overlay.style.display === 'flex') overlay.style.display = 'none';
+        });
     }
 
     /* ── Event listeners ──────────────────────────────── */

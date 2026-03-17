@@ -500,6 +500,12 @@ body.dark-mode .override-textarea {
     background: var(--card);
 }
 
+.override-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 10px;
+}
+
 .override-hint {
     margin-top: 8px;
     font-size: 12px;
@@ -761,7 +767,10 @@ body.dark-mode .analysis-list li {
 }
 
 body.dark-mode .analysis-list strong {
-    color: #f1f5f9;
+    color: #ff8c42;
+    background: rgba(255, 95, 0, 0.12);
+    padding: 1px 4px;
+    border-radius: 3px;
 }
 
 .analysis-list code {
@@ -794,7 +803,10 @@ body.dark-mode .analysis-paragraph {
 }
 
 body.dark-mode .analysis-paragraph strong {
-    color: #f1f5f9;
+    color: #ff8c42;
+    background: rgba(255, 95, 0, 0.12);
+    padding: 1px 4px;
+    border-radius: 3px;
 }
 
 .analysis-paragraph em {

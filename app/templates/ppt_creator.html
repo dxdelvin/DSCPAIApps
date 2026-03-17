@@ -35,14 +35,14 @@
 
                     <!-- File Upload Area -->
                     <div class="upload-section">
-                        <h4>PDF Files (.pdf)</h4>
+                        <h4>Upload Files</h4>
                         <div class="upload-area" id="upload-area">
                             <div class="upload-placeholder">
                                 <span class="upload-icon">📄</span>
-                                <p>Drag &amp; drop PDF files here or click to select</p>
-                                <p class="upload-hint">Supports .pdf files only (max 10 MB total for all files)</p>
+                                <p>Drag &amp; drop files here or click to select</p>
+                                <p class="upload-hint">Supports .pdf, .png, .jpg, .jpeg (max 10 MB total)</p>
                             </div>
-                            <input type="file" id="file-input" multiple accept=".pdf" hidden>
+                            <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg" hidden>
                         </div>
                     </div>
 
@@ -73,7 +73,8 @@
                     <div class="warning-notice">
                         <span class="warning-icon">⚠️</span>
                         <div class="warning-content">
-                            <strong>Important:</strong> Only text content is extracted from PDFs. Images, charts, and graphics within the PDF will not be processed or understood by the AI. For best results, use text-based PDFs.
+                            <strong>PDFs:</strong> Only text is extracted — embedded images/charts are skipped. Use text-based PDFs for best results.<br>
+                            <strong>Images (PNG/JPG):</strong> The AI reads the image directly using vision capabilities.
                         </div>
                     </div>
 

@@ -13,6 +13,7 @@ from typing import Optional
 from app.services.common_service import (
     create_chat_history,
     call_brain_pure_llm_chat,
+    upload_attachments,
 )
 
 
@@ -206,10 +207,11 @@ def _build_drawio_file(diagrams: list[dict]) -> str:
 async def analyze_pdf_content(
     pdf_bytes_list: list[tuple[str, bytes]],
     user_instructions: str = "",
+    image_files: list = None,
 ) -> dict:
     """
-    Extract text from uploaded PDF files, send to AI for analysis
-    to determine optimal diagram types and content.
+    Extract text from uploaded PDFs and/or process uploaded images via AI vision,
+    then analyze content to determine optimal diagram types.
     Returns dict with 'analysis' (parsed JSON), 'chatHistoryId', 'extractedText', or 'error'.
     """
     brain_id = os.getenv("DSCP_BRAIN_ID")
@@ -225,22 +227,31 @@ async def analyze_pdf_content(
         elif text:
             all_text_parts.append(f"=== File: {fname} ===\n{text}")
 
-    if not all_text_parts:
-        detail = "\n".join(errors) if errors else "No readable text could be extracted from the uploaded files."
+    has_text = bool(all_text_parts)
+    has_images = bool(image_files)
+
+    if not has_text and not has_images:
+        detail = "\n".join(errors) if errors else "No readable content could be extracted from the uploaded files."
         return {
             "error": True,
-            "message": "PDF Extraction Failed",
+            "message": "Extraction Failed",
             "detail": detail,
         }
 
-    combined_text = "\n\n".join(all_text_parts)
+    combined_text = "\n\n".join(all_text_parts) if has_text else ""
 
-    prompt = (
-        "Below is text content extracted from uploaded PDF documents.\n"
-        "Analyze the content and suggest the best diagram types to represent the information.\n"
-        "Consider creating a summary diagram plus topic-specific diagrams if warranted.\n\n"
-        f"{combined_text}"
-    )
+    if has_text:
+        prompt = (
+            "Below is text content extracted from uploaded documents.\n"
+            "Analyze the content and suggest the best diagram types to represent the information.\n"
+            "Consider creating a summary diagram plus topic-specific diagrams if warranted.\n\n"
+            f"{combined_text}"
+        )
+    else:
+        prompt = (
+            "Analyze the uploaded image(s) and suggest the best diagram types to represent the information shown.\n"
+            "Consider creating a summary diagram plus topic-specific diagrams if warranted."
+        )
 
     if user_instructions:
         prompt += f"\n\nAdditional user instructions:\n{user_instructions}"
@@ -251,10 +262,18 @@ async def analyze_pdf_content(
 
     chat_history_id = chat_result.get("chatHistoryId")
 
+    attachment_ids = []
+    if has_images:
+        upload_result = await upload_attachments(brain_id, image_files)
+        if upload_result.get("error"):
+            return upload_result
+        attachment_ids = upload_result.get("attachmentIds", [])
+
     response = await call_brain_pure_llm_chat(
         brain_id,
         prompt,
         chat_history_id=chat_history_id,
+        attachment_ids=attachment_ids or None,
         custom_behaviour=ANALYZE_BEHAVIOUR,
     )
 

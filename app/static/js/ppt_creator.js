@@ -54,7 +54,11 @@ class PptCreatorApp {
 
     addFiles(fileList) {
         for (const f of fileList) {
-            if (f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')) {
+            const nameLower = f.name.toLowerCase();
+            const isPdf  = f.type === 'application/pdf' || nameLower.endsWith('.pdf');
+            const isImage = ['image/png', 'image/jpeg'].includes(f.type)
+                         || nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg');
+            if (isPdf || isImage) {
                 // Check if file already exists
                 if (this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
                     continue;
@@ -77,7 +81,7 @@ class PptCreatorApp {
                 
                 this.files.push(f);
             } else {
-                showToast(`Skipped "${f.name}" – only PDF files are accepted`, 'warning');
+                showToast(`Skipped "${f.name}" – only PDF, PNG, JPG, or JPEG files are accepted`, 'warning');
             }
         }
         this.renderFilesList();
@@ -98,14 +102,17 @@ class PptCreatorApp {
         const totalSizeStr = this.formatSize(totalSize);
         const limitStr = this.formatSize(this.MAX_FILE_SIZE);
         
-        list.innerHTML = this.files.map((f, i) => `
+        list.innerHTML = this.files.map((f, i) => {
+            const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
+            return `
             <div class="file-item">
-                <span class="file-icon">📄</span>
+                <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
                 <span class="file-name">${this.esc(f.name)}</span>
                 <span class="file-size">${this.formatSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
             </div>
-        `).join('') + `
+        `;
+        }).join('') + `
             <div class="file-item total-size">
                 <span class="file-icon">📊</span>
                 <span class="file-name"><strong>Total Size</strong></span>

@@ -1069,6 +1069,41 @@ function sanitizeDetail(detail) {
 function updateInfoModalContent() {
     const infoTitle = document.getElementById('infoModalTitle');
     const infoContent = document.getElementById('infoModalContent');
+
+    if (currentMode === 'upload') {
+        if (infoTitle) infoTitle.textContent = 'Upload & Build Guide';
+        if (infoContent) {
+            infoContent.innerHTML = `<p>Use Upload & Build when you already have process material and want the AI to convert it into BPMN faster.</p>
+                <div class="guide-section">
+                    <h4>📁 What you can upload</h4>
+                    <ul>
+                        <li><strong>PDF:</strong> Process descriptions, SOPs, requirements, workshop notes, or exported diagrams.</li>
+                        <li><strong>PNG / JPG / JPEG:</strong> Screenshots of flowcharts, whiteboard sketches, BPMN drafts, or process diagrams.</li>
+                    </ul>
+                </div>
+                <div class="guide-section">
+                    <h4>🔎 How analysis works</h4>
+                    <ul>
+                        <li><strong>PDF files:</strong> Text is extracted and analyzed by the AI.</li>
+                        <li><strong>Image files:</strong> The AI inspects the visual content directly.</li>
+                        <li><strong>Best results:</strong> Upload clear, readable files with visible decisions, actors, and sequence flow.</li>
+                    </ul>
+                </div>
+                <div class="guide-section">
+                    <h4>🛠 Recommended workflow</h4>
+                    <ul>
+                        <li>Upload one process-focused file.</li>
+                        <li>Click <strong>Analyze File</strong> and review the AI summary.</li>
+                        <li>Use <strong>Modify Inputs</strong> to correct missing lanes, gateways, or end states.</li>
+                        <li>Click <strong>Generate BPMN</strong> once the analysis matches your intended flow.</li>
+                    </ul>
+                </div>
+                <div class="guide-example">
+                    <strong>Tip:</strong> If your file contains multiple processes, mention in Modify Inputs which one should be modeled in the final BPMN.
+                </div>`;
+        }
+        return;
+    }
     
     const stepInfo = {
         1: {

@@ -483,25 +483,27 @@ async def ppt_extract(
     username: str = Form(...),
     instructions: Optional[str] = Form(None),
 ):
-    """Upload PDF files → AI structures content into presentation slides."""
+    """Upload PDF/image files → AI structures content into presentation slides."""
     MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total across all files
-    file_bytes_list = []
+    _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
+    pdf_files = []
+    image_files = []
     total_size = 0
-    
+
     for f in files:
-        if not f.filename.lower().endswith(".pdf"):
+        fname_lower = f.filename.lower()
+        if not fname_lower.endswith(".pdf") and not fname_lower.endswith(_IMAGE_EXTS):
             return JSONResponse(
                 status_code=400,
                 content={
                     "status": "error",
                     "message": "Invalid file type",
-                    "detail": f"'{f.filename}' is not a PDF file. Only .pdf files are supported.",
+                    "detail": f"'{f.filename}' is not supported. Only .pdf, .png, .jpg, .jpeg files are accepted.",
                 },
             )
         content = await f.read()
         total_size += len(content)
-        
-        # Check total size across all files
+
         if total_size > MAX_TOTAL_SIZE:
             return JSONResponse(
                 status_code=413,
@@ -511,10 +513,14 @@ async def ppt_extract(
                     "detail": f"Combined file size exceeds the 10 MB limit. Current total: {total_size / (1024*1024):.1f} MB.",
                 },
             )
-        
-        file_bytes_list.append((f.filename, content))
 
-    result = await extract_pdf_content(file_bytes_list, instructions or "", username)
+        if fname_lower.endswith(".pdf"):
+            pdf_files.append((f.filename, content))
+        else:
+            await f.seek(0)
+            image_files.append(f)
+
+    result = await extract_pdf_content(pdf_files, instructions or "", username, image_files=image_files or None)
 
     if result.get("error"):
         return JSONResponse(
@@ -540,19 +546,22 @@ async def diagram_analyze(
     files: List[UploadFile] = File(...),
     instructions: Optional[str] = Form(None),
 ):
-    """Upload PDF files → AI analyzes content and suggests diagram types."""
+    """Upload PDF/image files → AI analyzes content and suggests diagram types."""
     MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total
-    file_bytes_list = []
+    _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
+    pdf_files = []
+    image_files = []
     total_size = 0
 
     for f in files:
-        if not f.filename.lower().endswith(".pdf"):
+        fname_lower = f.filename.lower()
+        if not fname_lower.endswith(".pdf") and not fname_lower.endswith(_IMAGE_EXTS):
             return JSONResponse(
                 status_code=400,
                 content={
                     "status": "error",
                     "message": "Invalid file type",
-                    "detail": f"'{f.filename}' is not a PDF file. Only .pdf files are supported.",
+                    "detail": f"'{f.filename}' is not supported. Only .pdf, .png, .jpg, .jpeg files are accepted.",
                 },
             )
         content = await f.read()
@@ -568,9 +577,13 @@ async def diagram_analyze(
                 },
             )
 
-        file_bytes_list.append((f.filename, content))
+        if fname_lower.endswith(".pdf"):
+            pdf_files.append((f.filename, content))
+        else:
+            await f.seek(0)
+            image_files.append(f)
 
-    result = await diagram_analyze_pdf(file_bytes_list, instructions or "")
+    result = await diagram_analyze_pdf(pdf_files, instructions or "", image_files=image_files or None)
 
     if result.get("error"):
         return JSONResponse(

@@ -147,7 +147,7 @@
             <!-- Step 6: Review & Generate -->
             <div class="form-step" id="step-6">
                 <h3>Review & Generate</h3>
-                <p>Review the AI analysis below. Use "Modify Inputs" to change your process details, or "Refresh Analysis" to re-analyze.</p>
+                <p>Review the AI analysis below. Use "Modify Inputs" to add feedback and refresh the analysis.</p>
                 
                 <div class="analysis-panel">
                     <div class="analysis-header">
@@ -159,7 +159,7 @@
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                             </svg>
-                            <p>Click "Refresh Analysis" to get AI insights about your process</p>
+                            <p>Click "Modify Inputs" to provide feedback and get AI insights about your process</p>
                         </div>
                     </div>
                 </div>
@@ -168,6 +168,9 @@
                 <div id="inlineOverrideContainer" class="inline-override" style="display: none; margin-top: 16px;">
                     <label for="reviewOverride" class="override-label">Modify Inputs (free text)</label>
                     <textarea id="reviewOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
+                    <div class="override-actions">
+                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">Refresh Analysis</button>
+                    </div>
                     <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
                 </div>
 
@@ -175,7 +178,6 @@
                     <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" id="editBtnReview">Modify Inputs</button>
-                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">Refresh Analysis</button>
                         <button type="button" class="btn btn-primary" id="generateBtn">Generate BPMN</button>
                     </div>
                 </div>
@@ -258,6 +260,9 @@
             <div id="uploadOverrideContainer" class="inline-override" style="display:none; margin-top:16px;">
                 <label for="uploadOverride" class="override-label">Modify Inputs (free text)</label>
                 <textarea id="uploadOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
+                <div class="override-actions">
+                    <button type="button" class="btn btn-ghost" id="uploadRefreshBtn">Refresh Analysis</button>
+                </div>
                 <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
             </div>
 
@@ -265,7 +270,6 @@
                 <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
                 <div class="form-actions">
                     <button type="button" class="btn btn-secondary" id="uploadModifyBtn">Modify Inputs</button>
-                    <button type="button" class="btn btn-ghost" id="uploadRefreshBtn">Refresh Analysis</button>
                     <button type="button" class="btn btn-primary" id="uploadGenerateBtn" disabled>Generate BPMN</button>
                 </div>
             </div>
