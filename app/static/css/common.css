@@ -1900,12 +1900,12 @@ body.easter-mode .brand-mark {
     background: linear-gradient(135deg, #fbbf24, #fb923c, #f472b6, #c084fc);
 }
 
-body.easter-mode .btn-primary {
+body.easter-mode .btn-primary:not(.btn-open) {
     background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #f472b6 100%);
     box-shadow: 0 2px 12px rgba(192,132,252,0.3);
 }
 
-body.easter-mode .btn-primary:hover {
+body.easter-mode .btn-primary:not(.btn-open):hover {
     box-shadow: 0 4px 20px rgba(192,132,252,0.4);
 }
 
