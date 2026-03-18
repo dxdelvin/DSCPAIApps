@@ -12,7 +12,7 @@ from app.services.common_service import (
 )
 
 
-# BPMN Checker-specific constants
+# BPMN Checker Workflow 2version in workflow editor
 BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
 
 BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
