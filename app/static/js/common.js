@@ -36,6 +36,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Easter / Festive Mode
+    initEasterMode();
+
     // Changelog toggle functionality
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
@@ -614,4 +617,127 @@ function initCharacterCounters() {
         updateCounter();
         ta.addEventListener('input', updateCounter);
     });
+}
+
+/**
+ * Easter / Festive Mode
+ * Adds pastel color overrides, floating eggs, cursor trails,
+ * and confetti bursts — works on top of light or dark theme.
+ */
+function initEasterMode() {
+    const toggle = document.getElementById('easterToggle');
+    if (!toggle) return;
+
+    const EGGS = ['🥚', '🐣', '🐰', '🌷', '🐥', '🌸', '🎀', '🪺'];
+    const CONFETTI_COLORS = ['#fbbf24', '#fb923c', '#f472b6', '#c084fc', '#60a5fa', '#34d399'];
+    let eggContainer = null;
+    let eggInterval = null;
+    let trailThrottle = 0;
+
+    // Restore saved preference
+    if (localStorage.getItem('dscp_easter') === 'on') {
+        activateEaster(false);
+    }
+
+    toggle.addEventListener('click', () => {
+        const isActive = document.body.classList.contains('easter-mode');
+        if (isActive) {
+            deactivateEaster();
+        } else {
+            activateEaster(true);
+        }
+    });
+
+    function activateEaster(withFanfare) {
+        document.body.classList.add('easter-mode');
+        localStorage.setItem('dscp_easter', 'on');
+
+        // Create floating egg container
+        if (!eggContainer) {
+            eggContainer = document.createElement('div');
+            eggContainer.className = 'easter-eggs-container';
+            eggContainer.id = 'easterEggsContainer';
+            document.body.appendChild(eggContainer);
+        }
+
+        // Spawn floating eggs periodically
+        eggInterval = setInterval(spawnFloatingEgg, 2500);
+        // Spawn a few immediately
+        for (let i = 0; i < 3; i++) setTimeout(spawnFloatingEgg, i * 400);
+
+        // Cursor trail
+        document.addEventListener('mousemove', handleCursorTrail);
+
+        // Confetti on button clicks
+        document.addEventListener('click', handleConfetti);
+
+        if (withFanfare) {
+            // Burst of eggs on activation
+            for (let i = 0; i < 8; i++) setTimeout(spawnFloatingEgg, i * 150);
+            showToast('🐣 Easter Mode activated! Look for hidden eggs!', 'info', 3000);
+        }
+    }
+
+    function deactivateEaster() {
+        document.body.classList.remove('easter-mode');
+        localStorage.setItem('dscp_easter', 'off');
+
+        if (eggInterval) { clearInterval(eggInterval); eggInterval = null; }
+        if (eggContainer) { eggContainer.remove(); eggContainer = null; }
+
+        document.removeEventListener('mousemove', handleCursorTrail);
+        document.removeEventListener('click', handleConfetti);
+    }
+
+    function spawnFloatingEgg() {
+        if (!eggContainer) return;
+        const egg = document.createElement('span');
+        egg.className = 'easter-egg-float';
+        egg.textContent = EGGS[Math.floor(Math.random() * EGGS.length)];
+        egg.style.left = Math.random() * 95 + '%';
+        egg.style.fontSize = (18 + Math.random() * 16) + 'px';
+        egg.style.animationDuration = (5 + Math.random() * 6) + 's';
+        eggContainer.appendChild(egg);
+        // Clean up after animation
+        egg.addEventListener('animationend', () => egg.remove());
+    }
+
+    function handleCursorTrail(e) {
+        if (!document.body.classList.contains('easter-mode')) return;
+        const now = Date.now();
+        if (now - trailThrottle < 120) return;
+        trailThrottle = now;
+
+        const trail = document.createElement('span');
+        trail.className = 'easter-trail';
+        trail.textContent = EGGS[Math.floor(Math.random() * EGGS.length)];
+        trail.style.left = e.clientX + 'px';
+        trail.style.top = e.clientY + 'px';
+        document.body.appendChild(trail);
+        trail.addEventListener('animationend', () => trail.remove());
+    }
+
+    function handleConfetti(e) {
+        if (!document.body.classList.contains('easter-mode')) return;
+        const target = e.target.closest('.btn, .app-card, .easter-toggle');
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+
+        for (let i = 0; i < 12; i++) {
+            const dot = document.createElement('span');
+            dot.className = 'easter-confetti';
+            dot.style.left = cx + 'px';
+            dot.style.top = cy + 'px';
+            dot.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+            const angle = (Math.PI * 2 * i) / 12;
+            const dist = 40 + Math.random() * 60;
+            dot.style.setProperty('--confetti-x', Math.cos(angle) * dist + 'px');
+            dot.style.setProperty('--confetti-y', Math.sin(angle) * dist + 'px');
+            document.body.appendChild(dot);
+            dot.addEventListener('animationend', () => dot.remove());
+        }
+    }
 }

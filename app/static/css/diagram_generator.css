@@ -1131,15 +1131,25 @@ body.dark-mode .refine-dropdown {
 
 /* Dark mode */
 body.dark-mode .dg-guide-modal {
-    background: var(--navy-900, #0f172a);
+    /* Use dark surfaces directly; --navy-900 is remapped to light text in dark theme */
+    background: var(--card, #141d2f);
+    border: 1px solid var(--border, #2a3a52);
 }
 
 body.dark-mode .dg-guide-header {
-    border-bottom-color: var(--border);
+    border-bottom-color: var(--border, #2a3a52);
 }
 
 body.dark-mode .dg-guide-header h2 {
     color: var(--text-primary);
+}
+
+body.dark-mode .dg-guide-subtitle {
+    color: var(--text-secondary, #b8c5d6);
+}
+
+body.dark-mode .dg-guide-close {
+    color: var(--text-secondary);
 }
 
 body.dark-mode .dg-guide-close:hover {
@@ -1148,17 +1158,27 @@ body.dark-mode .dg-guide-close:hover {
 }
 
 body.dark-mode .dg-guide-card {
-    background: var(--navy-800, #1e293b);
-    border-color: var(--border);
+    background: #101a2d;
+    border-color: var(--border, #2a3a52);
+}
+
+body.dark-mode .dg-guide-card:hover {
+    border-color: var(--brand-orange, #ff5f00);
+    box-shadow: 0 4px 16px rgba(255, 95, 0, 0.16);
 }
 
 body.dark-mode .dg-guide-preview {
-    background: var(--navy-900, #0f172a);
+    /* Keep preview canvas light so hard-coded SVG dark text remains readable */
+    background: #f8fafc;
     border-bottom-color: var(--border);
 }
 
 body.dark-mode .dg-guide-chip {
     color: var(--text-primary);
+}
+
+body.dark-mode .dg-guide-info p {
+    color: var(--text-secondary);
 }
 
 @media (max-width: 600px) {

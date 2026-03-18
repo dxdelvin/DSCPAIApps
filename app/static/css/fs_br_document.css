@@ -446,7 +446,14 @@ body.dark-mode .modal-content::-webkit-scrollbar-track { background: var(--navy-
 .mode-panel.active,
 .mode-panel[style*="display: block"] {
     display: block;
-    animation: fadeSlideUp 0.2s ease;
+    /* Use opacity-only animation here.
+       Transform on ancestor causes fixed right panels to appear briefly on load. */
+    animation: fsPanelFadeIn 0.2s ease;
+}
+
+@keyframes fsPanelFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
 }
 
 /* ══════════════════════════════════════════════════

@@ -115,10 +115,64 @@
                         </div>
                     </div>
 
-                    <!-- Empty State -->
+                    <!-- Guide / Empty State -->
                     <div class="empty-state" id="empty-state">
-                        <span class="empty-icon">📑</span>
-                        <p>Upload PDF files and click Generate to create a presentation</p>
+                        <div class="guide-panel">
+                            <div class="guide-header">
+                                <span class="guide-header-icon">📋</span>
+                                <div>
+                                    <p class="eyebrow">Quick Start</p>
+                                    <h4>How to Use</h4>
+                                </div>
+                            </div>
+
+                            <ol class="guide-steps">
+                                <li class="guide-step">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-body">
+                                        <strong>Upload your files</strong>
+                                        <span>Drag &amp; drop or click to add <b>PDF</b>, <b>PNG</b>, or <b>JPG</b> files (max 10 MB total).</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-body">
+                                        <strong>Enter your name</strong>
+                                        <span>Your name will appear on the generated presentation.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-body">
+                                        <strong>Add instructions <em>(optional)</em></strong>
+                                        <span>Guide the AI — e.g. <i>"Focus on key findings"</i> or <i>"Create exactly 8 slides"</i>.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-body">
+                                        <strong>Generate &amp; download</strong>
+                                        <span>Click <b>Generate Presentation</b>, then download the ready-made <b>.pptx</b> file.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">5</span>
+                                    <div class="step-body">
+                                        <strong>Refine with chat</strong>
+                                        <span>After generation, use the <b>Refine Content</b> panel to ask the AI to adjust any slides.</span>
+                                    </div>
+                                </li>
+                            </ol>
+
+                            <div class="guide-tips">
+                                <p class="guide-tips-title">💡 Tips</p>
+                                <ul>
+                                    <li>Text-based PDFs produce the best results — scanned/image PDFs may lose content.</li>
+                                    <li>Image files (PNG/JPG) are read directly by the AI using vision — great for charts or screenshots.</li>
+                                    <li>Be specific in your instructions to get a more focused presentation structure.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Loading State -->
