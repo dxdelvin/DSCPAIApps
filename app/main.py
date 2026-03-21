@@ -28,14 +28,11 @@ from app.services.auth_service import (
 app = FastAPI(title=APP_TITLE)
 
 
-# ============== Startup Event ==============
 @app.on_event("startup")
 async def startup_event():
     """Print startup information and verify configuration."""
     print("=" * 50)
     print(f"Starting {APP_TITLE}")
-    print(f"VCAP_SERVICES present: {bool(os.getenv('VCAP_SERVICES'))}")
-    print(f"VCAP_APPLICATION present: {bool(os.getenv('VCAP_APPLICATION'))}")
     
     # Check XSUAA config
     config = get_xsuaa_config()
