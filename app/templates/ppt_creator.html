@@ -59,14 +59,26 @@
 
                     <!-- User Name -->
                     <div class="form-group">
-                        <label for="user-name">Your Name <span style="color: var(--brand-orange, #ff5f00);">*</span></label>
+                        <label for="user-name">Your Name <span style="color: var(--brand-orange, #FF7100);">*</span></label>
                         <input type="text" id="user-name" placeholder="e.g. John Doe" required>
                     </div>
 
                     <!-- Instructions -->
                     <div class="form-group">
                         <label for="user-instructions">Additional Instructions (optional)</label>
-                        <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on key findings, use a professional tone, create 10 slides..." maxlength="3000"></textarea>
+                        <div class="instructions-wrapper">
+                            <textarea id="user-instructions" rows="3" placeholder="E.g. Focus on key findings, use a professional tone, create 10 slides..." maxlength="3000"></textarea>
+                            
+                            <input type="checkbox" id="orange-theme-toggle" class="theme-toggle-input">
+                            <label class="theme-tag" for="orange-theme-toggle">
+                                <span class="tag-body">
+                                    <span class="tag-icon">🎨</span> Use Orange Theme <span class="tag-badge">SmartArt</span>
+                                </span>
+                            </label>
+                            <div class="theme-tag-hint">
+                                Restricts SmartArt colors to BSH orange shades.
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Warning Notice -->

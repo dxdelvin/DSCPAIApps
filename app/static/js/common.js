@@ -621,7 +621,7 @@ function initCharacterCounters() {
 
 /**
  * Easter / Festive Mode
- * Adds pastel color overrides, floating eggs, cursor trails,
+ * Adds pastel color overrides, floating eggs, cursor trails,   
  * and confetti bursts — works on top of light or dark theme.
  */
 function initEasterMode() {
@@ -674,7 +674,7 @@ function initEasterMode() {
         if (withFanfare) {
             // Burst of eggs on activation
             for (let i = 0; i < 8; i++) setTimeout(spawnFloatingEgg, i * 150);
-            showToast('🐣 Easter Mode activated! Look for hidden eggs!', 'info', 3000);
+            showToast('🐣 Happy Easter Season', 'info', 3000);
         }
     }
 

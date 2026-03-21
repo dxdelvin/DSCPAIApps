@@ -206,7 +206,7 @@ body.dark-mode .review-value {
     }
 
     .modal-header {
-        background: linear-gradient(135deg, #ff5f00 0%, #ff7a2e 100%);
+        background: linear-gradient(135deg, #FF6840 0%, #ff7a2e 100%);
         padding: 20px 24px;
         position: sticky;
         top: 0;
@@ -248,7 +248,7 @@ body.dark-mode .review-value {
 
     .modal-body h4::before {
         content: "→";
-        color: #ff5f00;
+        color: #FF6840;
         font-weight: bold;
         font-size: 18px;
     }
@@ -271,8 +271,8 @@ body.dark-mode .review-value {
     }
 
     .modal-example {
-        background: rgba(255, 95, 0, 0.05);
-        border-left: 3px solid #ff5f00;
+        background: rgba(255, 104, 64, 0.05);
+        border-left: 3px solid #FF6840;
         padding: 12px 14px;
         border-radius: 6px;
         margin-top: 10px;
@@ -281,7 +281,7 @@ body.dark-mode .review-value {
     }
 
     body.dark-mode .modal-example {
-        background: rgba(255, 95, 0, 0.1);
+        background: rgba(255, 104, 64, 0.1);
         color: var(--slate-300);
     }
 
@@ -374,7 +374,7 @@ body.dark-mode .lane-input, body.dark-mode .sublane-input {
 .lane-input:focus, .sublane-input:focus {
     outline: none;
     border: 2px solid var(--brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+    box-shadow: 0 0 0 3px rgba(255, 104, 64, 0.12);
     background-color: var(--card);
 }
 
@@ -496,7 +496,7 @@ body.dark-mode .override-textarea {
 .override-textarea:focus {
     outline: none;
     border-color: var(--brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.12);
+    box-shadow: 0 0 0 3px rgba(255, 104, 64, 0.12);
     background: var(--card);
 }
 
@@ -701,7 +701,7 @@ body.dark-mode .analysis-section {
     color: var(--navy-900);
     margin: 0 0 12px 0;
     padding-bottom: 8px;
-    border-bottom: 3px solid #ff5f00;
+    border-bottom: 3px solid #FF6840;
     display: flex;
     align-items: center;
     gap: 10px;
@@ -718,7 +718,7 @@ body.dark-mode .analysis-main-heading {
 .analysis-subsection {
     margin: 14px 0;
     padding-left: 14px;
-    border-left: 4px solid #ff5f00;
+    border-left: 4px solid #FF6840;
 }
 
 .analysis-subheading {
@@ -757,7 +757,7 @@ body.dark-mode .analysis-list li {
     content: '→';
     position: absolute;
     left: -16px;
-    color: #ff5f00;
+    color: #FF6840;
     font-weight: bold;
 }
 
@@ -768,7 +768,7 @@ body.dark-mode .analysis-list li {
 
 body.dark-mode .analysis-list strong {
     color: #ff8c42;
-    background: rgba(255, 95, 0, 0.12);
+    background: rgba(255, 104, 64, 0.12);
     padding: 1px 4px;
     border-radius: 3px;
 }
@@ -804,7 +804,7 @@ body.dark-mode .analysis-paragraph {
 
 body.dark-mode .analysis-paragraph strong {
     color: #ff8c42;
-    background: rgba(255, 95, 0, 0.12);
+    background: rgba(255, 104, 64, 0.12);
     padding: 1px 4px;
     border-radius: 3px;
 }
@@ -901,7 +901,7 @@ body.dark-mode .upload-section > p {
 .upload-area:hover,
 .upload-area.drag-over {
     border-color: var(--brand-orange);
-    background: rgba(255, 95, 0, 0.03);
+    background: rgba(255, 104, 64, 0.03);
 }
 
 body.dark-mode .upload-area {
@@ -912,7 +912,7 @@ body.dark-mode .upload-area {
 body.dark-mode .upload-area:hover,
 body.dark-mode .upload-area.drag-over {
     border-color: var(--brand-orange);
-    background: rgba(255, 95, 0, 0.08);
+    background: rgba(255, 104, 64, 0.08);
 }
 
 .upload-placeholder {

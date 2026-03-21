@@ -13,6 +13,7 @@ class PptCreatorApp {
         this.chatHistoryId = null;
         this.currentContent = null;
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        this.MAX_IMAGES = 3;
         this.init();
     }
 
@@ -63,17 +64,26 @@ class PptCreatorApp {
                 if (this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
                     continue;
                 }
+
+                // Check max image limit
+                if (isImage) {
+                    const currentImageCount = this.files.filter(ef => {
+                        const n = ef.name.toLowerCase();
+                        return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
+                    }).length;
+                    if (currentImageCount >= this.MAX_IMAGES) {
+                        showToast(`Cannot add "${f.name}" — maximum ${this.MAX_IMAGES} images allowed.`, 'error');
+                        continue;
+                    }
+                }
                 
                 // Check total size limit (10MB across all files)
                 const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
                 const newTotal = currentTotal + f.size;
                 
                 if (newTotal > this.MAX_FILE_SIZE) {
-                    const remaining = this.MAX_FILE_SIZE - currentTotal;
                     showToast(
-                        `Cannot add "${f.name}" (${this.formatSize(f.size)}). ` +
-                        `Total upload limit is 10 MB. Current: ${this.formatSize(currentTotal)}, ` +
-                        `Available: ${this.formatSize(remaining)}.`,
+                        `Cannot add "${f.name}" — adding this file (${this.formatSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -154,6 +164,10 @@ class PptCreatorApp {
         document.getElementById('extract-btn').disabled = this.files.length === 0;
     }
 
+    isOrangeThemeEnabled() {
+        return Boolean(document.getElementById('orange-theme-toggle')?.checked);
+    }
+
     /* ── Extract content ──────────────────────────────── */
 
     async extractContent() {
@@ -166,11 +180,12 @@ class PptCreatorApp {
             return;
         }
 
-        this.showLoading('Creating presentation from PDFs…');
+        this.showLoading('Creating presentation from Your Content…');
 
         const formData = new FormData();
         this.files.forEach(f => formData.append('files', f));
         formData.append('username', userName);
+        formData.append('force_orange_theme', this.isOrangeThemeEnabled() ? 'true' : 'false');
         const instructions = document.getElementById('user-instructions').value.trim();
         if (instructions) formData.append('instructions', instructions);
 
@@ -231,6 +246,7 @@ class PptCreatorApp {
                     chatHistoryId: this.chatHistoryId,
                     message: msg,
                     currentContent: this.currentContent,
+                    forceOrangeTheme: this.isOrangeThemeEnabled(),
                 }),
             });
             const data = await res.json();
@@ -387,7 +403,8 @@ class PptCreatorApp {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     content: this.currentContent,
-                    username: userName 
+                    username: userName,
+                    forceOrangeTheme: this.isOrangeThemeEnabled(),
                 }),
             });
 
@@ -456,6 +473,8 @@ class PptCreatorApp {
         this.updateExtractBtn();
         document.getElementById('user-name').value                  = '';
         document.getElementById('user-instructions').value          = '';
+        const orangeToggle = document.getElementById('orange-theme-toggle');
+        if (orangeToggle) orangeToggle.checked = false;
         document.getElementById('chat-container').style.display     = 'none'
         document.getElementById('chat-messages').innerHTML          = '';
         const rp = document.getElementById('result-panel');

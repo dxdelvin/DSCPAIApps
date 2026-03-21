@@ -143,8 +143,62 @@
 
                     <!-- Empty State -->
                     <div class="empty-state" id="empty-state">
-                        <span class="empty-icon">📊</span>
-                        <p>Upload a PDF and click Analyze to generate diagrams</p>
+                        <div class="guide-panel">
+                            <div class="guide-header">
+                                <span class="guide-header-icon">📋</span>
+                                <div>
+                                    <p class="eyebrow">Quick Start</p>
+                                    <h4>How to Use</h4>
+                                </div>
+                            </div>
+
+                            <ol class="guide-steps">
+                                <li class="guide-step">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-body">
+                                        <strong>Upload your file</strong>
+                                        <span>Add one <b>PDF</b>, <b>PNG</b>, or <b>JPG</b> file (max 10 MB).</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-body">
+                                        <strong>Select diagram preference</strong>
+                                        <span>Choose one or more diagram types, or keep <b>AI Decides</b> for automatic suggestions.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-body">
+                                        <strong>Analyze content</strong>
+                                        <span>Click <b>Analyze PDF</b> to let AI propose the best diagram options.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-body">
+                                        <strong>Generate selected diagrams</strong>
+                                        <span>Review the suggestions, select what you want, then generate and download <b>.drawio</b> files.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">5</span>
+                                    <div class="step-body">
+                                        <strong>Refine with chat</strong>
+                                        <span>Use the <b>Refine Diagram</b> panel to adjust flow, structure, and labels.</span>
+                                    </div>
+                                </li>
+                            </ol>
+
+                            <div class="guide-tips">
+                                <p class="guide-tips-title">💡 Tips</p>
+                                <ul>
+                                    <li>Use clear, text-rich PDFs for more accurate diagram suggestions.</li>
+                                    <li>Pick specific diagram types when you already know the target format.</li>
+                                    <li>Open the diagram guide above for visual examples before analysis.</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Loading State -->
@@ -171,8 +225,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <ellipse cx="60" cy="10" rx="20" ry="8" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="60" y="13" text-anchor="middle" font-size="7" fill="#FF5F00" font-weight="600">Start</text>
+                        <ellipse cx="60" cy="10" rx="20" ry="8" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="60" y="13" text-anchor="middle" font-size="7" fill="#FF7100" font-weight="600">Start</text>
                         <line x1="60" y1="18" x2="60" y2="27" stroke="#64748b" stroke-width="1.2"/>
                         <polygon points="60,29 57,25 63,25" fill="#64748b"/>
                         <rect x="35" y="29" width="50" height="14" rx="3" fill="#0F172A" fill-opacity=".08" stroke="#0F172A" stroke-width="1.2"/>
@@ -197,8 +251,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <ellipse cx="60" cy="45" rx="18" ry="11" fill="#FF5F00" fill-opacity=".2" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="60" y="48" text-anchor="middle" font-size="7" fill="#FF5F00" font-weight="600">Topic</text>
+                        <ellipse cx="60" cy="45" rx="18" ry="11" fill="#FF7100" fill-opacity=".2" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="60" y="48" text-anchor="middle" font-size="7" fill="#FF7100" font-weight="600">Topic</text>
                         <line x1="78" y1="40" x2="97" y2="22" stroke="#94a3b8" stroke-width="1.2"/>
                         <rect x="93" y="15" width="24" height="13" rx="6" fill="#228BE6" fill-opacity=".2" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="105" y="24" text-anchor="middle" font-size="5.5" fill="#228BE6">Idea A</text>
@@ -227,13 +281,13 @@
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <text x="22" y="12" text-anchor="middle" font-size="6.5" fill="#0F172A" font-weight="600">Actor A</text>
                         <line x1="22" y1="14" x2="22" y2="82" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3"/>
-                        <rect x="8" y="7" width="28" height="10" rx="3" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.2"/>
+                        <rect x="8" y="7" width="28" height="10" rx="3" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.2"/>
                         <text x="98" y="12" text-anchor="middle" font-size="6.5" fill="#0F172A" font-weight="600">Actor B</text>
                         <line x1="98" y1="14" x2="98" y2="82" stroke="#64748b" stroke-width="1" stroke-dasharray="3,3"/>
                         <rect x="84" y="7" width="28" height="10" rx="3" fill="#228BE6" fill-opacity=".15" stroke="#228BE6" stroke-width="1.2"/>
-                        <line x1="22" y1="28" x2="94" y2="28" stroke="#FF5F00" stroke-width="1.2"/>
-                        <polygon points="96,28 91,25 91,31" fill="#FF5F00"/>
-                        <text x="60" y="25" text-anchor="middle" font-size="5.5" fill="#FF5F00">Request()</text>
+                        <line x1="22" y1="28" x2="94" y2="28" stroke="#FF7100" stroke-width="1.2"/>
+                        <polygon points="96,28 91,25 91,31" fill="#FF7100"/>
+                        <text x="60" y="25" text-anchor="middle" font-size="5.5" fill="#FF7100">Request()</text>
                         <line x1="98" y1="44" x2="26" y2="44" stroke="#228BE6" stroke-width="1.2"/>
                         <polygon points="24,44 29,41 29,47" fill="#228BE6"/>
                         <text x="60" y="41" text-anchor="middle" font-size="5.5" fill="#228BE6">Response()</text>
@@ -278,8 +332,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="40" y="5" width="40" height="16" rx="3" fill="#FF5F00" fill-opacity=".2" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="60" y="16" text-anchor="middle" font-size="6.5" fill="#FF5F00" font-weight="700">CEO</text>
+                        <rect x="40" y="5" width="40" height="16" rx="3" fill="#FF7100" fill-opacity=".2" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="60" y="16" text-anchor="middle" font-size="6.5" fill="#FF7100" font-weight="700">CEO</text>
                         <line x1="60" y1="21" x2="60" y2="30" stroke="#64748b" stroke-width="1.2"/>
                         <line x1="30" y1="30" x2="90" y2="30" stroke="#64748b" stroke-width="1.2"/>
                         <line x1="30" y1="30" x2="30" y2="36" stroke="#64748b" stroke-width="1.2"/>
@@ -315,10 +369,10 @@
                         <polygon points="62,18 58,15 58,21" fill="#64748b"/>
                         <rect x="62" y="12" width="28" height="12" rx="2" fill="#228BE6" fill-opacity=".2" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="76" y="21" text-anchor="middle" font-size="5.5" fill="#228BE6">Create Quote</text>
-                        <rect x="2" y="46" width="116" height="40" rx="3" fill="#FF5F00" fill-opacity=".05" stroke="#FF5F00" stroke-width="1.2"/>
-                        <text x="8" y="66" font-size="6" fill="#FF5F00" font-weight="600">Finance</text>
-                        <rect x="22" y="56" width="28" height="12" rx="2" fill="#FF5F00" fill-opacity=".2" stroke="#FF5F00" stroke-width="1.2"/>
-                        <text x="36" y="65" text-anchor="middle" font-size="5.5" fill="#FF5F00">Review Cost</text>
+                        <rect x="2" y="46" width="116" height="40" rx="3" fill="#FF7100" fill-opacity=".05" stroke="#FF7100" stroke-width="1.2"/>
+                        <text x="8" y="66" font-size="6" fill="#FF7100" font-weight="600">Finance</text>
+                        <rect x="22" y="56" width="28" height="12" rx="2" fill="#FF7100" fill-opacity=".2" stroke="#FF7100" stroke-width="1.2"/>
+                        <text x="36" y="65" text-anchor="middle" font-size="5.5" fill="#FF7100">Review Cost</text>
                         <line x1="76" y1="24" x2="76" y2="56" stroke="#64748b" stroke-width="1" stroke-dasharray="3,2"/>
                         <polygon points="76,58 73,53 79,53" fill="#64748b"/>
                     </svg>
@@ -332,8 +386,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="5" y="35" width="28" height="20" rx="3" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="19" y="48" text-anchor="middle" font-size="5.5" fill="#FF5F00" font-weight="600">Frontend</text>
+                        <rect x="5" y="35" width="28" height="20" rx="3" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="19" y="48" text-anchor="middle" font-size="5.5" fill="#FF7100" font-weight="600">Frontend</text>
                         <rect x="46" y="10" width="28" height="20" rx="3" fill="#228BE6" fill-opacity=".15" stroke="#228BE6" stroke-width="1.5"/>
                         <text x="60" y="23" text-anchor="middle" font-size="5.5" fill="#228BE6" font-weight="600">API Layer</text>
                         <rect x="46" y="60" width="28" height="20" rx="3" fill="#10B981" fill-opacity=".15" stroke="#10B981" stroke-width="1.5"/>
@@ -376,8 +430,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="22" cy="45" r="13" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="22" y="48" text-anchor="middle" font-size="5.5" fill="#FF5F00" font-weight="600">Idle</text>
+                        <circle cx="22" cy="45" r="13" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="22" y="48" text-anchor="middle" font-size="5.5" fill="#FF7100" font-weight="600">Idle</text>
                         <circle cx="60" cy="20" r="13" fill="#228BE6" fill-opacity=".15" stroke="#228BE6" stroke-width="1.5"/>
                         <text x="60" y="23" text-anchor="middle" font-size="5.5" fill="#228BE6" font-weight="600">Active</text>
                         <circle cx="98" cy="45" r="13" fill="#10B981" fill-opacity=".15" stroke="#10B981" stroke-width="1.5"/>
@@ -404,8 +458,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="60" cy="45" r="10" fill="#FF5F00" fill-opacity=".2" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="60" y="48" text-anchor="middle" font-size="5.5" fill="#FF5F00">Core</text>
+                        <circle cx="60" cy="45" r="10" fill="#FF7100" fill-opacity=".2" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="60" y="48" text-anchor="middle" font-size="5.5" fill="#FF7100">Core</text>
                         <circle cx="22" cy="18" r="8" fill="#228BE6" fill-opacity=".15" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="22" y="21" text-anchor="middle" font-size="5" fill="#228BE6">DB</text>
                         <circle cx="60" cy="8" r="8" fill="#10B981" fill-opacity=".15" stroke="#10B981" stroke-width="1.2"/>
@@ -437,12 +491,12 @@
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <line x1="10" y1="45" x2="110" y2="45" stroke="#64748b" stroke-width="2"/>
-                        <circle cx="10" cy="45" r="4" fill="#FF5F00" stroke="#FF5F00" stroke-width="1"/>
+                        <circle cx="10" cy="45" r="4" fill="#FF7100" stroke="#FF7100" stroke-width="1"/>
                         <circle cx="35" cy="45" r="4" fill="#228BE6" stroke="#228BE6" stroke-width="1"/>
                         <circle cx="60" cy="45" r="4" fill="#10B981" stroke="#10B981" stroke-width="1"/>
                         <circle cx="85" cy="45" r="4" fill="#8B5CF6" stroke="#8B5CF6" stroke-width="1"/>
                         <circle cx="110" cy="45" r="4" fill="#F59E0B" stroke="#F59E0B" stroke-width="1"/>
-                        <text x="10" y="34" text-anchor="middle" font-size="5.5" fill="#FF5F00">Q1</text>
+                        <text x="10" y="34" text-anchor="middle" font-size="5.5" fill="#FF7100">Q1</text>
                         <text x="10" y="60" text-anchor="middle" font-size="5" fill="#64748b">Jan</text>
                         <text x="35" y="60" text-anchor="middle" font-size="5" fill="#64748b">Mar</text>
                         <text x="60" y="34" text-anchor="middle" font-size="5.5" fill="#10B981">Launch</text>
@@ -461,8 +515,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="40" y="5" width="40" height="16" rx="3" fill="#FF5F00" fill-opacity=".2" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="60" y="16" text-anchor="middle" font-size="6.5" fill="#FF5F00" font-weight="700">Root</text>
+                        <rect x="40" y="5" width="40" height="16" rx="3" fill="#FF7100" fill-opacity=".2" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="60" y="16" text-anchor="middle" font-size="6.5" fill="#FF7100" font-weight="700">Root</text>
                         <line x1="60" y1="21" x2="60" y2="30" stroke="#64748b" stroke-width="1.2"/>
                         <line x1="30" y1="30" x2="90" y2="30" stroke="#64748b" stroke-width="1.2"/>
                         <line x1="30" y1="30" x2="30" y2="38" stroke="#64748b" stroke-width="1.2"/>
@@ -493,8 +547,8 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="25" cy="28" r="12" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="25" y="31" text-anchor="middle" font-size="5.5" fill="#FF5F00">Process</text>
+                        <circle cx="25" cy="28" r="12" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="25" y="31" text-anchor="middle" font-size="5.5" fill="#FF7100">Process</text>
                         <rect x="70" y="20" width="40" height="16" rx="2" fill="#228BE6" fill-opacity=".12" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="90" y="31" text-anchor="middle" font-size="5.5" fill="#228BE6">Data Store A</text>
                         <line x1="37" y1="25" x2="70" y2="25" stroke="#64748b" stroke-width="1.2"/>
@@ -526,8 +580,8 @@
                         <line x1="15" y1="55" x2="9" y2="65" stroke="#0F172A" stroke-width="1.2"/>
                         <line x1="15" y1="55" x2="21" y2="65" stroke="#0F172A" stroke-width="1.2"/>
                         <text x="15" y="74" text-anchor="middle" font-size="5.5" fill="#0F172A">User</text>
-                        <ellipse cx="75" cy="28" rx="30" ry="11" fill="#FF5F00" fill-opacity=".1" stroke="#FF5F00" stroke-width="1.2"/>
-                        <text x="75" y="31" text-anchor="middle" font-size="5.5" fill="#FF5F00">Login</text>
+                        <ellipse cx="75" cy="28" rx="30" ry="11" fill="#FF7100" fill-opacity=".1" stroke="#FF7100" stroke-width="1.2"/>
+                        <text x="75" y="31" text-anchor="middle" font-size="5.5" fill="#FF7100">Login</text>
                         <ellipse cx="75" cy="52" rx="30" ry="11" fill="#228BE6" fill-opacity=".1" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="75" y="55" text-anchor="middle" font-size="5.5" fill="#228BE6">View Dashboard</text>
                         <ellipse cx="75" cy="76" rx="30" ry="11" fill="#10B981" fill-opacity=".1" stroke="#10B981" stroke-width="1.2"/>
@@ -546,10 +600,10 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="10" y="20" width="45" height="50" rx="3" fill="#FF5F00" fill-opacity=".1" stroke="#FF5F00" stroke-width="1.5"/>
-                        <text x="32" y="35" text-anchor="middle" font-size="5.5" fill="#FF5F00" font-weight="700">«component»</text>
+                        <rect x="10" y="20" width="45" height="50" rx="3" fill="#FF7100" fill-opacity=".1" stroke="#FF7100" stroke-width="1.5"/>
+                        <text x="32" y="35" text-anchor="middle" font-size="5.5" fill="#FF7100" font-weight="700">«component»</text>
                         <text x="32" y="48" text-anchor="middle" font-size="6" fill="#0F172A">Frontend</text>
-                        <rect x="55" y="38" width="8" height="6" rx="1" fill="none" stroke="#FF5F00" stroke-width="1.2"/>
+                        <rect x="55" y="38" width="8" height="6" rx="1" fill="none" stroke="#FF7100" stroke-width="1.2"/>
                         <rect x="65" y="20" width="45" height="50" rx="3" fill="#228BE6" fill-opacity=".1" stroke="#228BE6" stroke-width="1.5"/>
                         <text x="87" y="35" text-anchor="middle" font-size="5.5" fill="#228BE6" font-weight="700">«component»</text>
                         <text x="87" y="48" text-anchor="middle" font-size="6" fill="#0F172A">Backend</text>
@@ -568,9 +622,9 @@
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="5" y="5" width="110" height="80" rx="4" fill="#0F172A" fill-opacity=".06" stroke="#0F172A" stroke-width="1.5"/>
                         <text x="60" y="16" text-anchor="middle" font-size="6" fill="#0F172A" font-weight="600">«node» Production Server</text>
-                        <rect x="15" y="22" width="42" height="30" rx="3" fill="#FF5F00" fill-opacity=".12" stroke="#FF5F00" stroke-width="1.2"/>
-                        <text x="36" y="33" text-anchor="middle" font-size="5.5" fill="#FF5F00">«artifact»</text>
-                        <text x="36" y="44" text-anchor="middle" font-size="5.5" fill="#FF5F00">frontend.js</text>
+                        <rect x="15" y="22" width="42" height="30" rx="3" fill="#FF7100" fill-opacity=".12" stroke="#FF7100" stroke-width="1.2"/>
+                        <text x="36" y="33" text-anchor="middle" font-size="5.5" fill="#FF7100">«artifact»</text>
+                        <text x="36" y="44" text-anchor="middle" font-size="5.5" fill="#FF7100">frontend.js</text>
                         <rect x="63" y="22" width="42" height="30" rx="3" fill="#228BE6" fill-opacity=".12" stroke="#228BE6" stroke-width="1.2"/>
                         <text x="84" y="33" text-anchor="middle" font-size="5.5" fill="#228BE6">«artifact»</text>
                         <text x="84" y="44" text-anchor="middle" font-size="5.5" fill="#228BE6">api.service</text>
@@ -590,8 +644,8 @@
                         <circle cx="60" cy="10" r="6" fill="#0F172A"/>
                         <line x1="60" y1="16" x2="60" y2="24" stroke="#64748b" stroke-width="1.2"/>
                         <polygon points="60,26 57,22 63,22" fill="#64748b"/>
-                        <rect x="42" y="26" width="36" height="13" rx="6" fill="#FF5F00" fill-opacity=".15" stroke="#FF5F00" stroke-width="1.2"/>
-                        <text x="60" y="35" text-anchor="middle" font-size="6" fill="#FF5F00">Verify Input</text>
+                        <rect x="42" y="26" width="36" height="13" rx="6" fill="#FF7100" fill-opacity=".15" stroke="#FF7100" stroke-width="1.2"/>
+                        <text x="60" y="35" text-anchor="middle" font-size="6" fill="#FF7100">Verify Input</text>
                         <line x1="60" y1="39" x2="60" y2="47" stroke="#64748b" stroke-width="1.2"/>
                         <polygon points="60,49 57,45 63,45" fill="#64748b"/>
                         <polygon points="60,49 76,58 60,67 44,58" fill="#228BE6" fill-opacity=".12" stroke="#228BE6" stroke-width="1.2"/>
@@ -618,9 +672,9 @@
             <div class="dg-guide-card">
                 <div class="dg-guide-preview">
                     <svg viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="42" cy="42" r="28" fill="#FF5F00" fill-opacity=".18" stroke="#FF5F00" stroke-width="1.5"/>
+                        <circle cx="42" cy="42" r="28" fill="#FF7100" fill-opacity=".18" stroke="#FF7100" stroke-width="1.5"/>
                         <circle cx="78" cy="42" r="28" fill="#228BE6" fill-opacity=".18" stroke="#228BE6" stroke-width="1.5"/>
-                        <text x="30" y="45" text-anchor="middle" font-size="7" fill="#FF5F00" font-weight="600">A</text>
+                        <text x="30" y="45" text-anchor="middle" font-size="7" fill="#FF7100" font-weight="600">A</text>
                         <text x="90" y="45" text-anchor="middle" font-size="7" fill="#228BE6" font-weight="600">B</text>
                         <text x="60" y="45" text-anchor="middle" font-size="5.5" fill="#0F172A">Both</text>
                     </svg>
@@ -645,7 +699,7 @@
                         <text x="62" y="6" font-size="5" fill="#94a3b8">W1</text>
                         <text x="82" y="6" font-size="5" fill="#94a3b8">W2</text>
                         <text x="102" y="6" font-size="5" fill="#94a3b8">W3</text>
-                        <rect x="55" y="14" width="40" height="7" rx="2" fill="#FF5F00" fill-opacity=".6"/>
+                        <rect x="55" y="14" width="40" height="7" rx="2" fill="#FF7100" fill-opacity=".6"/>
                         <rect x="55" y="32" width="20" height="7" rx="2" fill="#228BE6" fill-opacity=".6"/>
                         <rect x="75" y="50" width="40" height="7" rx="2" fill="#10B981" fill-opacity=".6"/>
                         <rect x="95" y="68" width="20" height="7" rx="2" fill="#8B5CF6" fill-opacity=".6"/>
@@ -666,8 +720,8 @@
                         <circle cx="22" cy="12" r="3" fill="#F59E0B" fill-opacity=".6"/>
                         <circle cx="31" cy="12" r="3" fill="#10B981" fill-opacity=".6"/>
                         <text x="80" y="15" text-anchor="middle" font-size="5.5" fill="#64748b">Page Title</text>
-                        <rect x="12" y="24" width="96" height="12" rx="2" fill="#FF5F00" fill-opacity=".18" stroke="#FF5F00" stroke-width="1"/>
-                        <text x="60" y="32" text-anchor="middle" font-size="5.5" fill="#FF5F00">Navigation Bar</text>
+                        <rect x="12" y="24" width="96" height="12" rx="2" fill="#FF7100" fill-opacity=".18" stroke="#FF7100" stroke-width="1"/>
+                        <text x="60" y="32" text-anchor="middle" font-size="5.5" fill="#FF7100">Navigation Bar</text>
                         <rect x="12" y="40" width="58" height="24" rx="2" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>
                         <text x="41" y="55" text-anchor="middle" font-size="5" fill="#94a3b8">Main Content</text>
                         <rect x="74" y="40" width="34" height="24" rx="2" fill="#fff" stroke="#cbd5e1" stroke-width="1"/>

@@ -65,6 +65,15 @@ SMART_ART_COLORS = [
     RGBColor(0x0F, 0x17, 0x2A),  # BSH Navy
 ]
 
+ORANGE_THEME_HEX_COLORS = [
+    "#FF5F00",  # Brand orange
+    "#FF7A1A",  # Light orange
+    "#E65100",  # Dark orange
+    "#FFB380",  # Soft peach
+    "#CC4C00",  # Burnt orange
+    "#FFA64D",  # Amber-orange
+]
+
 # ── AI behaviour prompts ──────────────────────────────────
 
 EXTRACT_BEHAVIOUR = (
@@ -93,18 +102,25 @@ EXTRACT_BEHAVIOUR = (
     '- "cycle": Circular arrangement for recurring processes (3-6 items)\n'
     '- "timeline": Horizontal timeline with events/milestones (3-6 items)\n'
     '- "venn": Overlapping circles showing relationships (2-3 items)\n'
-    '- "funnel": Conversion funnel - wide at top, narrow at bottom (3-5 items)\n\n'
+    '- "funnel": Conversion funnel - wide at top, narrow at bottom (3-5 items)\n'
+    '- "hierarchy": Org-chart tree — first item is root, rest are children (3-7 items)\n'
+    '- "chevron_process": Chevron arrows with descriptions above/below. Items use pipe: "Step | Description" (3-6 items)\n'
+    '- "timeline_detailed": Timeline with description boxes above/below. Items use pipe: "Milestone | Description" (3-6 items)\n'
+    '- "agenda": Numbered agenda list with headlines. Items use pipe: "Headline | Subtext" (3-6 items)\n\n'
     "RULES:\n"
     "1. Start with a title_slide and end with an end_slide.\n"
     "2. Use chapter slides to separate major sections.\n (Optional)"
     "3. Use VARIED layouts — do NOT use the same layout for every slide. (Use what feels natural for the content)\n"
     "4. Use \"smart_art\" layout for AT LEAST 25-30% of content slides. (Make sure it fits the content, see types below)\n"
     "Choose the type that best fits:\n"
-    "   - Sequential steps/workflows -> process\n"
+    "   - Sequential steps/workflows -> process or chevron_process (with descriptions)\n"
     "   - Features/specs/categories -> list_blocks\n"
     "   - Priority/hierarchy/levels -> pyramid\n"
     "   - 2x2 comparisons -> matrix\n"
     "   - Recurring/cyclical processes -> cycle\n"
+    "   - Org structures/tree breakdowns -> hierarchy\n"
+    "   - Events/milestones with details -> timeline_detailed\n"
+    "   - Meeting agendas/action items -> agenda\n"
     "5. Use image placeholder slides (content_with_image, image_with_content, "
     "full_image) where a visual would enhance the message.\n"
     "6. Keep bullet points concise (max 6 per slide, max 15 words each).\n"
@@ -158,7 +174,10 @@ REFINE_BEHAVIOUR = (
     "Apply the requested changes and return the FULL updated JSON "
     "with the same structure (title, subtitle, slides array with layout field). "
     "Keep using varied layouts including smart_art where appropriate. "
-    "Available smart_art types: process, list_blocks, pyramid, matrix, cycle, timeline, venn, funnel. "
+    "Available smart_art types: process, list_blocks, pyramid, matrix, cycle, timeline, venn, funnel, "
+    "hierarchy, chevron_process, timeline_detailed, agenda. "
+    "For types that support descriptions (chevron_process, timeline_detailed, agenda), "
+    "items use pipe format: 'Label | Description'. "
     "For color changes, specify hex color codes in the smart_art.colors array. "
     "Return ONLY the JSON, no markdown fences, no explanation."
 )
@@ -641,6 +660,373 @@ def _draw_funnel_smart_art(slide, items, custom_colors=None):
         y += stage_h + gap
 
 
+def _draw_hierarchy_smart_art(slide, items, custom_colors=None):
+    """Org-chart / hierarchy tree.
+
+    Items convention: first item is root. Remaining items are children
+    displayed in a grid below the root.  If >6 children, they wrap into
+    two rows of up to 6 columns each (max 12 children).
+    """
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.6)
+    area_top = Inches(1.6)
+    area_w = Inches(11)
+    root_w = Inches(3.5)
+    root_h = Inches(0.8)
+    node_h = Inches(0.7)
+    gap_x = Inches(0.2)
+    gap_y = Inches(0.55)
+
+    # Root node — centred at top
+    root_x = area_left + (area_w - root_w) // 2
+    root_y = area_top
+    _add_shape_with_text(
+        slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+        int(root_x), int(root_y), int(root_w), int(root_h),
+        items[0], BSH_NAVY, BSH_WHITE, Pt(14), True,
+    )
+
+    children = items[1:]
+    if not children:
+        return
+
+    # Split children into rows of up to 6
+    max_per_row = 6
+    rows = [children[i:i + max_per_row] for i in range(0, len(children), max_per_row)]
+
+    row_top = root_y + root_h + gap_y
+    root_cx = root_x + root_w // 2
+
+    for row_idx, row_items in enumerate(rows):
+        cols = len(row_items)
+        node_w = min(int((area_w - (cols - 1) * gap_x) / cols), Inches(2.5))
+        total_row_w = cols * node_w + (cols - 1) * gap_x
+        start_x = area_left + (area_w - total_row_w) // 2
+        current_row_y = row_top + row_idx * (node_h + gap_y + Inches(0.3))
+
+        # Vertical connector from root to row
+        if row_idx == 0:
+            conn_x = int(root_cx)
+            conn = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                conn_x - Inches(0.015), int(root_y + root_h),
+                int(Inches(0.03)), int(current_row_y - (root_y + root_h)),
+            )
+            conn.fill.solid()
+            conn.fill.fore_color.rgb = BSH_GREY
+            conn.line.fill.background()
+
+            # Horizontal bar connecting children
+            first_cx = start_x + node_w // 2
+            last_cx = start_x + (cols - 1) * (node_w + gap_x) + node_w // 2
+            if cols > 1:
+                hbar = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    int(first_cx), int(current_row_y - Inches(0.15)),
+                    int(last_cx - first_cx), int(Inches(0.03)),
+                )
+                hbar.fill.solid()
+                hbar.fill.fore_color.rgb = BSH_GREY
+                hbar.line.fill.background()
+
+        x = start_x
+        for ci, child in enumerate(row_items):
+            color_idx = row_idx * max_per_row + ci + 1
+            color = _get_sa_color(color_idx, custom_colors)
+
+            # Vertical stub from horizontal bar to child
+            child_cx = x + node_w // 2
+            if row_idx == 0:
+                stub = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    int(child_cx - Inches(0.015)), int(current_row_y - Inches(0.15)),
+                    int(Inches(0.03)), int(Inches(0.15)),
+                )
+                stub.fill.solid()
+                stub.fill.fore_color.rgb = BSH_GREY
+                stub.line.fill.background()
+
+            _add_shape_with_text(
+                slide, MSO_SHAPE.ROUNDED_RECTANGLE,
+                int(x), int(current_row_y), int(node_w), int(node_h),
+                child, color, BSH_WHITE, Pt(11), True,
+            )
+            x += node_w + gap_x
+
+
+def _draw_chevron_process_smart_art(slide, items, custom_colors=None):
+    """Chevron arrow process with description boxes alternating above/below.
+
+    Items are pairs: each item is either a plain string "Label" (rendered as
+    chevron only) or "Label | Description" (chevron + description box).
+    If no pipe, the whole string is the chevron label with no description.
+    """
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.5)
+    area_top = Inches(1.4)
+    area_w = Inches(11.5)
+    chevron_h = Inches(0.7)
+    desc_box_h = Inches(1.1)
+    desc_box_w = Inches(1.6)
+
+    overlap = Inches(0.08)
+    chev_w = min(int((area_w + (n - 1) * overlap) / n), Inches(2.5))
+    total_w = n * chev_w - (n - 1) * overlap
+    start_x = area_left + (area_w - total_w) // 2
+
+    # Chevron strip sits in the vertical centre
+    strip_y = area_top + desc_box_h + Inches(0.35)
+
+    x = start_x
+    for i, raw_item in enumerate(items):
+        parts = raw_item.split("|", 1) if "|" in raw_item else [raw_item, ""]
+        label = parts[0].strip()
+        desc = parts[1].strip() if len(parts) > 1 else ""
+
+        color = _get_sa_color(i, custom_colors)
+
+        # Chevron shape
+        _add_shape_with_text(
+            slide, MSO_SHAPE.CHEVRON,
+            int(x), int(strip_y), int(chev_w), int(chevron_h),
+            label, color, BSH_WHITE, Pt(10), True,
+        )
+
+        # Description box (alternating above / below)
+        if desc:
+            chev_cx = x + chev_w // 2
+            box_x = int(chev_cx - desc_box_w // 2)
+
+            if i % 2 == 0:
+                # Above
+                box_y = int(strip_y - Inches(0.25) - desc_box_h)
+                # Connector line
+                conn = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    int(chev_cx - Inches(0.01)), int(box_y + desc_box_h),
+                    int(Inches(0.02)), int(Inches(0.25)),
+                )
+            else:
+                # Below
+                box_y = int(strip_y + chevron_h + Inches(0.25))
+                conn = slide.shapes.add_shape(
+                    MSO_SHAPE.RECTANGLE,
+                    int(chev_cx - Inches(0.01)), int(strip_y + chevron_h),
+                    int(Inches(0.02)), int(Inches(0.25)),
+                )
+
+            conn.fill.solid()
+            conn.fill.fore_color.rgb = BSH_GREY
+            conn.line.fill.background()
+
+            # Description text box
+            txBox = slide.shapes.add_textbox(box_x, box_y, int(desc_box_w), int(desc_box_h))
+            tf = txBox.text_frame
+            tf.word_wrap = True
+            tf.margin_top = Inches(0.05)
+            tf.margin_left = Inches(0.05)
+            tf.margin_right = Inches(0.05)
+            p = tf.paragraphs[0]
+            p.text = desc
+            p.alignment = PP_ALIGN.LEFT
+            for run in p.runs:
+                run.font.size = Pt(9)
+                run.font.color.rgb = BSH_NAVY
+
+        x += chev_w - overlap
+
+
+def _draw_timeline_detailed_smart_art(slide, items, custom_colors=None):
+    """Detailed timeline — horizontal line with vertical connectors and
+    description boxes alternating above and below each marker.
+
+    Items: "Label | Description" or just "Label".
+    """
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.5)
+    area_w = Inches(11.5)
+    line_y = Inches(3.6)
+    box_w = Inches(1.5)
+    box_h = Inches(1.2)
+    connector_h = Inches(0.4)
+    marker_r = Inches(0.1)
+
+    # Horizontal line
+    line = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        int(area_left), int(line_y - Inches(0.02)),
+        int(area_w), int(Inches(0.04)),
+    )
+    line.fill.solid()
+    line.fill.fore_color.rgb = BSH_ORANGE
+    line.line.fill.background()
+
+    spacing = area_w / max(n - 1, 1) if n > 1 else 0
+
+    for i, raw_item in enumerate(items):
+        parts = raw_item.split("|", 1) if "|" in raw_item else [raw_item, ""]
+        label = parts[0].strip()
+        desc = parts[1].strip() if len(parts) > 1 else ""
+
+        cx = area_left + (spacing * i if n > 1 else area_w // 2)
+        color = _get_sa_color(i, custom_colors)
+
+        # Marker dot
+        marker = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(cx - marker_r), int(line_y - marker_r),
+            int(marker_r * 2), int(marker_r * 2),
+        )
+        marker.fill.solid()
+        marker.fill.fore_color.rgb = color
+        marker.line.fill.background()
+
+        # Vertical connector
+        if i % 2 == 0:
+            conn_top = line_y - marker_r - connector_h
+            box_y = conn_top - box_h
+        else:
+            conn_top = line_y + marker_r
+            box_y = conn_top + connector_h
+
+        conn = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            int(cx - Inches(0.01)), int(conn_top),
+            int(Inches(0.02)), int(connector_h),
+        )
+        conn.fill.solid()
+        conn.fill.fore_color.rgb = color
+        conn.line.fill.background()
+
+        # Description box
+        bx = int(cx - box_w // 2)
+        box = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            bx, int(box_y), int(box_w), int(box_h),
+        )
+        box.fill.solid()
+        box.fill.fore_color.rgb = RGBColor(0xF8, 0xFA, 0xFC)
+        box.line.color.rgb = RGBColor(0xE2, 0xE8, 0xF0)
+        box.line.width = Pt(1)
+
+        tf = box.text_frame
+        tf.word_wrap = True
+        tf.margin_left = Inches(0.1)
+        tf.margin_top = Inches(0.08)
+        # Bold label paragraph
+        p = tf.paragraphs[0]
+        p.text = label
+        p.alignment = PP_ALIGN.LEFT
+        for run in p.runs:
+            run.font.size = Pt(10)
+            run.font.color.rgb = BSH_NAVY
+            run.font.bold = True
+        # Description paragraph
+        if desc:
+            p2 = tf.add_paragraph()
+            p2.text = desc
+            p2.alignment = PP_ALIGN.LEFT
+            for run in p2.runs:
+                run.font.size = Pt(8)
+                run.font.color.rgb = BSH_GREY
+
+
+def _draw_agenda_smart_art(slide, items, custom_colors=None):
+    """Numbered agenda list with headlines and optional sub-text.
+
+    Items: "Headline | Sub-text" or just "Headline".
+    Renders a numbered list on the left with separator lines, similar to
+    the BSH Agenda template layout.
+    """
+    n = len(items)
+    if n == 0:
+        return
+
+    area_left = Inches(0.8)
+    area_top = Inches(1.6)
+    area_w = Inches(10.5)
+    row_h = Inches(0.85)
+    gap = Inches(0.08)
+    num_w = Inches(0.6)
+    total_h = n * row_h + (n - 1) * gap
+    y = area_top
+
+    for i, raw_item in enumerate(items):
+        parts = raw_item.split("|", 1) if "|" in raw_item else [raw_item, ""]
+        headline = parts[0].strip()
+        subtext = parts[1].strip() if len(parts) > 1 else ""
+        color = _get_sa_color(i, custom_colors)
+
+        # Top separator line
+        sep = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            int(area_left), int(y),
+            int(area_w), int(Inches(0.02)),
+        )
+        sep.fill.solid()
+        sep.fill.fore_color.rgb = RGBColor(0xE2, 0xE8, 0xF0)
+        sep.line.fill.background()
+
+        # Number
+        num_box = slide.shapes.add_textbox(
+            int(area_left), int(y + Inches(0.1)),
+            int(num_w), int(row_h - Inches(0.1)),
+        )
+        tf_num = num_box.text_frame
+        p_num = tf_num.paragraphs[0]
+        p_num.text = f"{i + 1}."
+        p_num.alignment = PP_ALIGN.LEFT
+        for run in p_num.runs:
+            run.font.size = Pt(18)
+            run.font.color.rgb = color
+            run.font.bold = True
+
+        # Headline + subtext
+        text_box = slide.shapes.add_textbox(
+            int(area_left + num_w + Inches(0.15)), int(y + Inches(0.1)),
+            int(area_w - num_w - Inches(0.15)), int(row_h - Inches(0.1)),
+        )
+        tf = text_box.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.text = headline
+        p.alignment = PP_ALIGN.LEFT
+        for run in p.runs:
+            run.font.size = Pt(16)
+            run.font.color.rgb = BSH_NAVY
+            run.font.bold = True
+
+        if subtext:
+            p2 = tf.add_paragraph()
+            p2.text = subtext
+            p2.alignment = PP_ALIGN.LEFT
+            for run in p2.runs:
+                run.font.size = Pt(12)
+                run.font.color.rgb = BSH_GREY
+                run.font.italic = True
+
+        y += row_h + gap
+
+    # Bottom separator line
+    sep = slide.shapes.add_shape(
+        MSO_SHAPE.RECTANGLE,
+        int(area_left), int(y),
+        int(area_w), int(Inches(0.02)),
+    )
+    sep.fill.solid()
+    sep.fill.fore_color.rgb = RGBColor(0xE2, 0xE8, 0xF0)
+    sep.line.fill.background()
+
+
 SMART_ART_DRAWERS = {
     "process": _draw_process_smart_art,
     "list_blocks": _draw_list_blocks_smart_art,
@@ -650,6 +1036,10 @@ SMART_ART_DRAWERS = {
     "timeline": _draw_timeline_smart_art,
     "venn": _draw_venn_smart_art,
     "funnel": _draw_funnel_smart_art,
+    "hierarchy": _draw_hierarchy_smart_art,
+    "chevron_process": _draw_chevron_process_smart_art,
+    "timeline_detailed": _draw_timeline_detailed_smart_art,
+    "agenda": _draw_agenda_smart_art,
 }
 
 
@@ -844,7 +1234,7 @@ def _build_title_only_slide(prs, slide_data, layout):
     return slide
 
 
-def _build_smart_art_slide(prs, slide_data, layout):
+def _build_smart_art_slide(prs, slide_data, layout, force_orange_theme: bool = False):
     """Build a slide with SmartArt-like diagram shapes."""
     slide = prs.slides.add_slide(layout)
     _set_placeholder_text(slide, 0, slide_data.get("title", ""))
@@ -853,6 +1243,10 @@ def _build_smart_art_slide(prs, slide_data, layout):
     sa_type = sa.get("type", "list_blocks")
     sa_items = sa.get("items", [])
     sa_colors = sa.get("colors", None)
+
+    # If orange theme is forced and AI didn't provide explicit colors, apply orange palette.
+    if force_orange_theme and not sa_colors:
+        sa_colors = ORANGE_THEME_HEX_COLORS
 
     drawer = SMART_ART_DRAWERS.get(sa_type)
     if drawer and sa_items:
@@ -863,7 +1257,11 @@ def _build_smart_art_slide(prs, slide_data, layout):
 
 # ─── Main PPT builder ────────────────────────────────────
 
-def generate_pptx_file(content: dict, username: str = "Unknown User") -> io.BytesIO:
+def generate_pptx_file(
+    content: dict,
+    username: str = "Unknown User",
+    force_orange_theme: bool = False,
+) -> io.BytesIO:
     """
     Build a .pptx from structured AI content using varied template layouts.
     Inserts SmartArt diagrams and placeholder images where indicated.
@@ -881,6 +1279,22 @@ def generate_pptx_file(content: dict, username: str = "Unknown User") -> io.Byte
     
     slides_data = content.get("slides", [])
     current_date = datetime.now().strftime("%B %d, %Y")  # e.g., "March 01, 2026"
+    short_date = datetime.now().strftime("%Y-%m-%d")      # e.g., "2026-03-21"
+    pres_title = content.get("title", "")
+
+    # Update master slide footer: date and presentation title
+    for master in prs.slide_masters:
+        for shape in master.shapes:
+            if not shape.has_text_frame:
+                continue
+            if shape.name == "DateOnSlides":
+                for para in shape.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.text = short_date
+            elif shape.name == "FooterOnSlides":
+                for para in shape.text_frame.paragraphs:
+                    for run in para.runs:
+                        run.text = pres_title
 
     for slide_data in slides_data:
         layout_name = slide_data.get("layout", "content")
@@ -904,7 +1318,12 @@ def generate_pptx_file(content: dict, username: str = "Unknown User") -> io.Byte
             slide = _build_content_slide(prs, slide_data, layout)
 
         elif layout_name == "smart_art":
-            slide = _build_smart_art_slide(prs, slide_data, layout)
+            slide = _build_smart_art_slide(
+                prs,
+                slide_data,
+                layout,
+                force_orange_theme=force_orange_theme,
+            )
 
         elif layout_name == "content_with_image":
             slide = _build_content_with_image_slide(prs, slide_data, layout)
@@ -970,6 +1389,7 @@ async def extract_pdf_content(
     user_instructions: str = "",
     username: str = "Unknown User",
     image_files: list = None,
+    force_orange_theme: bool = False,
 ) -> dict:
     """
     Extract text from uploaded PDFs and/or process uploaded images via AI vision,
@@ -1012,6 +1432,13 @@ async def extract_pdf_content(
         body = f"Below is text content extracted from uploaded documents.\n{base_task}\n\n{combined_text}"
     else:
         body = f"Analyze the uploaded image(s) and {base_task}"
+
+    if force_orange_theme:
+        body = (
+            "VISUAL THEME REQUIREMENT: Use an orange-first visual style. "
+            "Prefer orange shades for smart_art.colors and supportive warm accents where appropriate.\n\n"
+            f"{body}"
+        )
 
     if user_instructions:
         prompt = (
@@ -1064,15 +1491,24 @@ async def refine_ppt_content(
     chat_history_id: str,
     message: str,
     current_content: dict = None,
+    force_orange_theme: bool = False,
 ) -> dict:
     """Continue the conversation to refine the presentation content."""
     brain_id = os.getenv("DSCP_BRAIN_ID")
     if not brain_id:
         return {"error": True, "message": "API Not Active", "detail": "DSCP_BRAIN_ID is not configured."}
 
-    prompt = message
+    theme_prefix = ""
+    if force_orange_theme:
+        theme_prefix = (
+            "VISUAL THEME REQUIREMENT: Keep an orange-first visual style and use orange shades "
+            "in smart_art.colors where relevant.\n\n"
+        )
+
+    prompt = f"{theme_prefix}{message}" if theme_prefix else message
     if current_content:
         prompt = (
+            f"{theme_prefix}"
             f"Here is the current presentation JSON:\n{json.dumps(current_content, indent=2)}\n\n"
             f"User request: {message}\n\n"
             "Apply the changes and return the FULL updated JSON with the same structure "

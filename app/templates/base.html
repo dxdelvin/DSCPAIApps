@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}BSH DSCP{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}?v={{ css_version }}">
     <link rel="icon" type="image/svg" href="{{ url_for('static', path='img/icon.svg') }}"/>
     {% block extra_css %}{% endblock %}
@@ -11,8 +14,8 @@
 <body{% if request.url_path == '/' %} class="home-page"{% endif %}>
     <header class="navbar">
         <div class="navbar-shell">
-            <a class="brand" href="/">
-                <span class="brand-mark">BSH</span>
+            <a class="brand" href="/" aria-label="BSH DSCP home">
+                <img class="brand-logo" src="{{ url_for('static', path='img/BSH_black_text.png') }}" alt="BSH Logo">
                 <span class="brand-text">
                     <span class="brand-name">{% block page_name %}BSH DSCP{% endblock %}</span>
                     <span class="brand-sub">Digital Supply Chain Planning</span>
@@ -52,15 +55,19 @@
             </div>
             <div class="changelog-content">
             <div class="changelog-section">
-                <h3 class="changelog-date">Mar 25th, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v2.6.0</span></h3>
+                <h3 class="changelog-date">Mar 24th, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v2.6.0</span></h3>
                 <ul class="changelog-list">
+                    <li>Updated the Logo, Colors, Font according to the BSH Design Guidelines across the application.</li>
                     <li>AI Diagram Generator now includes a visual diagram guide with previews to help users choose the right diagram type faster.</li>
-                    <li>Added clear step-by-step guides in PowerPoint Creator and Audit Checker for easier first-time use.</li>
+                    <li>Added clear step-by-step guides in PowerPoint Creator, AI Diagram Generator, and Audit Checker for easier first-time use.</li>
                     <li>PowerPoint Creator and AI Diagram Generator now support PDF, PNG, JPG, and JPEG uploads.</li>
+                    <li>PowerPoint Creator App now includes 4 new SmartArt layouts, Improved the Presentation output, added a orange theme button</li>
+                    <li>Added Easter Egg Button in navigation for a festive theme. (Testing Feature)</li>
+                
                 </ul>
             </div>
             <div class="changelog-section">
-                <h3 class="changelog-date">Mar 17th, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v2.5.0</span></h3>
+                <h3 class="changelog-date">Mar 17th, 2026:  <span class="badge-version">v2.5.0</span></h3>
                 <ul class="changelog-list">
                     <li>Mobile User Experience significantly improved with optimized responsive CSS across all tools.</li>
                     <li>Added a new "Upload &amp; Analyze" feature in the Signavio BPMN Builder, complementing the existing Form Builder mode.</li>
@@ -139,7 +146,7 @@
     <footer class="site-footer">
         <div class="footer-content">
             <span class="footer-badge">🚧 Beta Version</span>
-            <span class="footer-text">BSH Digital Supply Chain Planning • Powered by Dia Brain</span>
+            <span class="footer-text">BSH • Digital Supply Chain Planning • Powered by Dia Brain</span>
         </div>
         <div class="footer-credit">
             <p>Created by Delvin Dsouza (<a href="mailto:dsd9di@bosch.com">dsd9di@bosch.com</a>) - Have a feedback or found a bug? <a href="mailto:dsd9di@bosch.com?subject=DSCP%20AI%20Feedback">Contact me via Mail</a></p>

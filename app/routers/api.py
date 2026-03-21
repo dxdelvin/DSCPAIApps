@@ -482,9 +482,11 @@ async def ppt_extract(
     files: List[UploadFile] = File(...),
     username: str = Form(...),
     instructions: Optional[str] = Form(None),
+    force_orange_theme: bool = Form(False),
 ):
     """Upload PDF/image files → AI structures content into presentation slides."""
     MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total across all files
+    MAX_IMAGES = 3
     _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
     pdf_files = []
     image_files = []
@@ -517,10 +519,25 @@ async def ppt_extract(
         if fname_lower.endswith(".pdf"):
             pdf_files.append((f.filename, content))
         else:
+            if len(image_files) >= MAX_IMAGES:
+                return JSONResponse(
+                    status_code=400,
+                    content={
+                        "status": "error",
+                        "message": "Too many images",
+                        "detail": f"Maximum {MAX_IMAGES} images allowed per request.",
+                    },
+                )
             await f.seek(0)
             image_files.append(f)
 
-    result = await extract_pdf_content(pdf_files, instructions or "", username, image_files=image_files or None)
+    result = await extract_pdf_content(
+        pdf_files,
+        instructions or "",
+        username,
+        image_files=image_files or None,
+        force_orange_theme=force_orange_theme,
+    )
 
     if result.get("error"):
         return JSONResponse(
@@ -703,12 +720,18 @@ class PptRefineRequest(BaseModel):
     chatHistoryId: str
     message: str
     currentContent: Optional[dict] = None
+    forceOrangeTheme: bool = False
 
 
 @router.post("/ppt/refine")
 async def ppt_refine(data: PptRefineRequest):
     """Continue conversation to refine presentation content."""
-    result = await refine_ppt_content(data.chatHistoryId, data.message, data.currentContent)
+    result = await refine_ppt_content(
+        data.chatHistoryId,
+        data.message,
+        data.currentContent,
+        force_orange_theme=data.forceOrangeTheme,
+    )
 
     if result.get("error"):
         return JSONResponse(
@@ -731,6 +754,7 @@ async def ppt_refine(data: PptRefineRequest):
 class PptDownloadRequest(BaseModel):
     content: dict
     username: str = "Unknown User"
+    forceOrangeTheme: bool = False
 
 
 @router.post("/ppt/download")
@@ -752,7 +776,7 @@ async def ppt_download(data: PptDownloadRequest):
         )
 
     try:
-        buf = generate_pptx_file(content, username)
+        buf = generate_pptx_file(content, username, force_orange_theme=data.forceOrangeTheme)
         title = content.get("title", "Presentation").replace(" ", "_")
         safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
         filename = f"{safe}.pptx"

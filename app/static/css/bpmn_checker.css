@@ -94,12 +94,12 @@ body.dark-mode {
 
 .upload-area:hover {
     border-color: var(--brand-orange);
-    background: rgba(255, 95, 0, 0.03);
+    background: rgba(255, 104, 64, 0.03);
 }
 
 .upload-area.dragover {
     border-color: var(--brand-orange);
-    background: rgba(255, 95, 0, 0.08);
+    background: rgba(255, 104, 64, 0.08);
     transform: scale(1.01);
 }
 
@@ -240,7 +240,7 @@ body.dark-mode {
 .context-section textarea:focus {
     outline: none;
     border-color: var(--brand-orange);
-    box-shadow: 0 0 0 3px rgba(255, 95, 0, 0.1);
+    box-shadow: 0 0 0 3px rgba(255, 104, 64, 0.1);
 }
 
 /* Slimmer, cleaner scrollbars for context textarea */
@@ -616,7 +616,7 @@ body.dark-mode .finding-item.success {
 
 @keyframes highlightPulse {
     0%, 100% { transform: scale(1); box-shadow: none; }
-    50% { transform: scale(1.02); box-shadow: 0 4px 12px rgba(255, 95, 0, 0.3); }
+    50% { transform: scale(1.02); box-shadow: 0 4px 12px rgba(255, 104, 64, 0.3); }
 }
 
 .filter-message {
@@ -1093,7 +1093,7 @@ body.dark-mode .finding-item.success {
     .finding-fix {
         margin-top: 0.45rem;
         padding: 0.5rem 0.6rem;
-        background: rgba(255, 95, 0, 0.06);
+        background: rgba(255, 104, 64, 0.06);
         border-radius: 6px;
         font-size: 0.82rem;
         line-height: 1.4;
@@ -1185,7 +1185,7 @@ body.dark-mode .finding-item.success {
 
 /* Result Summary */
 .result-summary {
-    background: linear-gradient(135deg, var(--bg) 0%, rgba(255, 95, 0, 0.03) 100%);
+    background: linear-gradient(135deg, var(--bg) 0%, rgba(255, 104, 64, 0.03) 100%);
     border-left: 3px solid var(--brand-orange);
     padding: 1rem 1.25rem;
     border-radius: 0 8px 8px 0;
@@ -1311,7 +1311,7 @@ body.dark-mode .finding-item.success {
     align-items: center;
     gap: 0.75rem;
     padding: 0.9rem 1rem;
-    background: linear-gradient(135deg, var(--bg) 0%, rgba(255, 95, 0, 0.05) 100%);
+    background: linear-gradient(135deg, var(--bg) 0%, rgba(255, 104, 64, 0.05) 100%);
     border-bottom: 1px solid var(--border);
 }
 
@@ -1563,7 +1563,7 @@ body.dark-mode .analysis-content {
 }
 
 body.dark-mode .analysis-content code {
-    background: rgba(255, 95, 0, 0.15);
+    background: rgba(255, 104, 64, 0.15);
     color: #fdba74;
 }
 
@@ -1583,7 +1583,7 @@ body.dark-mode .priority-card {
 }
 
 body.dark-mode .priority-header {
-    background: linear-gradient(135deg, var(--surface-secondary) 0%, rgba(255, 95, 0, 0.08) 100%);
+    background: linear-gradient(135deg, var(--surface-secondary) 0%, rgba(255, 104, 64, 0.08) 100%);
 }
 
 body.dark-mode .fix-row {
