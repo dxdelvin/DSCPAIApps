@@ -224,3 +224,22 @@
     </div>
 </section>
 {% endblock %}
+
+{% block extra_js %}
+<script>
+    document.querySelectorAll('.app-card.active').forEach(card => {
+        const link = card.querySelector('.btn-open');
+        if (!link) return;
+        const icon = card.querySelector('.app-icon');
+        if (!icon) return;
+        icon.style.cursor = 'pointer';
+        icon.addEventListener('click', () => {
+            if (link.target === '_blank') {
+                window.open(link.href, '_blank', 'noopener,noreferrer');
+            } else {
+                window.location.href = link.href;
+            }
+        });
+    });
+</script>
+{% endblock %}

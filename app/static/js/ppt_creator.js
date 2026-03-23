@@ -197,7 +197,7 @@ class PptCreatorApp {
                 AppLogger.error('PPT extraction failed', { message: data.message, detail: data.detail });
                 this.hideLoading();
                 const title = data.message || 'Extraction Failed';
-                const detail = 'The AI service could not process your document. Please try again later.';
+                const detail = data.detail || 'The AI service could not process your document. Please try again later.';
                 this.showError(title, detail);
                 return;
             }

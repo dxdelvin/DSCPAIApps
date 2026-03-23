@@ -191,7 +191,7 @@ async def call_brain_chat(
 
     token = await get_brain_access_token()
     base_url, headers = _get_base_url_and_headers(token)
-    _require_env(base_url, "BRAIN_API_BASE_URL")
+    _require_env(base_url, "BRA                         IN_API_BASE_URL")
 
     url = f"{base_url}/chat/retrieval-augmented"
     payload = {
