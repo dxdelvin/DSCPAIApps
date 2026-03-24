@@ -23,37 +23,50 @@ def _template_context(request: Request, extra: dict | None = None):
 
 @router.get("/")
 async def home(request: Request):
-    # Get current user info for welcome message
     user_info = get_current_user(request)
     username = user_info.get("user", "Guest")
     
-    return templates.TemplateResponse("index.html", _template_context(request, {
-        "username": username,
-    }))
+    return templates.TemplateResponse(
+        request=request, 
+        name="index.html", 
+        context=_template_context(request, {"username": username})
+    )
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
-    return templates.TemplateResponse("signavio_bpmn.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="signavio_bpmn.html", context=_template_context(request)
+    )
 
 @router.get("/audit-check")
 async def audit_check(request: Request):
-    return templates.TemplateResponse("audit_check.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="audit_check.html", context=_template_context(request)
+    )
 
 @router.get("/bpmn-checker")
 async def bpmn_checker(request: Request):
-    return templates.TemplateResponse("bpmn_checker.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="bpmn_checker.html", context=_template_context(request)
+    )
 
 @router.get("/spec-builder")
 async def spec_builder(request: Request):
-    return templates.TemplateResponse("fs_br_document.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="fs_br_document.html", context=_template_context(request)
+    )
 
 @router.get("/ppt-creator")
 async def ppt_creator(request: Request):
-    return templates.TemplateResponse("ppt_creator.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="ppt_creator.html", context=_template_context(request)
+    )
 
 @router.get("/diagram-generator")
 async def diagram_generator(request: Request):
-    return templates.TemplateResponse("diagram_generator.html", _template_context(request))
+    return templates.TemplateResponse(
+        request=request, name="diagram_generator.html", context=_template_context(request)
+    )
 
 @router.get("/health")
 async def health_check():

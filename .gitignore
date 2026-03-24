@@ -94,3 +94,4 @@ htmlcov/
 .vs/DSCPAIApps/v17/DocumentLayout.json
 .vs/VSWorkspaceState.json
 *.yml
+test.zip
