@@ -62,8 +62,15 @@
 </div>
 
 <section class="apps" id="apps">
+    <div class="filter-bar" id="filterBar">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="day-to-day">Day to Day</button>
+        <button class="filter-chip" data-filter="signavio">Signavio</button>
+        <button class="filter-chip" data-filter="dscp">DSCP</button>
+    </div>
+
     <div class="app-grid">
-        <article class="app-card active">
+        <article class="app-card active" data-category="signavio">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -84,7 +91,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="day-to-day">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -106,7 +113,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="day-to-day">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -130,7 +137,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="dscp">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -152,7 +159,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="signavio">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -172,7 +179,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="dscp">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -195,7 +202,7 @@
             </div>
         </article>
 
-        <article class="app-card active">
+        <article class="app-card active" data-category="signavio">
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -241,5 +248,38 @@
             }
         });
     });
+
+    // Category filter
+    (function initCategoryFilter() {
+        const filterBar = document.getElementById('filterBar');
+        if (!filterBar) return;
+        const chips = filterBar.querySelectorAll('.filter-chip');
+        const cards = document.querySelectorAll('.app-grid .app-card');
+
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                const filter = chip.dataset.filter;
+
+                cards.forEach(card => {
+                    if (filter === 'all' || card.dataset.category === filter) {
+                        card.classList.remove('filter-hidden');
+                    } else {
+                        card.classList.add('filter-hidden');
+                    }
+                });
+
+                // Clear search when switching filters
+                const searchInput = document.getElementById('appSearch');
+                const searchClear = document.getElementById('searchClear');
+                if (searchInput && searchInput.value) {
+                    searchInput.value = '';
+                    if (searchClear) searchClear.hidden = true;
+                    searchInput.dispatchEvent(new Event('input'));
+                }
+            });
+        });
+    })();
 </script>
 {% endblock %}

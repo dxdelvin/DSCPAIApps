@@ -91,22 +91,22 @@ class BPMNCheckerApp {
 
         const file = files[0];
         
-        // Validate file type - accept PDF and images
-        const validTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
-        const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
+        // Validate file type - accept images only
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+        const validExtensions = ['.jpg', '.jpeg', '.png'];
         const fileExt = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
         
         const isValid = validTypes.includes(file.type) || validExtensions.includes(fileExt);
         
         if (!isValid) {
-            showToast('Please upload a PDF or image file (JPG, JPEG, PNG).', 'error');
+            showToast('Please upload an image file (JPG, JPEG, PNG).', 'error');
             return;
         }
 
-        // Validate file size (max 20MB)
-        const maxSize = 20 * 1024 * 1024;
+        // Validate file size (max 10MB)
+        const maxSize = 10 * 1024 * 1024;
         if (file.size > maxSize) {
-            showToast('File size must be less than 20MB.', 'error');
+            showToast('File size must be less than 10MB.', 'error');
             return;
         }
 
@@ -150,7 +150,7 @@ class BPMNCheckerApp {
 
     async checkDiagram() {
         if (!this.selectedFile) {
-            showToast('Please select a PDF file first.', 'warning');
+            showToast('Please select an image file first.', 'warning');
             return;
         }
 
@@ -194,19 +194,22 @@ class BPMNCheckerApp {
 
     showLoadingState() {
         document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('loading-state').style.display = 'flex';
         document.getElementById('results-content').style.display = 'none';
+        LoadingPanel.show('loading-state', {
+            messages: ['Scanning diagram elements', 'Checking BPMN notation rules', 'Evaluating process quality', 'Preparing improvement suggestions'],
+            hint: 'This may take a moment while our AI reviews your diagram.'
+        });
     }
 
     showEmptyState() {
         document.getElementById('empty-state').style.display = 'flex';
-        document.getElementById('loading-state').style.display = 'none';
+        LoadingPanel.hide('loading-state');
         document.getElementById('results-content').style.display = 'none';
     }
 
     showResultsState() {
         document.getElementById('empty-state').style.display = 'none';
-        document.getElementById('loading-state').style.display = 'none';
+        LoadingPanel.hide('loading-state');
         document.getElementById('results-content').style.display = 'block';
     }
 

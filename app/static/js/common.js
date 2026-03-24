@@ -430,6 +430,9 @@ function initAppSearch() {
     function performSearch(query) {
         const searchTerm = query.toLowerCase().trim();
         
+        // Helper: check if card is hidden by category filter
+        const isFilteredOut = (card) => card.classList.contains('filter-hidden');
+        
         // Reset all cards if empty search
         if (!searchTerm) {
             originalData.forEach(({ card, nameEl, descEl, tagEls, name, description, tags }) => {
@@ -445,9 +448,14 @@ function initAppSearch() {
         
         // Score and filter cards
         const scored = originalData.map(data => {
-            const { name, description, tags } = data;
+            const { card, name, description, tags } = data;
             let score = 0;
             let matchType = null;
+
+            // Skip cards hidden by category filter
+            if (isFilteredOut(card)) {
+                return { ...data, score: 0, matchType: null };
+            }
             
             // Priority 1: Name match (highest priority)
             if (name.toLowerCase().includes(searchTerm)) {
@@ -618,6 +626,114 @@ function initCharacterCounters() {
         ta.addEventListener('input', updateCounter);
     });
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Loading Overlay (full-screen) & Loading Panel (inline)
+   ═══════════════════════════════════════════════════════════ */
+
+/**
+ * Full-screen loading overlay with animated concentric rings and cycling messages.
+ *
+ * Usage:
+ *   LoadingOverlay.show({ messages: ['Step 1…', 'Step 2…'], icon: '<svg>…</svg>' });
+ *   LoadingOverlay.hide();
+ */
+const LoadingOverlay = {
+    _el: null,
+    _timer: null,
+
+    show({ messages = ['Processing…'], icon = '' } = {}) {
+        this.hide();
+        const el = document.createElement('div');
+        el.className = 'lo-overlay';
+        el.innerHTML =
+            '<div class="lo-rings">' +
+                '<div class="lo-ring lo-ring-outer"></div>' +
+                '<div class="lo-ring lo-ring-inner"></div>' +
+                (icon ? '<div class="lo-icon">' + icon + '</div>' : '') +
+            '</div>' +
+            '<div class="lo-status">' +
+                '<span class="lo-text"></span>' +
+                '<span class="lo-dots"><i></i><i></i><i></i></span>' +
+            '</div>';
+        document.body.appendChild(el);
+        this._el = el;
+        this._cycleMessages(el.querySelector('.lo-text'), messages);
+    },
+
+    hide() {
+        if (this._timer) { clearInterval(this._timer); this._timer = null; }
+        if (this._el) { this._el.remove(); this._el = null; }
+    },
+
+    _cycleMessages(el, msgs) {
+        let i = 0;
+        el.textContent = msgs[0];
+        if (msgs.length > 1) {
+            this._timer = setInterval(() => {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    i = (i + 1) % msgs.length;
+                    el.textContent = msgs[i];
+                    el.style.opacity = '1';
+                }, 250);
+            }, 2500);
+        }
+    }
+};
+
+/**
+ * Inline loading panel — renders animated loader inside an existing container.
+ *
+ * Usage:
+ *   LoadingPanel.show('loading-state', { messages: ['Analyzing…', 'Processing…'], hint: 'This may take a moment.' });
+ *   LoadingPanel.hide('loading-state');
+ */
+const LoadingPanel = {
+    _timers: new Map(),
+
+    show(container, { messages = ['Processing…'], hint = '' } = {}) {
+        if (typeof container === 'string') container = document.getElementById(container);
+        if (!container) return;
+        this.hide(container);
+        container.style.display = 'flex';
+        container.innerHTML =
+            '<div class="lp-panel">' +
+                '<div class="lp-rings">' +
+                    '<div class="lp-ring lp-ring-outer"></div>' +
+                    '<div class="lp-ring lp-ring-inner"></div>' +
+                '</div>' +
+                '<div class="lp-status">' +
+                    '<span class="lp-text"></span>' +
+                    '<span class="lp-dots"><i></i><i></i><i></i></span>' +
+                '</div>' +
+                (hint ? '<p class="lp-hint">' + hint + '</p>' : '') +
+            '</div>';
+        const textEl = container.querySelector('.lp-text');
+        let i = 0;
+        textEl.textContent = messages[0];
+        if (messages.length > 1) {
+            const timer = setInterval(() => {
+                textEl.style.opacity = '0';
+                setTimeout(() => {
+                    i = (i + 1) % messages.length;
+                    textEl.textContent = messages[i];
+                    textEl.style.opacity = '1';
+                }, 250);
+            }, 2500);
+            this._timers.set(container, timer);
+        }
+    },
+
+    hide(container) {
+        if (typeof container === 'string') container = document.getElementById(container);
+        if (!container) return;
+        const timer = this._timers.get(container);
+        if (timer) { clearInterval(timer); this._timers.delete(container); }
+        container.style.display = 'none';
+        container.innerHTML = '';
+    }
+};
 
 /**
  * Easter / Festive Mode

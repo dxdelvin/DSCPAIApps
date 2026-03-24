@@ -390,30 +390,7 @@ body.dark-mode {
     padding: 4rem 2rem;
 }
 
-.loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--border);
-    border-top-color: var(--brand-orange);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    margin-bottom: 1.5rem;
-}
-
-/* @keyframes spin now in common.css */
-
-.loading-state h4 {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    margin: 0 0 0.5rem;
-}
-
-.loading-state p {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin: 0;
-}
+/* Loading content now injected by LoadingPanel (common.js) */
 
 /* Score Section */
 .score-section {

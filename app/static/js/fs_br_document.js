@@ -659,10 +659,11 @@ function setVal(id, v) {
 
 async function exportFsDocx() {
     const data = collectFsFormData();
-    const spinner = document.getElementById('loadingSpinner');
 
     try {
-        if (spinner) spinner.style.display = 'flex';
+        LoadingOverlay.show({
+            messages: ['Collecting form data', 'Generating document structure', 'Building Word document', 'Preparing download']
+        });
 
         const response = await fetch('/api/export-functional-spec', {
             method: 'POST',
@@ -693,7 +694,7 @@ async function exportFsDocx() {
         AppLogger.error('FS Export error:', err);
         showToast('Document export failed. Please try again.', 'error');
     } finally {
-        if (spinner) spinner.style.display = 'none';
+        LoadingOverlay.hide();
     }
 }
 
@@ -1175,10 +1176,11 @@ function buildBrReviewSummary() {
 
 async function exportBrDocx() {
     const data = collectBrFormData();
-    const spinner = document.getElementById('loadingSpinner');
 
     try {
-        if (spinner) spinner.style.display = 'flex';
+        LoadingOverlay.show({
+            messages: ['Collecting requirements data', 'Generating document structure', 'Building Word document', 'Preparing download']
+        });
 
         const response = await fetch('/api/export-business-requirement', {
             method: 'POST',
@@ -1210,7 +1212,7 @@ async function exportBrDocx() {
         AppLogger.error('BR Export error:', err);
         showToast('Document export failed. Please try again.', 'error');
     } finally {
-        if (spinner) spinner.style.display = 'none';
+        LoadingOverlay.hide();
     }
 }
 

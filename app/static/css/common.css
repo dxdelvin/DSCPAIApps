@@ -385,6 +385,202 @@ body.dark-mode .sc-element {
     to { transform: rotate(360deg); }
 }
 
+/* Base spinner – reusable across all pages */
+.spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255, 104, 64, 0.25);
+    border-top-color: var(--brand-orange, #FF6840);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+}
+
+/* ── Loading Overlay (full-screen) ────────────────────────── */
+.lo-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.75rem;
+    z-index: 1500;
+}
+
+.lo-rings {
+    position: relative;
+    width: 96px;
+    height: 96px;
+}
+
+.lo-ring {
+    position: absolute;
+    border-radius: 50%;
+    border-style: solid;
+}
+
+.lo-ring-outer {
+    inset: 0;
+    border-width: 3px;
+    border-color: rgba(255, 255, 255, 0.12);
+    border-top-color: var(--brand-orange, #FF6840);
+    border-right-color: var(--brand-orange, #FF6840);
+    animation: spin 1.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.lo-ring-inner {
+    inset: 12px;
+    border-width: 2.5px;
+    border-color: rgba(255, 255, 255, 0.08);
+    border-bottom-color: #fff;
+    border-left-color: #fff;
+    animation: spin 1s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite reverse;
+}
+
+.lo-icon {
+    position: absolute;
+    inset: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: loPulse 2.4s ease-in-out infinite;
+}
+
+.lo-icon svg {
+    width: 44px;
+    height: 44px;
+}
+
+@keyframes loPulse {
+    0%, 100% { opacity: 0.7; transform: scale(0.92); }
+    50%      { opacity: 1;   transform: scale(1.08); }
+}
+
+.lo-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.lo-text {
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    transition: opacity 0.25s ease;
+}
+
+.lo-dots {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+    padding-top: 1px;
+}
+
+.lo-dots i {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.7);
+    font-style: normal;
+    animation: loDotBlink 1.2s ease-in-out infinite;
+}
+
+.lo-dots i:nth-child(2) { animation-delay: 0.2s; }
+.lo-dots i:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes loDotBlink {
+    0%, 60%, 100% { opacity: 0.3; transform: scale(0.8); }
+    30%           { opacity: 1;   transform: scale(1.2); }
+}
+
+/* ── Loading Panel (inline, inside a container) ───────────── */
+.lp-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 250px;
+    gap: 1.25rem;
+    padding: 2rem;
+}
+
+.lp-rings {
+    position: relative;
+    width: 64px;
+    height: 64px;
+}
+
+.lp-ring {
+    position: absolute;
+    border-radius: 50%;
+    border-style: solid;
+}
+
+.lp-ring-outer {
+    inset: 0;
+    border-width: 3px;
+    border-color: var(--border, #e2e8f0);
+    border-top-color: var(--brand-orange, #FF6840);
+    border-right-color: var(--brand-orange, #FF6840);
+    animation: spin 1.6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.lp-ring-inner {
+    inset: 10px;
+    border-width: 2px;
+    border-color: transparent;
+    border-bottom-color: var(--text-muted, #94a3b8);
+    border-left-color: var(--text-muted, #94a3b8);
+    animation: spin 1s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite reverse;
+}
+
+.lp-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.lp-text {
+    color: var(--text-secondary, #64748b);
+    font-size: 0.92rem;
+    font-weight: 600;
+    transition: opacity 0.25s ease;
+}
+
+.lp-dots {
+    display: inline-flex;
+    gap: 3px;
+    align-items: center;
+    padding-top: 1px;
+}
+
+.lp-dots i {
+    display: block;
+    width: 3.5px;
+    height: 3.5px;
+    border-radius: 50%;
+    background: var(--text-muted, #94a3b8);
+    font-style: normal;
+    animation: loDotBlink 1.2s ease-in-out infinite;
+}
+
+.lp-dots i:nth-child(2) { animation-delay: 0.2s; }
+.lp-dots i:nth-child(3) { animation-delay: 0.4s; }
+
+.lp-hint {
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.82rem;
+    margin: 0;
+    text-align: center;
+    max-width: 320px;
+}
+
 /* Ensure header content stays above decorations */
 .page-header > * {
     position: relative;
@@ -561,6 +757,61 @@ body.dark-mode .app-card .match-highlight {
 
 .no-results p {
     font-size: 14px;
+}
+
+/* ── Category filter bar ───────────────────────────────── */
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 22px;
+}
+
+.filter-chip {
+    padding: 7px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 20px;
+    background: var(--card, #fff);
+    color: var(--text-secondary, #64748b);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+    border-color: var(--brand-orange, #FF6840);
+    color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.06);
+}
+
+.filter-chip.active {
+    background: var(--brand-orange, #FF6840);
+    color: #fff;
+    border-color: var(--brand-orange, #FF6840);
+}
+
+body.dark-mode .filter-chip {
+    background: var(--card);
+    border-color: var(--border);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .filter-chip:hover {
+    border-color: var(--brand-orange);
+    color: var(--brand-orange);
+    background: rgba(255, 104, 64, 0.12);
+}
+
+body.dark-mode .filter-chip.active {
+    background: var(--brand-orange);
+    color: #fff;
+    border-color: var(--brand-orange);
+}
+
+.app-card.filter-hidden {
+    display: none !important;
 }
 
 /* Apps grid */

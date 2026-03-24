@@ -30,26 +30,31 @@
             <!-- Left: Upload & Controls -->
             <div class="builder-left">
                 <div class="form-container">
-                    <h3>Upload Document</h3>
-                    <p>Upload a file. AI will analyze the content and suggest the best diagram types.</p>
+                    <h3>Upload Documents</h3>
+                    <p>Upload one or more files. AI will analyze the content and suggest the best diagram types.</p>
 
                     <!-- File Upload Area -->
                     <div class="upload-section">
-                        <h4>Upload File</h4>
+                        <h4>Upload Files</h4>
                         <div class="upload-area" id="upload-area">
                             <div class="upload-placeholder">
                                 <span class="upload-icon">📄</span>
-                                <p>Drag &amp; drop a file here or click to select</p>
-                                <p class="upload-hint">Supports .pdf, .png, .jpg, .jpeg (max 10 MB)</p>
+                                <p>Drag &amp; drop files here or click to select</p>
+                                <p class="upload-hint">Supports .pdf, .png, .jpg, .jpeg (max 10 MB total)</p>
                             </div>
-                            <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" hidden>
+                            <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg" hidden>
                         </div>
                     </div>
 
                     <!-- Uploaded Files List -->
                     <div class="files-list-section" id="files-list-section" style="display:none">
-                        <h4>Uploaded File</h4>
+                        <h4>Uploaded Files</h4>
                         <div class="files-list" id="files-list"></div>
+                        <div class="form-group">
+                            <button class="btn btn-secondary btn-sm" id="add-more-btn">
+                                <span>➕</span> Add More Files
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Diagram Type Preference -->
@@ -81,6 +86,15 @@
                         </div>
                     </div>
 
+                    <!-- Additional Context -->
+                    <div class="form-group">
+                        <label for="additional-context">Additional Context <span class="optional-tag">(Optional)</span></label>
+                        <div class="instructions-wrapper">
+                            <textarea id="additional-context" rows="3" placeholder="Provide any additional context or instructions for the AI, e.g., 'Focus on the authentication flow' or 'Include error handling paths'"></textarea>
+                            <span class="word-count" id="context-word-count">0 / 1000 words</span>
+                        </div>
+                    </div>
+
                     <!-- Warning Notice -->
                     <div class="warning-notice">
                         <span class="warning-icon">⚠️</span>
@@ -93,7 +107,7 @@
                     <!-- Action Buttons -->
                     <div class="form-actions">
                         <button class="btn btn-primary" id="analyze-btn" disabled>
-                            Analyze PDF
+                            Analyze Content
                         </button>
                         <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
                     </div>
@@ -156,8 +170,8 @@
                                 <li class="guide-step">
                                     <span class="step-badge">1</span>
                                     <div class="step-body">
-                                        <strong>Upload your file</strong>
-                                        <span>Add one <b>PDF</b>, <b>PNG</b>, or <b>JPG</b> file (max 10 MB).</span>
+                                        <strong>Upload your files</strong>
+                                        <span>Drag &amp; drop or click to add <b>PDF</b>, <b>PNG</b>, or <b>JPG</b> files (max 10 MB total).</span>
                                     </div>
                                 </li>
                                 <li class="guide-step">
@@ -171,7 +185,7 @@
                                     <span class="step-badge">3</span>
                                     <div class="step-body">
                                         <strong>Analyze content</strong>
-                                        <span>Click <b>Analyze PDF</b> to let AI propose the best diagram options.</span>
+                                        <span>Click <b>Analyze Content</b> to let AI propose the best diagram options.</span>
                                     </div>
                                 </li>
                                 <li class="guide-step">
@@ -202,10 +216,7 @@
                     </div>
 
                     <!-- Loading State -->
-                    <div class="loading-state" id="loading-state" style="display:none">
-                        <div class="spinner"></div>
-                        <p id="loading-text">Analyzing PDF content...</p>
-                    </div>
+                    <div class="loading-state" id="loading-state" style="display:none"></div>
                 </div>
             </div>
         </div>

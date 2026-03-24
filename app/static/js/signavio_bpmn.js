@@ -11,6 +11,9 @@ let uploadChatHistoryId = null;
 let uploadedFile = null;
 let uploadDocumentValid = true;
 
+const BPMN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="8.5" y="14" width="7" height="7" rx="1.5"/><line x1="6.5" y1="10" x2="6.5" y2="14" opacity="0.5"/><line x1="17.5" y1="10" x2="17.5" y2="14" opacity="0.5"/><line x1="6.5" y1="14" x2="8.5" y2="14" opacity="0.5"/><line x1="17.5" y1="14" x2="15.5" y2="14" opacity="0.5"/></svg>';
+const BPMN_GENERATE_MESSAGES = ['Analyzing process structure', 'Building BPMN elements', 'Arranging swimlanes', 'Generating diagram file'];
+
 window.addEventListener('DOMContentLoaded', () => {
     initializeFormHandlers();
     initializeUploadHandlers();
@@ -261,10 +264,17 @@ async function analyzeUploadedFile() {
     const contentEl = document.getElementById('uploadAnalysisContent');
     const generateBtn = document.getElementById('uploadGenerateBtn');
     const ctaPanel = document.getElementById('upload-cta-panel');
+    const analyzeBtn = document.getElementById('uploadAnalyzeBtn');
 
+    // Disable button and show loading state
+    if (analyzeBtn) { analyzeBtn.disabled = true; analyzeBtn.innerHTML = '<span class="spinner"></span> Analyzing…'; }
     if (panel) panel.style.display = '';
     if (statusEl) statusEl.textContent = 'Analyzing...';
-    if (contentEl) contentEl.innerHTML = '<div class="analysis-loading"><span class="spinner"></span> Analyzing your file...</div>';
+    if (contentEl) {
+        contentEl.innerHTML = '';
+        contentEl.style.display = 'flex';
+        LoadingPanel.show(contentEl, { messages: ['Reading document content', 'Extracting process details', 'Analyzing workflow structure'] });
+    }
     if (generateBtn) generateBtn.disabled = true;
     if (ctaPanel) ctaPanel.style.display = '';
 
@@ -312,6 +322,12 @@ async function analyzeUploadedFile() {
         AppLogger.error('Upload analysis error:', error);
         if (statusEl) statusEl.textContent = 'Error';
         if (contentEl) contentEl.innerHTML = '<div class="analysis-error"><p>Connection failed</p><p class="error-detail">Unable to connect to the server. Please check your connection and try again.</p></div>';
+    } finally {
+        // Re-enable analyze button
+        if (analyzeBtn) {
+            analyzeBtn.disabled = false;
+            analyzeBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg> Analyze File';
+        }
     }
 }
 
@@ -383,8 +399,7 @@ async function generateUploadBPMN() {
         return;
     }
 
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    if (loadingSpinner) loadingSpinner.style.display = 'flex';
+    LoadingOverlay.show({ messages: BPMN_GENERATE_MESSAGES, icon: BPMN_ICON_SVG });
 
     try {
         showToast('Consulting BRAIN for BPMN generation...', 'info');
@@ -424,7 +439,7 @@ async function generateUploadBPMN() {
         AppLogger.error('Upload BPMN generation error:', error);
         showToast('Unable to connect to the server. Please check your connection and try again.', 'error');
     } finally {
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
+        LoadingOverlay.hide();
     }
 }
 
@@ -974,8 +989,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function generateBPMN() {
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    if (loadingSpinner) loadingSpinner.style.display = 'flex';
+    LoadingOverlay.show({ messages: BPMN_GENERATE_MESSAGES, icon: BPMN_ICON_SVG });
     
     try {
         showToast('Consulting BRAIN for BPMN generation...', 'info');
@@ -1023,7 +1037,7 @@ async function generateBPMN() {
         AppLogger.error('BPMN generation error:', error);
         showToast('Unable to connect to the server. Please check your connection and try again.', 'error');
     } finally {
-        if (loadingSpinner) loadingSpinner.style.display = 'none';
+        LoadingOverlay.hide();
     }
 }
 

@@ -693,16 +693,7 @@ body.dark-mode .empty-icon {
     opacity: 0.5;
 }
 
-/* Loading State */
-.loading {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    color: var(--brand-orange);
-    font-weight: 600;
-    padding: 2rem;
-}
+/* Loading panel content now injected by LoadingPanel (common.js) */
 
 .spinner {
     width: 20px;

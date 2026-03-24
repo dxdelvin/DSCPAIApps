@@ -437,12 +437,14 @@ class PptCreatorApp {
         document.getElementById('empty-state').style.display   = 'none';
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';
-        document.getElementById('loading-state').style.display = 'flex';
-        document.getElementById('loading-text').textContent    = text || 'Processing…';
+        const messages = text
+            ? [text, 'Analyzing document structure', 'Designing slide layouts', 'Building presentation']
+            : ['Processing…'];
+        LoadingPanel.show('loading-state', { messages });
     }
 
     hideLoading() {
-        document.getElementById('loading-state').style.display = 'none';
+        LoadingPanel.hide('loading-state');
     }
 
     handleResetRequest() {

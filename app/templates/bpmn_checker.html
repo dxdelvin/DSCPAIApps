@@ -13,7 +13,7 @@
     <div>
         <p class="eyebrow">BSH | BPMN Validation</p>
         <h1>BPMN Diagram Checker</h1>
-        <p class="lede">Upload your BPMN diagram as a PDF and get instant AI-powered feedback on mistakes, best practices, and logical flow.</p>
+        <p class="lede">Upload your BPMN diagram as an image and get instant AI-powered feedback on mistakes, best practices, and logical flow.</p>
     </div>
 </section>
 
@@ -48,7 +48,7 @@
             <div class="checker-left">
                 <div class="upload-panel">
                     <h3>Upload BPMN Diagram</h3>
-                    <p>Upload a PDF or image of your BPMN diagram for analysis.</p>
+                    <p>Upload an image of your BPMN diagram for analysis.</p>
                     
                     <!-- Upload Area -->
                     <div class="upload-section">
@@ -65,9 +65,9 @@
                                 </span>
                                 <p class="upload-text">Drag & drop your BPMN diagram here</p>
                                 <p class="upload-hint">or click to browse</p>
-                                <span class="upload-formats">PDF, JPG, JPEG, PNG • Max 20MB</span>
+                                <span class="upload-formats">JPG, JPEG, PNG • Max 10MB</span>
                             </div>
-                            <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png" hidden>
+                            <input type="file" id="file-input" accept=".jpg,.jpeg,.png" hidden>
                         </div>
                     </div>
 
@@ -84,7 +84,7 @@
                                 </svg>
                             </div>
                             <div class="file-details">
-                                <p class="file-name" id="file-name">document.pdf</p>
+                                <p class="file-name" id="file-name">diagram.png</p>
                                 <p class="file-size" id="file-size">2.5 MB</p>
                             </div>
                             <button class="btn-remove" id="remove-file-btn" title="Remove file">
@@ -133,15 +133,11 @@
                             </svg>
                         </div>
                         <h4>Ready to Analyze</h4>
-                        <p>Upload a BPMN diagram (PDF or image) to get started. Our AI will identify problems and provide actionable solutions.</p>
+                        <p>Upload a BPMN diagram image to get started. Our AI will identify problems and provide actionable solutions.</p>
                     </div>
 
                     <!-- Loading State -->
-                    <div class="loading-state" id="loading-state" style="display: none;">
-                        <div class="loading-spinner"></div>
-                        <h4>Analyzing your BPMN diagram...</h4>
-                        <p>This may take a moment while our AI reviews your diagram for errors and improvements.</p>
-                    </div>
+                    <div class="loading-state" id="loading-state" style="display: none;"></div>
 
                     <!-- Results Content -->
                     <div class="results-content" id="results-content" style="display: none;">
@@ -221,7 +217,7 @@
         <div class="modal-body">
             <div class="guide-section">
                 <h4>📤 Upload Your Diagram</h4>
-                <p>Upload your BPMN diagram as a PDF or image (JPG, PNG) from tools like Signavio, BPMN.io, or Lucidchart. Make sure the diagram is clearly visible and not cropped.</p>
+                <p>Upload your BPMN diagram as an image (JPG, PNG) from tools like Signavio, BPMN.io, or Lucidchart. Make sure the diagram is clearly visible and not cropped.</p>
             </div>
             <div class="guide-section">
                 <h4>🔍 What Gets Checked</h4>
@@ -242,7 +238,7 @@
             <div class="guide-section">
                 <h4>💡 Tips for Best Results</h4>
                 <ul>
-                    <li>Use high-quality exports (PDF or PNG) for better recognition</li>
+                    <li>Use high-quality exports (PNG or JPG) for better recognition</li>
                     <li>Include the full diagram without cropping</li>
                     <li>Add context about your process for more relevant feedback</li>
                     <li>Ensure text labels are readable in the image</li>

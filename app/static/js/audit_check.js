@@ -488,7 +488,9 @@ class AuditCheckApp {
 
         resultsPanel.style.display = 'block';
         emptyState.style.display = 'none';
-        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Analyzing with Audit Brain...</div>';
+        LoadingPanel.show(resultsContent, {
+            messages: ['Uploading document', 'Running audit analysis', 'Evaluating compliance', 'Preparing audit report']
+        });
         statusBadge.className = 'status-badge info';
         statusBadge.textContent = 'Analyzing...';
 
@@ -617,7 +619,8 @@ class AuditCheckApp {
         // Check file size limit (10MB)
         const MAX_PDF_SIZE = 10 * 1024 * 1024; // 10MB in bytes
         if (file.size > MAX_PDF_SIZE) {
-            showToast('PDF file size exceeds 10MB limit', 'error');
+            const fileSizeInMB = (file.size / (1024 * 1024)).toFixed(1);
+            showToast(`${file.name} is ${fileSizeInMB}MB - exceeds 10MB limit`, 'error');
             return;
         }
 
@@ -703,7 +706,9 @@ class AuditCheckApp {
 
         emptyState.style.display = 'none';
         resultsPanel.style.display = 'flex';
-        resultsContent.innerHTML = '<div class="loading"><span class="spinner"></span> Checking with Audit Brain...</div>';
+        LoadingPanel.show(resultsContent, {
+            messages: ['Uploading PDF', 'Running audit analysis', 'Evaluating compliance', 'Preparing findings']
+        });
         statusBadge.className = 'status-badge info';
         statusBadge.textContent = 'Checking...';
     }

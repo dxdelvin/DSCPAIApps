@@ -9,13 +9,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
 class DiagramGeneratorApp {
     constructor() {
-        this.file = null;
+        this.files = [];
         this.chatHistoryId = null;
         this.analysis = null;
         this.extractedText = null;
         this.diagrams = [];          // { name, type, xml }
         this.activeTabIndex = 0;
-        this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+        this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB total
+        this.MAX_IMAGES = 3;
         this.init();
     }
 
@@ -26,6 +27,7 @@ class DiagramGeneratorApp {
         this.setupTypePicker();
         this.setupEventListeners();
         this.setupGuide();
+        this.setupWordCounter();
     }
 
     /* ── Upload handling ──────────────────────────────── */
@@ -48,29 +50,48 @@ class DiagramGeneratorApp {
         uploadArea.addEventListener('drop', e => {
             e.preventDefault();
             uploadArea.classList.remove('drag-over');
-            if (e.dataTransfer.files.length) this.setFile(e.dataTransfer.files[0]);
+            this.addFiles(e.dataTransfer.files);
         });
 
         fileInput.addEventListener('change', () => {
-            if (fileInput.files.length) this.setFile(fileInput.files[0]);
+            this.addFiles(fileInput.files);
             fileInput.value = '';
         });
     }
 
-    setFile(f) {
-        const nameLower = f.name.toLowerCase();
-        const isPdf  = f.type === 'application/pdf' || nameLower.endsWith('.pdf');
-        const isImage = ['image/png', 'image/jpeg'].includes(f.type)
-                     || nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg');
-        if (!isPdf && !isImage) {
-            showToast('Only PDF, PNG, JPG, or JPEG files are accepted.', 'warning');
-            return;
+    addFiles(fileList) {
+        for (const f of fileList) {
+            const nameLower = f.name.toLowerCase();
+            const isPdf  = f.type === 'application/pdf' || nameLower.endsWith('.pdf');
+            const isImage = ['image/png', 'image/jpeg'].includes(f.type)
+                         || nameLower.endsWith('.png') || nameLower.endsWith('.jpg') || nameLower.endsWith('.jpeg');
+            if (isPdf || isImage) {
+                if (this.files.some(existing => existing.name === f.name && existing.size === f.size)) {
+                    continue;
+                }
+                if (isImage) {
+                    const currentImageCount = this.files.filter(ef => {
+                        const n = ef.name.toLowerCase();
+                        return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
+                    }).length;
+                    if (currentImageCount >= this.MAX_IMAGES) {
+                        showToast(`Cannot add "${f.name}" — maximum ${this.MAX_IMAGES} images allowed.`, 'error');
+                        continue;
+                    }
+                }
+                const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
+                if (currentTotal + f.size > this.MAX_FILE_SIZE) {
+                    showToast(
+                        `Cannot add "${f.name}" — adding this file (${this.formatSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        'error'
+                    );
+                    continue;
+                }
+                this.files.push(f);
+            } else {
+                showToast(`Skipped "${f.name}" – only PDF, PNG, JPG, or JPEG files are accepted`, 'warning');
+            }
         }
-        if (f.size > this.MAX_FILE_SIZE) {
-            showToast(`File is too large (${this.formatSize(f.size)}). Maximum is 10 MB.`, 'error');
-            return;
-        }
-        this.file = f;
         this.renderFilesList();
         this.updateAnalyzeBtn();
     }
@@ -78,24 +99,41 @@ class DiagramGeneratorApp {
     renderFilesList() {
         const section = document.getElementById('files-list-section');
         const list    = document.getElementById('files-list');
-        if (!this.file) {
+        if (!this.files.length) {
             section.style.display = 'none';
             return;
         }
         section.style.display = 'block';
-        const isImg = !this.file.name.toLowerCase().endsWith('.pdf') && this.file.type !== 'application/pdf';
-        list.innerHTML = `
+
+        const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
+        const totalSizeStr = this.formatSize(totalSize);
+        const limitStr = this.formatSize(this.MAX_FILE_SIZE);
+
+        list.innerHTML = this.files.map((f, i) => {
+            const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
+            return `
             <div class="file-item">
                 <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
-                <span class="file-name">${this.esc(this.file.name)}</span>
-                <span class="file-size">${this.formatSize(this.file.size)}</span>
-                <button class="btn btn-ghost btn-sm file-remove" id="remove-file-btn">✕</button>
+                <span class="file-name">${this.esc(f.name)}</span>
+                <span class="file-size">${this.formatSize(f.size)}</span>
+                <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
             </div>
         `;
-        document.getElementById('remove-file-btn').addEventListener('click', () => {
-            this.file = null;
-            this.renderFilesList();
-            this.updateAnalyzeBtn();
+        }).join('') + `
+            <div class="file-item total-size">
+                <span class="file-icon">📊</span>
+                <span class="file-name"><strong>Total Size</strong></span>
+                <span class="file-size"><strong>${totalSizeStr} / ${limitStr}</strong></span>
+                <span style="width: 24px;"></span>
+            </div>
+        `;
+
+        list.querySelectorAll('.file-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.files.splice(+btn.dataset.index, 1);
+                this.renderFilesList();
+                this.updateAnalyzeBtn();
+            });
         });
     }
 
@@ -164,9 +202,37 @@ class DiagramGeneratorApp {
         });
     }
 
+    /* ── Word Counter for additional context ───────────── */
+
+    setupWordCounter() {
+        const textarea = document.getElementById('additional-context');
+        const counter  = document.getElementById('context-word-count');
+        if (!textarea || !counter) return;
+
+        const MAX_WORDS = 1000;
+
+        const updateCount = () => {
+            const text = textarea.value.trim();
+            const words = text ? text.split(/\s+/).length : 0;
+            counter.textContent = `${words} / ${MAX_WORDS} words`;
+            if (words > MAX_WORDS) {
+                counter.classList.add('over-limit');
+            } else {
+                counter.classList.remove('over-limit');
+            }
+        };
+
+        textarea.addEventListener('input', updateCount);
+        updateCount();
+    }
+
     /* ── Event listeners ──────────────────────────────── */
 
     setupEventListeners() {
+        document.getElementById('add-more-btn').addEventListener('click', () => {
+            document.getElementById('file-input').click();
+        });
+
         document.getElementById('analyze-btn').addEventListener('click', () => this.analyzeContent());
         document.getElementById('reset-btn').addEventListener('click', () => this.handleResetRequest());
         document.getElementById('generate-btn').addEventListener('click', () => this.generateDiagrams());
@@ -182,26 +248,34 @@ class DiagramGeneratorApp {
     }
 
     updateAnalyzeBtn() {
-        document.getElementById('analyze-btn').disabled = !this.file;
+        document.getElementById('analyze-btn').disabled = this.files.length === 0;
     }
 
     /* ── Analyze content ──────────────────────────────── */
 
     async analyzeContent() {
-        if (!this.file) return;
+        if (!this.files.length) return;
 
-        this.showLoading('Analyzing PDF content…');
+        this.showLoading('Analyzing content…');
 
         const formData = new FormData();
-        formData.append('files', this.file);
+        this.files.forEach(f => formData.append('files', f));
 
-        // Build instructions from selected diagram types
+        // Build instructions from selected diagram types and additional context
+        let instructionParts = [];
         const selectedTypes = this.getSelectedTypes();
         if (selectedTypes.length) {
             const typeLabels = selectedTypes.map(t => t.replace(/_/g, ' ')).join(', ');
-            formData.append('instructions',
+            instructionParts.push(
                 `The user specifically wants these diagram types: ${typeLabels}. ` +
                 `Generate suggestions ONLY for these types. Do not suggest other types.`);
+        }
+        const additionalContext = document.getElementById('additional-context')?.value?.trim();
+        if (additionalContext) {
+            instructionParts.push(`Additional context from user: ${additionalContext}`);
+        }
+        if (instructionParts.length) {
+            formData.append('instructions', instructionParts.join('\n\n'));
         }
 
         try {
@@ -659,12 +733,14 @@ class DiagramGeneratorApp {
         document.getElementById('selection-container').style.display = 'none';
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';
-        document.getElementById('loading-state').style.display = 'flex';
-        document.getElementById('loading-text').textContent    = text || 'Processing…';
+        const messages = text
+            ? [text, 'Reading document content', 'Identifying diagram elements', 'Building structure']
+            : ['Processing…'];
+        LoadingPanel.show('loading-state', { messages });
     }
 
     hideLoading() {
-        document.getElementById('loading-state').style.display = 'none';
+        LoadingPanel.hide('loading-state');
     }
 
     handleResetRequest() {
@@ -685,7 +761,7 @@ class DiagramGeneratorApp {
     }
 
     resetAll() {
-        this.file           = null;
+        this.files          = [];
         this.chatHistoryId  = null;
         this.analysis       = null;
         this.extractedText  = null;
@@ -701,6 +777,12 @@ class DiagramGeneratorApp {
             picker.querySelectorAll('.type-chip').forEach(c => c.classList.remove('active'));
             picker.querySelector('[data-type="auto"]')?.classList.add('active');
         }
+
+        // Clear additional context
+        const ctxInput = document.getElementById('additional-context');
+        if (ctxInput) { ctxInput.value = ''; }
+        const wordCount = document.getElementById('context-word-count');
+        if (wordCount) { wordCount.textContent = '0 / 1000 words'; }
 
         document.getElementById('selection-container').style.display = 'none';
         document.getElementById('chat-container').style.display     = 'none';
