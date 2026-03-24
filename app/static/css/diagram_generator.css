@@ -653,6 +653,18 @@ body.dark-mode .type-chip.active {
     white-space: nowrap;
 }
 
+.dg-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+.dg-card-refine,
+.dg-card-download {
+    white-space: nowrap;
+}
+
 /* ═══════════════════════════════════════════════════════════
    Result Panel
    ═══════════════════════════════════════════════════════════ */
@@ -871,7 +883,12 @@ body.dark-mode .no-content-tips {
 
 /* Loading content now injected by LoadingPanel (common.js) */
 .loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
     min-height: 300px;
+    padding: 2rem;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -1027,6 +1044,11 @@ body.dark-mode .refine-dropdown {
         width: 36px;
         height: 36px;
         font-size: 1.5rem;
+    }
+
+    .dg-card-actions {
+        flex-direction: column;
+        align-items: stretch;
     }
 }
 

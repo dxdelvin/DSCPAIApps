@@ -267,8 +267,9 @@ class DiagramGeneratorApp {
         if (selectedTypes.length) {
             const typeLabels = selectedTypes.map(t => t.replace(/_/g, ' ')).join(', ');
             instructionParts.push(
-                `The user specifically wants these diagram types: ${typeLabels}. ` +
-                `Generate suggestions ONLY for these types. Do not suggest other types.`);
+                `PREFERRED DIAGRAM TYPES: ${typeLabels}. ` +
+                `The majority of suggestions MUST be of these requested types. ` +
+                `You may include at most 1 best alternative of a different type only if it clearly adds value.`);
         }
         const additionalContext = document.getElementById('additional-context')?.value?.trim();
         if (additionalContext) {
@@ -596,9 +597,14 @@ class DiagramGeneratorApp {
                     <span class="dg-card-type">${typeLabel}</span>
                     <span class="dg-card-status dg-status-ready"> Ready</span>
                 </div>
-                <button class="btn btn-primary btn-sm dg-card-download" data-index="${i}" title="Download .drawio">
-                    ⬇ Download
-                </button>
+                <div class="dg-card-actions">
+                    <button class="btn btn-secondary btn-sm dg-card-refine" data-index="${i}" title="Jump to refine panel">
+                        ✨ Refine
+                    </button>
+                    <button class="btn btn-primary btn-sm dg-card-download" data-index="${i}" title="Download .drawio">
+                        ⬇ Download
+                    </button>
+                </div>
             </div>`;
         }).join('');
 
@@ -606,7 +612,17 @@ class DiagramGeneratorApp {
         cardsEl.querySelectorAll('.dg-card-download').forEach(btn => {
             btn.addEventListener('click', e => {
                 e.stopPropagation();
-                this.downloadDiagramByIndex(parseInt(btn.dataset.index));
+                const idx = parseInt(btn.dataset.index);
+                this.downloadDiagramByIndex(idx);
+            });
+        });
+
+        // Wire refine buttons to jump to refine section
+        cardsEl.querySelectorAll('.dg-card-refine').forEach(btn => {
+            btn.addEventListener('click', e => {
+                e.stopPropagation();
+                const idx = parseInt(btn.dataset.index);
+                this.openRefineForIndex(idx);
             });
         });
 
@@ -627,6 +643,27 @@ class DiagramGeneratorApp {
         // Mark initial active card
         const activeCard = cardsEl.querySelector(`.dg-card[data-index="${this.activeTabIndex}"]`);
         if (activeCard) activeCard.classList.add('dg-card-active');
+    }
+
+    openRefineForIndex(index) {
+        if (!Number.isInteger(index) || index < 0 || index >= this.diagrams.length) return;
+
+        this.activeTabIndex = index;
+
+        const refineSelect = document.getElementById('refine-select');
+        if (refineSelect) refineSelect.value = index;
+
+        const cardsEl = document.getElementById('diagram-cards');
+        if (cardsEl) {
+            cardsEl.querySelectorAll('.dg-card').forEach(c => c.classList.remove('dg-card-active'));
+            const activeCard = cardsEl.querySelector(`.dg-card[data-index="${index}"]`);
+            if (activeCard) activeCard.classList.add('dg-card-active');
+        }
+
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+            chatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
     }
 
     getTypeIcon(type) {

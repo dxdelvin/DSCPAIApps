@@ -35,14 +35,25 @@ ANALYZE_BEHAVIOUR = (
     '- "class_diagram": Object-oriented class structures, inheritance\n'
     '- "state_diagram": State machines, lifecycle stages, transitions\n'
     '- "block_diagram": High-level system components and their connections\n'
-    '- "tree": Hierarchical breakdown, taxonomy, WBS\n\n'
+    '- "tree": Hierarchical breakdown, taxonomy, WBS\n'
+    '- "data_flow": Data flow diagrams, input/output/processing pipelines\n'
+    '- "use_case": Use case diagrams, actor-system interactions\n'
+    '- "component": Component diagrams, software/system component relationships\n'
+    '- "deployment": Deployment diagrams, infrastructure and deployment targets\n'
+    '- "activity": Activity diagrams, workflow/activity sequences with concurrency\n'
+    '- "venn": Venn diagrams, set overlaps and comparisons\n'
+    '- "gantt": Gantt charts, project scheduling and task timelines\n'
+    '- "wireframe": Wireframe layouts, UI structure and screen mockups\n\n'
     "RULES:\n"
     "1. Analyze the PDF content thoroughly.\n"
-    "2. Suggest 1-4 diagrams depending on content complexity.\n"
-    "3. Always include a SUMMARY diagram first that captures the overall picture.\n"
-    "4. Add topic-focused diagrams for distinct sections/themes if the content warrants it.\n"
-    "5. For each diagram, explain WHY that type was chosen.\n"
-    "6. Include the key elements that should appear in each diagram.\n\n"
+    "2. If the user has specified preferred diagram types, you MUST follow these rules:\n"
+    "   a. The MAJORITY of your suggestions MUST use the user's requested type(s).\n"
+    "   b. You may include at most 1 alternative diagram of a different type, "
+    "ONLY if it clearly adds value. Mark it with '(Best Alternative)' in its name.\n"
+    "   c. Focus your analysis on how the content maps to the requested type(s).\n"
+    "3. If no preferred types are specified, suggest 1-4 diagrams depending on content complexity.\n"
+    "4. For each diagram, explain WHY that type was chosen.\n"
+    "5. Include the key elements that should appear in each diagram.\n\n"
     "Return your response as a valid JSON object with this EXACT structure:\n"
     "{\n"
     '  "title": "Overall document title",\n'
