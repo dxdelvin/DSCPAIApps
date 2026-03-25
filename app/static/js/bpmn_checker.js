@@ -1,7 +1,3 @@
-// ============================================
-// BPMN DIAGRAM CHECKER - Main JavaScript
-// ============================================
-
 class BPMNCheckerApp {
     constructor() {
         this.selectedFile = null;
@@ -16,7 +12,6 @@ class BPMNCheckerApp {
     }
 
     setupEventListeners() {
-        // Upload area click
         const uploadArea = document.getElementById('upload-area');
         const fileInput = document.getElementById('file-input');
         
@@ -25,25 +20,21 @@ class BPMNCheckerApp {
             fileInput.addEventListener('change', (e) => this.handleFileSelection(e.target.files));
         }
 
-        // Remove file button
         const removeBtn = document.getElementById('remove-file-btn');
         if (removeBtn) {
             removeBtn.addEventListener('click', () => this.removeFile());
         }
 
-        // Check button
         const checkBtn = document.getElementById('check-btn');
         if (checkBtn) {
             checkBtn.addEventListener('click', () => this.checkDiagram());
         }
 
-        // Reset button
         const resetBtn = document.getElementById('resetBtn');
         if (resetBtn) {
             resetBtn.addEventListener('click', () => this.reset());
         }
 
-        // Guide modal
         const guideBtn = document.getElementById('guideBtn');
         const guideModal = document.getElementById('guide-modal');
         const closeGuideBtn = document.getElementById('close-guide-btn');

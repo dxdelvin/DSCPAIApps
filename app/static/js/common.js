@@ -3,18 +3,13 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    // App Search Functionality
     initAppSearch();
-    
-    // Character Counters
     initCharacterCounters();
-    
-    // Theme Toggle Functionality
+
     const themeToggle = document.getElementById('themeToggle');
     const sunIcon = document.querySelector('.sun-icon');
     const moonIcon = document.querySelector('.moon-icon');
-    
-    // Check saved theme
+
     const savedTheme = localStorage.getItem('dscp_theme') || 'light';
     if (savedTheme === 'dark') {
         document.body.classList.add('dark-mode');
@@ -26,54 +21,44 @@ document.addEventListener('DOMContentLoaded', () => {
         themeToggle.addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
-            
-            // Toggle icons
+
             if (sunIcon) sunIcon.style.display = isDark ? 'none' : 'block';
             if (moonIcon) moonIcon.style.display = isDark ? 'block' : 'none';
-            
-            // Save preference
+
             localStorage.setItem('dscp_theme', isDark ? 'dark' : 'light');
         });
     }
 
-    // Easter / Festive Mode
     initEasterMode();
 
-    // Changelog toggle functionality
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
     const closeChangelog = document.getElementById('closeChangelog');
-    
-    // Grab the latest version from the first badge in the DOM
+
     const latestVersionEl = document.querySelector('.badge-version');
     const latestVersion = latestVersionEl ? latestVersionEl.textContent.trim() : 'v1.0.0';
     const storageKey = 'dscp_last_seen_version';
-    
-    // Check for new version
+
     const lastSeenVersion = localStorage.getItem(storageKey);
     const hasUpdates = lastSeenVersion !== latestVersion;
 
-    // Show notification dot if updates exist
     if (hasUpdates && changelogBell) {
         const dot = document.createElement('div');
         dot.className = 'badge-dot';
         changelogBell.appendChild(dot);
     }
 
-    // Ensure modal is hidden on page load
     if (changelogPanel) {
         changelogPanel.hidden = true;
     }
 
-    // Toggle changelog panel
     if (changelogBell) {
         changelogBell.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             if (changelogPanel) {
                 changelogPanel.hidden = !changelogPanel.hidden;
-                
-                // If opening, mark as seen
+
                 if (!changelogPanel.hidden && hasUpdates) {
                     localStorage.setItem(storageKey, latestVersion);
                     const dot = changelogBell.querySelector('.badge-dot');
@@ -83,7 +68,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close button
     if (closeChangelog) {
         closeChangelog.addEventListener('click', (e) => {
             e.preventDefault();
@@ -94,7 +78,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close when clicking outside
     if (changelogPanel) {
         changelogPanel.addEventListener('click', (e) => {
             if (e.target === changelogPanel) {
@@ -315,7 +298,6 @@ function showConfirmation(title, message, onConfirm, options = {}) {
         cancelText = 'Cancel'
     } = options;
 
-    // Create modal if it doesn't exist
     let modal = document.getElementById('confirmation-modal');
     if (!modal) {
         modal = document.createElement('div');
@@ -336,14 +318,12 @@ function showConfirmation(title, message, onConfirm, options = {}) {
         `;
         document.body.appendChild(modal);
 
-        // Close on outside click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
                 closeConfirmation();
             }
         });
 
-        // Close with Escape key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && modal.classList.contains('active')) {
                 closeConfirmation();
@@ -351,14 +331,12 @@ function showConfirmation(title, message, onConfirm, options = {}) {
         });
     }
 
-    // Update content
     modal.querySelector('.confirmation-icon').textContent = icon;
     modal.querySelector('.confirmation-title').textContent = title;
     modal.querySelector('.confirmation-message').textContent = message;
     modal.querySelector('#confirm-ok').textContent = confirmText;
     modal.querySelector('#confirm-cancel').textContent = cancelText;
 
-    // Set up handlers
     modal.querySelector('#confirm-cancel').onclick = () => {
         closeConfirmation();
     };
@@ -368,7 +346,6 @@ function showConfirmation(title, message, onConfirm, options = {}) {
         onConfirm();
     };
 
-    // Show modal
     modal.classList.add('active');
     modal.querySelector('#confirm-cancel').focus();
 }
@@ -393,8 +370,7 @@ function initAppSearch() {
     if (!searchInput || !appGrid) return;
     
     const appCards = Array.from(appGrid.querySelectorAll('.app-card'));
-    
-    // Store original content for each card
+
     const originalData = appCards.map(card => {
         const name = card.querySelector('h3')?.textContent || '';
         const description = card.querySelector('.app-body p')?.textContent || '';
@@ -415,8 +391,7 @@ function initAppSearch() {
     searchInput.addEventListener('input', (e) => {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => performSearch(e.target.value), 150);
-        
-        // Toggle clear button
+
         searchClear.hidden = !e.target.value.trim();
     });
     
@@ -429,11 +404,9 @@ function initAppSearch() {
     
     function performSearch(query) {
         const searchTerm = query.toLowerCase().trim();
-        
-        // Helper: check if card is hidden by category filter
+
         const isFilteredOut = (card) => card.classList.contains('filter-hidden');
-        
-        // Reset all cards if empty search
+
         if (!searchTerm) {
             originalData.forEach(({ card, nameEl, descEl, tagEls, name, description, tags }) => {
                 card.classList.remove('search-hidden');
@@ -445,29 +418,24 @@ function initAppSearch() {
             removeNoResults();
             return;
         }
-        
-        // Score and filter cards
+
         const scored = originalData.map(data => {
             const { card, name, description, tags } = data;
             let score = 0;
             let matchType = null;
 
-            // Skip cards hidden by category filter
             if (isFilteredOut(card)) {
                 return { ...data, score: 0, matchType: null };
             }
-            
-            // Priority 1: Name match (highest priority)
+
             if (name.toLowerCase().includes(searchTerm)) {
                 score = 300;
                 matchType = 'name';
             }
-            // Priority 2: Tag match
             else if (tags.some(tag => tag.toLowerCase().includes(searchTerm))) {
                 score = 200;
                 matchType = 'tag';
             }
-            // Priority 3: Description match
             else if (description.toLowerCase().includes(searchTerm)) {
                 score = 100;
                 matchType = 'description';
@@ -475,8 +443,7 @@ function initAppSearch() {
             
             return { ...data, score, matchType };
         });
-        
-        // Sort by score (descending)
+
         scored.sort((a, b) => b.score - a.score);
         
         let visibleCount = 0;
@@ -484,15 +451,13 @@ function initAppSearch() {
         scored.forEach(({ card, nameEl, descEl, tagEls, name, description, tags, score, matchType }) => {
             if (score === 0) {
                 card.classList.add('search-hidden');
-                // Reset content
                 if (nameEl) nameEl.innerHTML = escapeHtml(name);
                 if (descEl) descEl.innerHTML = escapeHtml(description);
                 tagEls.forEach((el, i) => el.innerHTML = escapeHtml(tags[i]));
             } else {
                 card.classList.remove('search-hidden');
                 visibleCount++;
-                
-                // Highlight matches
+
                 if (matchType === 'name' && nameEl) {
                     nameEl.innerHTML = highlightMatch(name, searchTerm);
                 } else if (nameEl) {
@@ -516,13 +481,11 @@ function initAppSearch() {
                 } else if (descEl) {
                     descEl.innerHTML = escapeHtml(description);
                 }
-                
-                // Reorder in DOM
+
                 appGrid.appendChild(card);
             }
         });
-        
-        // Show results info
+
         if (searchResultsInfo) {
             if (visibleCount > 0) {
                 searchResultsInfo.innerHTML = `Found <span class="highlight">${visibleCount}</span> app${visibleCount !== 1 ? 's' : ''} matching "<span class="highlight">${escapeHtml(searchTerm)}</span>"`;
@@ -531,8 +494,7 @@ function initAppSearch() {
                 searchResultsInfo.hidden = true;
             }
         }
-        
-        // Show/hide no results message
+
         if (visibleCount === 0) {
             showNoResults(searchTerm);
         } else {
@@ -590,12 +552,9 @@ function initCharacterCounters() {
         const maxLength = parseInt(ta.getAttribute('maxlength'), 10);
         if (isNaN(maxLength)) return;
 
-        // Create character counter element
         const counter = document.createElement('div');
         counter.className = 'char-counter';
-        
-        // Wrap textarea in a position relative container if not already to place the counter cleanly
-        // Better yet, just insert it seamlessly beneath the textarea.
+
         if (ta.nextSibling) {
             ta.parentNode.insertBefore(counter, ta.nextSibling);
         } else {
@@ -605,11 +564,9 @@ function initCharacterCounters() {
         const updateCounter = () => {
             const currentLength = ta.value.length;
             counter.textContent = `${currentLength} / ${maxLength}`;
-            
-            // Calculate usage percentage
+
             const ratio = currentLength / maxLength;
-            
-            // Remove previous semantic classes
+
             counter.classList.remove('char-safe', 'char-warn', 'char-danger');
             
             if (ratio > 0.95) {
@@ -621,15 +578,10 @@ function initCharacterCounters() {
             }
         };
 
-        // Initialize and bind
         updateCounter();
         ta.addEventListener('input', updateCounter);
     });
 }
-
-/* ═══════════════════════════════════════════════════════════
-   Loading Overlay (full-screen) & Loading Panel (inline)
-   ═══════════════════════════════════════════════════════════ */
 
 /**
  * Full-screen loading overlay with animated concentric rings and cycling messages.
@@ -750,7 +702,6 @@ function initEasterMode() {
     let eggInterval = null;
     let trailThrottle = 0;
 
-    // Restore saved preference
     if (localStorage.getItem('dscp_easter') === 'on') {
         activateEaster(false);
     }
@@ -768,7 +719,6 @@ function initEasterMode() {
         document.body.classList.add('easter-mode');
         localStorage.setItem('dscp_easter', 'on');
 
-        // Create floating egg container
         if (!eggContainer) {
             eggContainer = document.createElement('div');
             eggContainer.className = 'easter-eggs-container';
@@ -776,19 +726,14 @@ function initEasterMode() {
             document.body.appendChild(eggContainer);
         }
 
-        // Spawn floating eggs periodically
         eggInterval = setInterval(spawnFloatingEgg, 2500);
-        // Spawn a few immediately
         for (let i = 0; i < 3; i++) setTimeout(spawnFloatingEgg, i * 400);
 
-        // Cursor trail
         document.addEventListener('mousemove', handleCursorTrail);
 
-        // Confetti on button clicks
         document.addEventListener('click', handleConfetti);
 
         if (withFanfare) {
-            // Burst of eggs on activation
             for (let i = 0; i < 8; i++) setTimeout(spawnFloatingEgg, i * 150);
             showToast('🐣 Happy Easter Season', 'info', 3000);
         }
@@ -814,7 +759,6 @@ function initEasterMode() {
         egg.style.fontSize = (18 + Math.random() * 16) + 'px';
         egg.style.animationDuration = (5 + Math.random() * 6) + 's';
         eggContainer.appendChild(egg);
-        // Clean up after animation
         egg.addEventListener('animationend', () => egg.remove());
     }
 

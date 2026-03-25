@@ -1,4 +1,3 @@
-import os
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
@@ -27,45 +26,44 @@ async def home(request: Request):
     username = user_info.get("user", "Guest")
     
     return templates.TemplateResponse(
-        request=request, 
-        name="index.html", 
+        "index.html",
         context=_template_context(request, {"username": username})
     )
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
     return templates.TemplateResponse(
-        request=request, name="signavio_bpmn.html", context=_template_context(request)
+        "signavio_bpmn.html", context=_template_context(request)
     )
 
 @router.get("/audit-check")
 async def audit_check(request: Request):
     return templates.TemplateResponse(
-        request=request, name="audit_check.html", context=_template_context(request)
+        "audit_check.html", context=_template_context(request)
     )
 
 @router.get("/bpmn-checker")
 async def bpmn_checker(request: Request):
     return templates.TemplateResponse(
-        request=request, name="bpmn_checker.html", context=_template_context(request)
+        "bpmn_checker.html", context=_template_context(request)
     )
 
 @router.get("/spec-builder")
 async def spec_builder(request: Request):
     return templates.TemplateResponse(
-        request=request, name="fs_br_document.html", context=_template_context(request)
+        "fs_br_document.html", context=_template_context(request)
     )
 
 @router.get("/ppt-creator")
 async def ppt_creator(request: Request):
     return templates.TemplateResponse(
-        request=request, name="ppt_creator.html", context=_template_context(request)
+        "ppt_creator.html", context=_template_context(request)
     )
 
 @router.get("/diagram-generator")
 async def diagram_generator(request: Request):
     return templates.TemplateResponse(
-        request=request, name="diagram_generator.html", context=_template_context(request)
+        "diagram_generator.html", context=_template_context(request)
     )
 
 @router.get("/health")

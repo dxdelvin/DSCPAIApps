@@ -1,7 +1,3 @@
-// ============================================
-// AUDIT CHECK - Main JavaScript
-// ============================================
-
 class AuditCheckApp {
     constructor() {
         this.currentMode = 'creator';
@@ -22,8 +18,6 @@ class AuditCheckApp {
         this.switchMode(this.currentMode);
     }
 
-    // ==================== IMAGE UPLOAD (standalone) ====================
-
     setupImageUpload() {
         const dropArea  = document.getElementById('upload-area');
         const fileInput = document.getElementById('file-input');
@@ -31,16 +25,13 @@ class AuditCheckApp {
 
         let dragCounter = 0;
 
-        // Click to open picker
         dropArea.addEventListener('click', () => fileInput.click());
 
-        // File-input change
         fileInput.addEventListener('change', () => {
             this.handleImageFiles(Array.from(fileInput.files));
             fileInput.value = '';
         });
 
-        // Drag events
         dropArea.addEventListener('dragenter', e => {
             e.preventDefault(); e.stopPropagation();
             dragCounter++;
