@@ -130,8 +130,7 @@
               "RelativeToolTip": ".env.example",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAABEAAAAKAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-20T11:36:16.659Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-20T11:36:16.659Z"
             },
             {
               "$type": "Document",
@@ -155,8 +154,7 @@
               "RelativeToolTip": "app\\main.py",
               "ViewState": "AgIAAF0AAAAAAAAAAAAwwEgAAAAjAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-12T13:05:30.004Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-12T13:05:30.004Z"
             },
             {
               "$type": "Document",
@@ -168,8 +166,7 @@
               "RelativeToolTip": "xs-security.json",
               "ViewState": "AgIAABYAAAAAAAAAAAAwwCIAAAAgAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
-              "WhenOpened": "2026-01-26T10:31:18.699Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-26T10:31:18.699Z"
             },
             {
               "$type": "Document",
@@ -179,7 +176,7 @@
               "RelativeDocumentMoniker": "app\\services\\auth_service.py",
               "ToolTip": "C:\\Users\\DSD9DI\\OneDrive - Bosch Group\\Dokumente\\GitHub\\DSCPAIApps\\app\\services\\auth_service.py",
               "RelativeToolTip": "app\\services\\auth_service.py",
-              "ViewState": "AgIAAEgAAAAAAAAAAAAAAFEAAAAvAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAoAAAAYAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2026-01-26T10:42:53.476Z",
               "EditorCaption": ""
@@ -194,8 +191,7 @@
               "RelativeToolTip": "main.py",
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-01-09T14:56:48.279Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-01-09T14:56:48.279Z"
             },
             {
               "$type": "Document",
@@ -207,8 +203,7 @@
               "RelativeToolTip": "app\\services\\ppt_creator_service.py",
               "ViewState": "AgIAAKcAAAAAAAAAAAAwwLQAAAApAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
-              "WhenOpened": "2026-03-02T06:41:03.943Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-03-02T06:41:03.943Z"
             },
             {
               "$type": "Document",
@@ -447,6 +442,10 @@
               "ViewState": "AgIAAAAAAAAAAAAAAAAAAB8AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001818|",
               "WhenOpened": "2026-01-11T21:34:37.833Z"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
             }
           ]
         }

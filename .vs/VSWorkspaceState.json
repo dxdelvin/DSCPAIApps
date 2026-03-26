@@ -3,10 +3,14 @@
     "",
     "\\app",
     "\\app\\core",
+    "\\app\\routers",
     "\\app\\services",
     "\\app\\static",
+    "\\app\\static\\css",
     "\\app\\static\\img",
+    "\\app\\static\\js",
     "\\app\\templates"
   ],
+  "SelectedNode": "\\app\\services\\auth_service.py",
   "PreviewInSolutionExplorer": false
 }
