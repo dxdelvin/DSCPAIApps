@@ -1,4 +1,3 @@
-import os
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
@@ -21,52 +20,46 @@ def _template_context(request: Request, extra: dict | None = None):
         context.update(extra)
     return context
 
+
+def _render_template(request: Request, name: str, extra: dict | None = None):
+    context = _template_context(request, extra)
+    try:
+        # Newer Starlette/FastAPI signature.
+        return templates.TemplateResponse(request=request, name=name, context=context)
+    except TypeError:
+        # Older Starlette signature.
+        return templates.TemplateResponse(name, context)
+
 @router.get("/")
 async def home(request: Request):
     user_info = get_current_user(request)
     username = user_info.get("user", "Guest")
 
-    return templates.TemplateResponse(
-        request=request, 
-        name="index.html", 
-        context=_template_context(request, {"username": username})
-    )
+    return _render_template(request, "index.html", {"username": username})
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="signavio_bpmn.html", context=_template_context(request)
-    )
+    return _render_template(request, "signavio_bpmn.html")
 
 @router.get("/audit-check")
-async def audit_check(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="audit_check.html", context=_template_context(request)
-    )
+async def audit_check(  request: Request):
+    return _render_template(request, "audit_check.html")
 
 @router.get("/bpmn-checker")
 async def bpmn_checker(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="bpmn_checker.html", context=_template_context(request)
-    )
+    return _render_template(request, "bpmn_checker.html")
 
 @router.get("/spec-builder")
 async def spec_builder(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="fs_br_document.html", context=_template_context(request)
-    )
+    return _render_template(request, "fs_br_document.html")
 
 @router.get("/ppt-creator")
 async def ppt_creator(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="ppt_creator.html", context=_template_context(request)
-    )
+    return _render_template(request, "ppt_creator.html")
 
 @router.get("/diagram-generator")
 async def diagram_generator(request: Request):
-    return templates.TemplateResponse(
-        request=request, name="diagram_generator.html", context=_template_context(request)
-    )
+    return _render_template(request, "diagram_generator.html")
 
 @router.get("/health")
 async def health_check():

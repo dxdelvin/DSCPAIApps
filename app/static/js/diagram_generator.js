@@ -234,6 +234,7 @@ class DiagramGeneratorApp {
         });
 
         document.getElementById('analyze-btn').addEventListener('click', () => this.analyzeContent());
+        document.getElementById('copy-diagram-btn').addEventListener('click', () => this.copyImageAsDiagram());
         document.getElementById('reset-btn').addEventListener('click', () => this.handleResetRequest());
         document.getElementById('generate-btn').addEventListener('click', () => this.generateDiagrams());
         document.getElementById('select-all-btn').addEventListener('click', () => this.toggleSelectAll());
@@ -248,7 +249,29 @@ class DiagramGeneratorApp {
     }
 
     updateAnalyzeBtn() {
-        document.getElementById('analyze-btn').disabled = this.files.length === 0;
+        const hasPdfs    = this.files.some(f => f.name.toLowerCase().endsWith('.pdf'));
+        const imageFiles = this.files.filter(f => !f.name.toLowerCase().endsWith('.pdf'));
+        const hasAny     = this.files.length > 0;
+
+        document.getElementById('analyze-btn').disabled = !hasAny;
+
+        const copyBtn      = document.getElementById('copy-diagram-btn');
+        const multiImages  = imageFiles.length > 1;
+        const onlyPdfs     = hasPdfs && imageFiles.length === 0;
+
+        // Enabled if there's at least 1 image OR 1 PDF (so we can show the toast)
+        copyBtn.disabled = !hasAny;
+        copyBtn.classList.toggle('copy-btn-pdf-warn', hasPdfs && !multiImages);
+
+        if (multiImages) {
+            copyBtn.title = 'Exactly 1 image is required for this mode — click to see warning';
+        } else if (onlyPdfs) {
+            copyBtn.title = 'Images only — click to see warning';
+        } else if (hasPdfs && imageFiles.length === 1) {
+            copyBtn.title = 'Remove PDF to start Copy as Diagram';
+        } else {
+            copyBtn.title = 'Reproduce the uploaded diagram image exactly as a draw.io file';
+        }
     }
 
     /* ── Analyze content ──────────────────────────────── */
@@ -314,6 +337,76 @@ class DiagramGeneratorApp {
             this.hideLoading();
             this.showError('Connection Error', 'Unable to connect to the server. Please check your connection and try again.');
         }
+    }
+
+    /* ── Copy image as diagram ────────────────────────── */
+
+    async copyImageAsDiagram() {
+        const hasPdfs    = this.files.some(f => f.name.toLowerCase().endsWith('.pdf'));
+        const imageFiles = this.files.filter(f => !f.name.toLowerCase().endsWith('.pdf'));
+
+        if (imageFiles.length > 1) {
+            showToast('⚠️ Please upload exactly 1 image for Copy as Diagram. Multiple images are not supported in this mode.', 'warning');
+            return;
+        }
+
+        if (hasPdfs) {
+            showToast('⚠️ Copy as Diagram only works with images. Please remove all PDF files first.', 'warning');
+            return;
+        }
+
+        if (imageFiles.length === 0) {
+            showToast('⚠️ Please upload an image file (.png, .jpg, .jpeg) to use Copy as Diagram.', 'warning');
+            return;
+        }
+
+        this._setActionButtonsDisabled(true);
+        this.showLoading('Reproducing diagram from image…');
+
+        const formData = new FormData();
+        imageFiles.forEach(f => formData.append('files', f));
+
+        try {
+            const res  = await fetch('/api/diagram/copy-image', { method: 'POST', body: formData });
+            const data = await res.json();
+
+            this.hideLoading();
+            this._setActionButtonsDisabled(false);
+
+            if (data.status === 'not_a_diagram') {
+                this.showNotADiagramError(data.content_type, data.suggestion);
+                return;
+            }
+
+            if (!res.ok || data.status === 'error') {
+                AppLogger.error('Copy as Diagram failed', { message: data.message, detail: data.detail });
+                this.showError(data.message || 'Copy Failed', data.detail || 'Could not reproduce the diagram from the image.');
+                return;
+            }
+
+            this.diagrams = (data.diagrams || []).map((d, i) => ({
+                ...d,
+                name: d.name || `Copied Diagram ${i + 1}`,
+            }));
+            this.chatHistoryId = data.chatHistoryId || this.chatHistoryId;
+            this.activeTabIndex = 0;
+
+            this.showResult();
+            this.showChatPanel();
+            showToast('Diagram reproduced successfully! Download your .drawio file.', 'success');
+        } catch (err) {
+            AppLogger.error('Copy as Diagram connection error:', err);
+            this.hideLoading();
+            this._setActionButtonsDisabled(false);
+            this.showError('Connection Error', 'Unable to connect to the server. Please try again.');
+        }
+    }
+
+    _setActionButtonsDisabled(disabled) {
+        ['analyze-btn', 'copy-diagram-btn', 'reset-btn'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.disabled = disabled;
+        });
     }
 
     /* ── Diagram suggestions ──────────────────────────── */
@@ -521,6 +614,33 @@ class DiagramGeneratorApp {
         showToast(title, 'warning');
     }
 
+    showNotADiagramError(contentType, suggestion) {
+        const resultPanel = document.getElementById('result-panel');
+        const emptyState  = document.getElementById('empty-state');
+        const resultInfo  = document.getElementById('result-info');
+        const cards       = document.getElementById('diagram-cards');
+
+        if (emptyState) emptyState.style.display = 'none';
+        if (cards) cards.innerHTML = '';
+        if (resultPanel) resultPanel.style.display = 'flex';
+
+        let html = '<div class="no-content-state">';
+        html += '<span class="no-content-icon">🖼️</span>';
+        html += '<h4 class="no-content-title">Not a Diagram to Copy</h4>';
+        html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${this.esc(contentType || 'non-diagram content')}</strong> — not a structured diagram that can be reproduced in draw.io.</p>`;
+        html += '<div class="no-content-tips">';
+        html += '<p class="no-content-tips-heading">💡 What you can do instead:</p>';
+        html += '<ul>';
+        html += '<li>Use <strong>Analyze Content</strong> to let AI understand the image and suggest diagram variations</li>';
+        html += '<li>Select <strong>AI Decides</strong> in the diagram type picker — it will generate the best diagram type for your content</li>';
+        html += '<li><strong>Copy as Diagram</strong> works with: flowcharts, org charts, sequence diagrams, network maps, ER diagrams, swimlanes, and any diagram with shapes connected by arrows</li>';
+        html += '</ul>';
+        html += '</div></div>';
+
+        resultInfo.innerHTML = html;
+        showToast('Image is not a diagram — try Analyze Content instead', 'info');
+    }
+
     showError(title, detail) {
         const resultPanel = document.getElementById('result-panel');
         const emptyState  = document.getElementById('empty-state');
@@ -558,9 +678,10 @@ class DiagramGeneratorApp {
         // Result info (header + stats)
         const successCount = this.diagrams.filter(d => d.xml && !d.error).length;
         const typeSet = new Set(this.diagrams.map(d => d.type));
+        const isCopyMode = this.diagrams.every(d => d.type === 'copy');
 
         let html = '<div class="result-header">';
-        html += `<h4 class="result-title">${this.esc(this.analysis?.title || 'Generated Diagrams')}</h4>`;
+        html += `<h4 class="result-title">${this.esc(isCopyMode ? 'Copied Diagram' : (this.analysis?.title || 'Generated Diagrams'))}</h4>`;
         html += `<p class="result-subtitle">${successCount} of ${this.diagrams.length} diagrams ready to download</p>`;
         html += '</div>';
 
@@ -680,16 +801,20 @@ class DiagramGeneratorApp {
             state_diagram: '⚡',
             block_diagram: '🧱',
             tree:          '🌲',
+            copy:          '🖼️',
         };
         return icons[type] || '📊';
     }
 
     formatTypeLabel(type) {
         if (!type) return 'General';
+        if (type === 'copy') return 'Copied Image';
         return String(type)
             .replace(/_/g, ' ')
             .replace(/\b\w/g, c => c.toUpperCase());
     }
+
+
 
     formatDiagramName(diagram, index) {
         const baseRaw = (diagram?.name || `Diagram ${index + 1}`).trim();
@@ -830,6 +955,14 @@ class DiagramGeneratorApp {
         if (cards) cards.innerHTML = '';
         document.getElementById('empty-state').style.display        = 'flex';
         document.getElementById('loading-state').style.display      = 'none';
+
+        // Reset copy button state
+        const copyBtn = document.getElementById('copy-diagram-btn');
+        if (copyBtn) {
+            copyBtn.disabled = true;
+            copyBtn.classList.remove('copy-btn-pdf-warn');
+            copyBtn.title = 'Upload an image to use Copy as Diagram';
+        }
     }
 
     esc(str) {

@@ -28,6 +28,7 @@ from app.services.diagram_generator_service import (
     generate_diagrams,
     refine_diagram,
     build_drawio_download,
+    copy_image_as_diagram,
 )
 
 router = APIRouter()
@@ -690,6 +691,100 @@ async def diagram_refine(data: DiagramRefineRequest):
 
 class DiagramDownloadRequest(BaseModel):
     diagrams: list
+
+
+@router.post("/diagram/copy-image")
+async def diagram_copy_image(
+    files: List[UploadFile] = File(...),
+):
+    """Reproduce image-based diagram(s) as exact draw.io XML — images only, no PDFs."""
+    _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
+    MAX_TOTAL_SIZE = 10 * 1024 * 1024
+    MAX_IMAGES = 3
+
+    image_files = []
+    total_size = 0
+
+    for f in files:
+        fname_lower = f.filename.lower()
+
+        if fname_lower.endswith(".pdf"):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "PDFs not supported in Copy as Diagram mode",
+                    "detail": "This mode only works with image files (.png, .jpg, .jpeg). Please remove all PDF files and try again.",
+                },
+            )
+
+        if not any(fname_lower.endswith(ext) for ext in _IMAGE_EXTS):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Unsupported file type",
+                    "detail": f"'{f.filename}' is not a supported image. Only .png, .jpg, .jpeg files are accepted.",
+                },
+            )
+
+        content = await f.read()
+        total_size += len(content)
+
+        if total_size > MAX_TOTAL_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "status": "error",
+                    "message": "Total upload size too large",
+                    "detail": f"Combined file size exceeds the 10 MB limit.",
+                },
+            )
+
+        await f.seek(0)
+        image_files.append(f)
+
+        if len(image_files) > 1:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Only 1 image allowed",
+                    "detail": "Copy as Diagram supports exactly 1 image at a time. Please upload a single image file.",
+                },
+            )
+
+    if not image_files:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "No images provided", "detail": "Please upload at least one image file."},
+        )
+
+    result = await copy_image_as_diagram(image_files)
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "Copy failed"),
+                "detail": result.get("detail", ""),
+            },
+        )
+
+    if result.get("not_a_diagram"):
+        return {
+            "status": "not_a_diagram",
+            "content_type": result.get("content_type"),
+            "suggestion": result.get("suggestion"),
+            "chatHistoryId": result.get("chatHistoryId"),
+        }
+
+    return {
+        "status": "success",
+        "diagrams": result.get("diagrams"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
 
 
 @router.post("/diagram/download")

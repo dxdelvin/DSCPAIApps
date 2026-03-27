@@ -1255,3 +1255,47 @@ body.dark-mode .dg-guide-info p {
         grid-template-columns: 1fr;
     }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   Copy as Diagram button
+   ═══════════════════════════════════════════════════════════ */
+
+.btn-copy-mode {
+    background: var(--card);
+    color: #8B5CF6;
+    border: 1px solid #8B5CF6;
+}
+
+.btn-copy-mode:hover:not(:disabled):not(.copy-btn-pdf-warn) {
+    background: #8B5CF6;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
+}
+
+.btn-copy-mode.copy-btn-pdf-warn {
+    color: #b45309;
+    border-color: #f59e0b;
+    background: var(--card);
+}
+
+.btn-copy-mode.copy-btn-pdf-warn:hover {
+    background: #f59e0b22;
+}
+
+body.dark-mode .btn-copy-mode {
+    background: var(--navy-800, #1e293b);
+    color: #a78bfa;
+    border-color: #7c3aed;
+}
+
+body.dark-mode .btn-copy-mode:hover:not(:disabled):not(.copy-btn-pdf-warn) {
+    background: #7c3aed;
+    color: #fff;
+}
+
+body.dark-mode .btn-copy-mode.copy-btn-pdf-warn {
+    color: #fbbf24;
+    border-color: #fbbf24;
+    background: var(--navy-800, #1e293b);
+}

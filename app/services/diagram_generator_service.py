@@ -116,6 +116,62 @@ REFINE_BEHAVIOUR = (
     "Return ONLY the raw mxGraphModel XML, no markdown fences, no explanation."
 )
 
+COPY_IMAGE_BEHAVIOUR = (
+    "You are a diagram reproduction specialist for draw.io (mxGraph) XML.\n"
+    "You will receive one or more images.\n\n"
+    "STEP 1 — CLASSIFY:\n"
+    "Determine if the image contains an actual DIAGRAM: a flowchart, org chart, sequence diagram, "
+    "network diagram, mind map, ER diagram, swimlane, block diagram, UML diagram, process map, "
+    "architecture diagram, or any structured visual made of shapes connected by arrows/lines.\n"
+    "A diagram has geometric shapes (boxes, circles, diamonds, cylinders) connected by arrows "
+    "or lines that represent processes, structures, or relationships.\n\n"
+    "These are NOT diagrams — return the JSON flag for these:\n"
+    "- Plain text documents or screenshots\n"
+    "- Bar charts, pie charts, line charts (data visualizations, NOT draw.io diagrams)\n"
+    "- Photos or illustrations\n"
+    "- Slides or pages with only text and no connecting arrows\n"
+    "- Tables without connecting arrows between shapes\n\n"
+    "STEP 2A — If the image IS a diagram, reproduce it as draw.io mxGraph XML:\n\n"
+    "SHAPES (vertices):\n"
+    "- Assign every shape a unique numeric id starting from 2 (ids 0 and 1 are reserved for root cells).\n"
+    "- Set vertex=\"1\" on every shape cell.\n"
+    "- Match the shape type to the correct draw.io style:\n"
+    "    rectangle / process step  → rounded=1;whiteSpace=wrap;html=1;\n"
+    "    decision / diamond        → rhombus;whiteSpace=wrap;html=1;\n"
+    "    start / end / terminator  → ellipse;whiteSpace=wrap;html=1;\n"
+    "    database / cylinder       → shape=cylinder3;whiteSpace=wrap;html=1;\n"
+    "    parallelogram / input     → shape=parallelogram;whiteSpace=wrap;html=1;\n"
+    "    document shape            → shape=document;whiteSpace=wrap;html=1;\n"
+    "    cloud                     → ellipse;shape=cloud;whiteSpace=wrap;html=1;\n"
+    "    hexagon                   → shape=hexagon;whiteSpace=wrap;html=1;\n"
+    "    circle / oval             → ellipse;whiteSpace=wrap;html=1;\n"
+    "- Copy the label text exactly as it appears in the image.\n"
+    "- Set x, y, width, height in <mxGeometry> to reflect the relative layout.\n\n"
+    "CONNECTIONS (edges) — THIS IS THE MOST IMPORTANT PART:\n"
+    "- Every visible arrow, line, or connector in the image MUST become an mxCell with edge=\"1\".\n"
+    "- Each edge cell MUST have source=\"<id>\" and target=\"<id>\" referencing the correct shape ids.\n"
+    "- Copy edge labels (e.g. 'Yes', 'No', conditions) into the value attribute.\n"
+    "- For directed arrows use: style=\"edgeStyle=orthogonalEdgeStyle;html=1;\"\n"
+    "- For bidirectional arrows add: endArrow=block;startArrow=block;\n"
+    "- For dashed lines add: dashed=1;\n"
+    "- DO NOT OMIT A SINGLE CONNECTION. Every arrow in the image needs a corresponding edge cell.\n\n"
+    "XML STRUCTURE RULES:\n"
+    "1. Output ONLY valid mxGraph XML wrapped in <mxGraphModel> tags.\n"
+    "2. Always include root cells id=\"0\" (root) and id=\"1\" (default parent layer).\n"
+    "3. All vertex and edge cells must be children of the cell with id=\"1\".\n"
+    "4. Every <mxGeometry> element must have the attribute as=\"geometry\".\n"
+    "5. Vertices need: <mxGeometry x=\"...\" y=\"...\" width=\"...\" height=\"...\" as=\"geometry\" />\n"
+    "6. Edges need: <mxGeometry relative=\"1\" as=\"geometry\" />\n"
+    "7. Use readable, professional colors that match the source image as closely as possible.\n"
+    "8. Space shapes so nothing overlaps — minimum 40px gap between shapes.\n"
+    "9. Do NOT wrap output in markdown code fences.\n\n"
+    "STEP 2B — If the image is NOT a diagram:\n"
+    "Return ONLY this exact JSON (no markdown wrapper, no extra text):\n"
+    '{"not_a_diagram": true, "content_type": "<brief description of what the image actually shows>", '
+    '"suggestion": "Use Analyze Content mode to let AI generate diagram suggestions from this content."}\n\n'
+    "Return ONLY the raw mxGraphModel XML for diagrams. No explanation, no markdown."
+)
+
 
 # ─── PDF text extraction ─────────────────────────────────
 
@@ -432,3 +488,104 @@ async def refine_diagram(
 def build_drawio_download(diagrams: list[dict]) -> str:
     """Build a complete .drawio file content from generated diagrams."""
     return _build_drawio_file(diagrams)
+
+
+async def copy_image_as_diagram(image_files: list) -> dict:
+    """
+    Reproduce image(s) as an exact draw.io diagram using AI vision.
+
+    Accepts a list of UploadFile objects (images only — no PDFs).
+    Returns one of:
+      - {"diagrams": [...], "chatHistoryId": ...}           on success
+      - {"not_a_diagram": True, "content_type": ..., ...}   when image is not a diagram
+      - {"error": True, "message": ..., "detail": ...}      on failure
+    """
+    brain_id = os.getenv("DSCP_BRAIN_ID")
+    if not brain_id:
+        return {"error": True, "message": "API Not Active", "detail": "DSCP_BRAIN_ID environment variable is not configured."}
+
+    if not image_files:
+        return {"error": True, "message": "No images provided", "detail": "Please upload at least one image file."}
+
+    chat_result = await create_chat_history(brain_id)
+    if chat_result.get("error"):
+        return {"error": True, "message": "Session error", "detail": chat_result.get("detail", "Could not create chat session.")}
+
+    chat_history_id = chat_result.get("chatHistoryId")
+
+    upload_result = await upload_attachments(brain_id, image_files)
+    if upload_result.get("error"):
+        return upload_result
+    attachment_ids = upload_result.get("attachmentIds", [])
+
+    n = len(image_files)
+    prompt = (
+        f"I have uploaded {n} image{'s' if n > 1 else ''}. "
+        "Please examine the image carefully. "
+        "If it shows a diagram, reproduce it exactly as mxGraph XML. "
+        "If it does not show a diagram, return the JSON flag as described in your behaviour rules."
+    )
+
+    response = await call_brain_pure_llm_chat(
+        brain_id,
+        prompt,
+        chat_history_id=chat_history_id,
+        attachment_ids=attachment_ids or None,
+        custom_behaviour=COPY_IMAGE_BEHAVIOUR,
+    )
+
+    if response.get("error"):
+        return {
+            "error": True,
+            "message": response.get("message", "AI service error"),
+            "detail": response.get("detail", "The AI could not process the image."),
+        }
+
+    raw = response.get("result", "")
+    updated_chat_id = response.get("chatHistoryId", chat_history_id)
+
+    # Check for the not_a_diagram JSON flag — try direct parse first
+    cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
+    try:
+        parsed = json.loads(cleaned)
+        if parsed.get("not_a_diagram"):
+            return {
+                "not_a_diagram": True,
+                "content_type": parsed.get("content_type", "non-diagram content"),
+                "suggestion": parsed.get("suggestion", "Use Analyze Content mode."),
+                "chatHistoryId": updated_chat_id,
+            }
+    except (json.JSONDecodeError, AttributeError):
+        pass
+
+    # Try to find the JSON flag embedded anywhere in the response
+    match = re.search(r'\{"not_a_diagram"\s*:\s*true[^}]*\}', raw, re.DOTALL)
+    if match:
+        try:
+            parsed = json.loads(match.group(0))
+            if parsed.get("not_a_diagram"):
+                return {
+                    "not_a_diagram": True,
+                    "content_type": parsed.get("content_type", "non-diagram content"),
+                    "suggestion": parsed.get("suggestion", "Use Analyze Content mode."),
+                    "chatHistoryId": updated_chat_id,
+                }
+        except json.JSONDecodeError:
+            pass
+
+    # Extract mxGraphModel XML
+    xml = _extract_mxgraph_xml(raw)
+    if not xml or "<mxGraphModel" not in xml:
+        return {
+            "error": True,
+            "message": "No diagram XML produced",
+            "detail": "The AI could not reproduce a structured diagram from the image. The image may not contain a clear draw.io-compatible diagram.",
+        }
+
+    file_names = [getattr(f, "filename", f"Image {i + 1}") for i, f in enumerate(image_files)]
+    raw_name = file_names[0].rsplit(".", 1)[0] if file_names else "Copied Diagram"
+
+    return {
+        "diagrams": [{"name": raw_name, "type": "copy", "xml": xml}],
+        "chatHistoryId": updated_chat_id,
+    }
