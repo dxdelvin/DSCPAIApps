@@ -459,12 +459,22 @@ function initializeLaneHandlers() {
 
     // Initialize handlers for the first lane
     initializeLaneItemHandlers(document.querySelector('.lane-item'));
+
+    // Initialize drag-and-drop for lanes and sublanes
+    initLaneDragDrop();
 }
 
 function createLaneHTML() {
     return `
         <div class="lane-item">
             <div class="lane-input-group">
+                <span class="lane-drag-handle" title="Drag to reorder">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                        <circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/>
+                        <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
+                    </svg>
+                </span>
                 <input type="text" class="lane-input" placeholder="e.g., Warehouse Manager" required>
                 <button type="button" class="btn-icon btn-remove-lane" title="Remove lane">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -488,6 +498,13 @@ function createLaneHTML() {
 function createSublaneHTML() {
     return `
         <div class="sublane-item">
+            <span class="sublane-drag-handle" title="Drag to reorder">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                    <circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/>
+                    <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
+                </svg>
+            </span>
             <input type="text" class="sublane-input" placeholder="e.g., Regional Sales" required>
             <button type="button" class="btn-icon btn-remove-sublane" title="Remove sub-lane">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -566,6 +583,131 @@ function initializeSublaneHandlers(sublaneItem) {
             initializeSublaneHandlers(newSublaneItem);
         });
     }
+}
+
+// Drag-and-drop reordering for lanes and sublanes
+function initLaneDragDrop() {
+    const lanesContainer = document.getElementById('lanesContainer');
+    if (!lanesContainer) return;
+
+    let dragEl = null;
+    let dragType = null; // 'lane' or 'sublane'
+    let placeholder = null;
+    let startY = 0;
+    let dragClone = null;
+    let parentContainer = null;
+
+    function getItems(container, type) {
+        const selector = type === 'lane' ? ':scope > .lane-item' : ':scope > .sublane-item';
+        return Array.from(container.querySelectorAll(selector));
+    }
+
+    function createPlaceholder(el) {
+        const ph = document.createElement('div');
+        ph.className = 'drag-placeholder';
+        ph.style.height = el.offsetHeight + 'px';
+        return ph;
+    }
+
+    function onPointerDown(e) {
+        const laneHandle = e.target.closest('.lane-drag-handle');
+        const sublaneHandle = e.target.closest('.sublane-drag-handle');
+        const handle = laneHandle || sublaneHandle;
+        if (!handle) return;
+
+        if (laneHandle) {
+            dragEl = handle.closest('.lane-item');
+            dragType = 'lane';
+            parentContainer = lanesContainer;
+        } else {
+            dragEl = handle.closest('.sublane-item');
+            dragType = 'sublane';
+            parentContainer = dragEl.parentElement;
+        }
+
+        if (!dragEl || !parentContainer) return;
+
+        e.preventDefault();
+        startY = e.clientY;
+
+        const rect = dragEl.getBoundingClientRect();
+        dragClone = dragEl.cloneNode(true);
+        dragClone.className += ' drag-clone';
+        dragClone.style.cssText = `
+            position: fixed;
+            left: ${rect.left}px;
+            top: ${rect.top}px;
+            width: ${rect.width}px;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0.9;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            transition: none;
+        `;
+        document.body.appendChild(dragClone);
+
+        placeholder = createPlaceholder(dragEl);
+        dragEl.style.display = 'none';
+        parentContainer.insertBefore(placeholder, dragEl);
+
+        document.addEventListener('pointermove', onPointerMove);
+        document.addEventListener('pointerup', onPointerUp);
+    }
+
+    function onPointerMove(e) {
+        if (!dragClone || !placeholder) return;
+
+        const dy = e.clientY - startY;
+        const origRect = placeholder.getBoundingClientRect();
+        dragClone.style.top = (origRect.top + dy) + 'px';
+
+        const items = getItems(parentContainer, dragType).filter(i => i !== dragEl);
+        let closestItem = null;
+        let closestOffset = Infinity;
+
+        items.forEach(item => {
+            if (item === dragEl) return;
+            const rect = item.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            const dist = e.clientY - mid;
+
+            if (Math.abs(dist) < Math.abs(closestOffset)) {
+                closestOffset = dist;
+                closestItem = item;
+            }
+        });
+
+        if (closestItem) {
+            if (closestOffset > 0) {
+                closestItem.insertAdjacentElement('afterend', placeholder);
+            } else {
+                parentContainer.insertBefore(placeholder, closestItem);
+            }
+        }
+    }
+
+    function onPointerUp() {
+        document.removeEventListener('pointermove', onPointerMove);
+        document.removeEventListener('pointerup', onPointerUp);
+
+        if (placeholder && dragEl && parentContainer) {
+            parentContainer.insertBefore(dragEl, placeholder);
+            dragEl.style.display = '';
+            placeholder.remove();
+        }
+
+        if (dragClone) {
+            dragClone.remove();
+        }
+
+        dragEl = null;
+        dragClone = null;
+        placeholder = null;
+        parentContainer = null;
+        dragType = null;
+    }
+
+    lanesContainer.addEventListener('pointerdown', onPointerDown);
 }
 
 function handleNext() {

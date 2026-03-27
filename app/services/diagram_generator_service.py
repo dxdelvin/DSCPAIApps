@@ -132,6 +132,12 @@ COPY_IMAGE_BEHAVIOUR = (
     "- Slides or pages with only text and no connecting arrows\n"
     "- Tables without connecting arrows between shapes\n\n"
     "STEP 2A — If the image IS a diagram, reproduce it as draw.io mxGraph XML:\n\n"
+    "REPRODUCTION GOAL:\n"
+    "- Recreate the diagram as literally and completely as possible.\n"
+    "- DO NOT summarize, simplify, merge, normalize, or redesign the source diagram.\n"
+    "- Preserve the number of boxes, clouds, zones, grouped areas, labels, edge labels, and visible connections.\n"
+    "- If the image is a dense enterprise architecture diagram, prioritize completeness over visual cleanliness.\n"
+    "- Missing a visible element is worse than producing a crowded diagram.\n\n"
     "SHAPES (vertices):\n"
     "- Assign every shape a unique numeric id starting from 2 (ids 0 and 1 are reserved for root cells).\n"
     "- Set vertex=\"1\" on every shape cell.\n"
@@ -146,15 +152,29 @@ COPY_IMAGE_BEHAVIOUR = (
     "    hexagon                   → shape=hexagon;whiteSpace=wrap;html=1;\n"
     "    circle / oval             → ellipse;whiteSpace=wrap;html=1;\n"
     "- Copy the label text exactly as it appears in the image.\n"
+    "- Preserve nested/grouped containers such as regions, zones, security boundaries, and dashed boundary boxes.\n"
+    "- Recreate outer frames and section labels even if they are only containers and not active systems.\n"
+    "- Preserve all visible service names, platform names, protocol labels, and small captions.\n"
+    "- For architecture diagrams, DO NOT collapse multiple services into one generic box.\n"
+    "- If a label is partially readable, keep the readable portion rather than omitting the entire node.\n"
     "- Set x, y, width, height in <mxGeometry> to reflect the relative layout.\n\n"
     "CONNECTIONS (edges) — THIS IS THE MOST IMPORTANT PART:\n"
     "- Every visible arrow, line, or connector in the image MUST become an mxCell with edge=\"1\".\n"
     "- Each edge cell MUST have source=\"<id>\" and target=\"<id>\" referencing the correct shape ids.\n"
     "- Copy edge labels (e.g. 'Yes', 'No', conditions) into the value attribute.\n"
+    "- Preserve protocol or transport labels on connectors such as HTTPS, SNC, File, MQTT, SMTP, ODBC, and similar text.\n"
+    "- If several connectors run in parallel, reproduce each connector separately rather than combining them.\n"
+    "- If connector routing is complex, it is acceptable to approximate the bend points, but not to delete the connection.\n"
     "- For directed arrows use: style=\"edgeStyle=orthogonalEdgeStyle;html=1;\"\n"
     "- For bidirectional arrows add: endArrow=block;startArrow=block;\n"
     "- For dashed lines add: dashed=1;\n"
     "- DO NOT OMIT A SINGLE CONNECTION. Every arrow in the image needs a corresponding edge cell.\n\n"
+    "SELF-CHECK BEFORE OUTPUT:\n"
+    "- Count the major boxes/containers in the image and make sure they all exist in the XML.\n"
+    "- Count the major clouds/external systems and make sure they all exist in the XML.\n"
+    "- Count the labeled protocol/transport annotations and make sure they were not dropped.\n"
+    "- Verify that section boundaries and grouped zones are present if visible in the source.\n"
+    "- Verify that the output is not a simplified subset of the source.\n\n"
     "XML STRUCTURE RULES:\n"
     "1. Output ONLY valid mxGraph XML wrapped in <mxGraphModel> tags.\n"
     "2. Always include root cells id=\"0\" (root) and id=\"1\" (default parent layer).\n"
@@ -523,6 +543,7 @@ async def copy_image_as_diagram(image_files: list) -> dict:
         f"I have uploaded {n} image{'s' if n > 1 else ''}. "
         "Please examine the image carefully. "
         "If it shows a diagram, reproduce it exactly as mxGraph XML. "
+        "Do not simplify the diagram. Preserve all visible boxes, grouped boundaries, connector labels, and connections, even if the diagram is dense. "
         "If it does not show a diagram, return the JSON flag as described in your behaviour rules."
     )
 
@@ -532,6 +553,7 @@ async def copy_image_as_diagram(image_files: list) -> dict:
         chat_history_id=chat_history_id,
         attachment_ids=attachment_ids or None,
         custom_behaviour=COPY_IMAGE_BEHAVIOUR,
+        timeout_seconds=300.0,
     )
 
     if response.get("error"):

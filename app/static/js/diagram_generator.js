@@ -655,7 +655,7 @@ class DiagramGeneratorApp {
         html += '<span class="error-icon">⚠️</span>';
         html += `<h4 class="error-title">${this.esc(title)}</h4>`;
         html += `<p class="error-detail">${this.esc(detail)}</p>`;
-        html += '<p class="error-hint">You can try uploading a different PDF or add more specific instructions.</p>';
+        html += '<p class="error-hint">Try a clearer image, crop the diagram more tightly, or retry when the AI service is less busy.</p>';
         html += '</div>';
 
         resultInfo.innerHTML = html;

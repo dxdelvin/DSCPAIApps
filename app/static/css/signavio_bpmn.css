@@ -353,6 +353,73 @@ body.dark-mode .review-value {
     gap: 8px;
 }
 
+/* Drag Handles */
+.lane-drag-handle,
+.sublane-drag-handle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 32px;
+    cursor: grab;
+    color: var(--slate-400);
+    border-radius: 6px;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background 0.15s ease;
+    touch-action: none;
+    user-select: none;
+}
+
+.lane-drag-handle:hover,
+.sublane-drag-handle:hover {
+    color: var(--brand-orange);
+    background: rgba(255, 104, 64, 0.08);
+}
+
+.lane-drag-handle:active,
+.sublane-drag-handle:active {
+    cursor: grabbing;
+}
+
+.sublane-drag-handle {
+    width: 24px;
+    height: 28px;
+}
+
+body.dark-mode .lane-drag-handle,
+body.dark-mode .sublane-drag-handle {
+    color: var(--slate-500);
+}
+
+body.dark-mode .lane-drag-handle:hover,
+body.dark-mode .sublane-drag-handle:hover {
+    color: var(--brand-orange);
+    background: rgba(255, 104, 64, 0.12);
+}
+
+/* Drag placeholder */
+.drag-placeholder {
+    border: 2px dashed var(--brand-orange);
+    border-radius: 8px;
+    background: rgba(255, 104, 64, 0.04);
+    transition: height 0.15s ease;
+}
+
+body.dark-mode .drag-placeholder {
+    background: rgba(255, 104, 64, 0.08);
+}
+
+/* Clone being dragged */
+.drag-clone {
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--brand-orange);
+}
+
+body.dark-mode .drag-clone {
+    background: var(--surface-secondary);
+}
+
 .lane-input, .sublane-input {
     flex: 1;
     padding: 10px 12px;

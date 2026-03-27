@@ -763,8 +763,15 @@ async def diagram_copy_image(
     result = await copy_image_as_diagram(image_files)
 
     if result.get("error"):
+        status_code = 500
+        if result.get("message") in {"Request Timed Out", "Gateway Timeout"}:
+            status_code = 504
+        elif result.get("message") in {"AI Service Unavailable"}:
+            status_code = 503
+        elif result.get("message") in {"Upstream Service Error"}:
+            status_code = 502
         return JSONResponse(
-            status_code=500,
+            status_code=status_code,
             content={
                 "status": "error",
                 "message": result.get("message", "Copy failed"),

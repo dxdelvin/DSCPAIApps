@@ -2178,6 +2178,129 @@ body.dark-mode .info-icon::after {
     border-color: var(--slate-400);
 }
 
+/* Language Selector */
+.lang-selector {
+    position: relative;
+}
+
+.lang-toggle {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--navy-900);
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.lang-toggle:hover {
+    background: var(--surface-hover);
+    border-color: var(--slate-400);
+}
+
+.lang-toggle svg {
+    color: var(--slate-500);
+    flex-shrink: 0;
+}
+
+.lang-code {
+    letter-spacing: 0.5px;
+}
+
+.lang-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    min-width: 160px;
+    z-index: 1100;
+    overflow: hidden;
+    animation: fadeSlideDown 0.15s ease;
+}
+
+@keyframes fadeSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--navy-900);
+    transition: background 0.15s ease;
+    text-align: left;
+}
+
+.lang-option:hover {
+    background: var(--surface-hover);
+}
+
+.lang-option.active {
+    background: rgba(255, 104, 64, 0.08);
+    color: var(--brand-orange);
+    font-weight: 600;
+}
+
+.lang-option + .lang-option {
+    border-top: 1px solid var(--border);
+}
+
+.lang-flag {
+    font-size: 18px;
+    line-height: 1;
+}
+
+body.dark-mode .lang-toggle {
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+body.dark-mode .lang-toggle:hover {
+    background: var(--surface-hover);
+}
+
+body.dark-mode .lang-dropdown {
+    background: var(--card);
+    border-color: var(--border);
+}
+
+body.dark-mode .lang-option {
+    color: var(--text-primary);
+}
+
+body.dark-mode .lang-option:hover {
+    background: var(--surface-hover);
+}
+
+body.dark-mode .lang-option.active {
+    background: rgba(255, 104, 64, 0.15);
+    color: var(--brand-orange);
+}
+
+@media (max-width: 768px) {
+    .lang-code {
+        display: none;
+    }
+    .lang-toggle {
+        padding: 6px 8px;
+    }
+}
+
 .confirmation-btn-confirm {
     background: var(--danger);
     color: white;
@@ -2280,6 +2403,29 @@ body.easter-mode {
     --border: #e9d5ff;
     --surface-hover: #fef9ff;
     --bg: #faf5ff;
+}
+
+body.easter-mode {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='14' rx='6' ry='8' fill='%23fbbf24' stroke='%23f59e0b' stroke-width='1.4'/%3E%3Ccircle cx='9' cy='11' r='1.2' fill='%23f472b6'/%3E%3Ccircle cx='14.5' cy='9.5' r='1.1' fill='%2360a5fa'/%3E%3Ccircle cx='14' cy='15' r='1.1' fill='%2334d399'/%3E%3C/svg%3E") 12 14, auto;
+}
+
+body.easter-mode a,
+body.easter-mode button,
+body.easter-mode .btn,
+body.easter-mode [role='button'],
+body.easter-mode summary,
+body.easter-mode label[for],
+body.easter-mode input[type='checkbox'],
+body.easter-mode input[type='radio'],
+body.easter-mode input[type='range'],
+body.easter-mode input[type='file'],
+body.easter-mode select {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cellipse cx='14' cy='18' rx='7' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5'/%3E%3Cellipse cx='10.5' cy='8.5' rx='2.5' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5' transform='rotate(-10 10.5 8.5)'/%3E%3Cellipse cx='17.5' cy='8.5' rx='2.5' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5' transform='rotate(10 17.5 8.5)'/%3E%3Ccircle cx='11.5' cy='17' r='1.1' fill='%23334155'/%3E%3Ccircle cx='16.5' cy='17' r='1.1' fill='%23334155'/%3E%3Ccircle cx='14' cy='19.5' r='1.1' fill='%23f472b6'/%3E%3C/svg%3E") 14 10, pointer;
+}
+
+body.easter-mode textarea,
+body.easter-mode input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
+    cursor: text;
 }
 
 body.easter-mode .navbar {

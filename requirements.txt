@@ -15,3 +15,4 @@ PyPDF2
 cfenv
 sap-xssec
 requests    
+babel

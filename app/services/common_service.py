@@ -238,6 +238,7 @@ async def call_brain_pure_llm_chat(
     chat_history_id: Optional[str] = None,
     attachment_ids: Optional[List[str]] = None,
     custom_behaviour: Optional[str] = None,
+    timeout_seconds: float = 120.0,
 ) -> dict:
     """Call DIA Brain pure LLM chat endpoint.
 
@@ -268,22 +269,47 @@ async def call_brain_pure_llm_chat(
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
-            response = await client.post(url, json=payload, headers=headers, timeout=120.0)
+            response = await client.post(url, json=payload, headers=headers, timeout=timeout_seconds)
             response.raise_for_status()
             data = response.json()
             return {
                 "result": data.get("result", ""),
                 "chatHistoryId": data.get("chatHistoryId", chat_history_id),
             }
-        except httpx.HTTPStatusError as e:
+        except httpx.TimeoutException as e:
             return {
                 "error": True,
-                "message": "API Not Active",
+                "message": "Request Timed Out",
+                "detail": f"The AI service took too long to respond: {e}",
+            }
+        except httpx.HTTPStatusError as e:
+            status_code = e.response.status_code
+            if status_code == 504:
+                return {
+                    "error": True,
+                    "message": "Gateway Timeout",
+                    "detail": "The AI service took too long while processing this diagram. This usually happens with dense or highly detailed images. Try a cleaner crop, a straighter screenshot, or split the diagram into smaller sections.",
+                }
+            if status_code == 503:
+                return {
+                    "error": True,
+                    "message": "AI Service Unavailable",
+                    "detail": "The AI service is temporarily unavailable. Please try again in a few minutes.",
+                }
+            if status_code == 502:
+                return {
+                    "error": True,
+                    "message": "Upstream Service Error",
+                    "detail": "The AI service returned an invalid response while processing the diagram. Please try again.",
+                }
+            return {
+                "error": True,
+                "message": "AI Service Error",
                 "detail": f"Status {e.response.status_code}: {e.response.text}",
             }
         except httpx.RequestError as e:
             return {
                 "error": True,
-                "message": "API Not Active",
+                "message": "Connection Error",
                 "detail": f"Connection error: {e}",
             }

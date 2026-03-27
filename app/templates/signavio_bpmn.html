@@ -79,6 +79,13 @@
                         <!-- Initial lane -->
                         <div class="lane-item">
                             <div class="lane-input-group">
+                                <span class="lane-drag-handle" title="Drag to reorder">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <circle cx="9" cy="5" r="1.5"/><circle cx="15" cy="5" r="1.5"/>
+                                        <circle cx="9" cy="10" r="1.5"/><circle cx="15" cy="10" r="1.5"/>
+                                        <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
+                                    </svg>
+                                </span>
                                 <input type="text" class="lane-input" placeholder="e.g., Sales Rep" required>
                                 <button type="button" class="btn-icon btn-remove-lane" title="Remove lane">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -102,83 +109,83 @@
                             <line x1="12" y1="5" x2="12" y2="19"></line>
                             <line x1="5" y1="12" x2="19" y2="12"></line>
                         </svg>
-                        Add Lane
+                        <span>Add Lane</span>
                     </button>
                 </div>
             </div>
 
             <!-- Step 3: Triggers -->
             <div class="form-step" id="step-3">
-                <h3>Start Triggers</h3>
-                <p>How does the process begin? Mention the lane(s) for each start event. Multiple starts are OK.</p>
+                <h3 data-i18n="bpmn.step3_heading">Start Triggers</h3>
+                <p data-i18n="bpmn.step3_desc">How does the process begin? Mention the lane(s) for each start event. Multiple starts are OK.</p>
                 <div class="form-group">
-                    <label for="startTriggers">What are the reasons your process is started? *</label>
-                    <textarea id="startTriggers" name="startTriggers" placeholder="e.g., Sales Rep lane — Customer email (Message); Scheduler lane — Every Friday 5 PM (Timer); Portal lane — User clicks Start (Manual)" rows="4" required></textarea>
+                    <label for="startTriggers" data-i18n="bpmn.triggers_label">What are the reasons your process is started? *</label>
+                    <textarea id="startTriggers" name="startTriggers" data-i18n-ph="bpmn.ph_triggers" placeholder="e.g., Sales Rep lane — Customer email (Message); Scheduler lane — Every Friday 5 PM (Timer); Portal lane — User clicks Start (Manual)" rows="4" required></textarea>
                 </div>
             </div>
 
             <!-- Step 4: Flow & Activities -->
             <div class="form-step" id="step-4">
-                <h3>Flow & Activities</h3>
-                <p>Describe the tasks and logic.</p>
+                <h3 data-i18n="bpmn.step4_heading">Flow & Activities</h3>
+                <p data-i18n="bpmn.step4_desc">Describe the tasks and logic.</p>
                 <div class="form-group">
                     <label for="processActivities">
-                        What are the process task activities? 
+                        <span data-i18n="bpmn.activities_label">What are the process task activities?</span> 
                         <span class="info-icon" data-tooltip="Explain in detail.&#10;• Mention conditions (e.g., 'If approved, then...').&#10;• Specify who is responsible for each task.">i</span>
                     </label>
-                    <textarea id="processActivities" name="processActivities" placeholder="Describe the steps in order. Example: The Sales Rep receives the order. If the amount is > $1000, the Manager must approve it. Otherwise, the system auto-approves..." rows="8" required></textarea>
+                    <textarea id="processActivities" name="processActivities" data-i18n-ph="bpmn.ph_activities" placeholder="Describe the steps in order. Example: The Sales Rep receives the order. If the amount is > $1000, the Manager must approve it. Otherwise, the system auto-approves..." rows="8" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label for="processEnding">How does the process end? *</label>
-                    <textarea id="processEnding" name="processEnding" placeholder="Describe the primary end state and any alternate endings. Example: Order shipped and invoice sent; Order canceled after credit check fails; Refund issued" rows="4" required></textarea>
+                    <label for="processEnding" data-i18n="bpmn.ending_label">How does the process end? *</label>
+                    <textarea id="processEnding" name="processEnding" data-i18n-ph="bpmn.ph_ending" placeholder="Describe the primary end state and any alternate endings. Example: Order shipped and invoice sent; Order canceled after credit check fails; Refund issued" rows="4" required></textarea>
                 </div>
             </div>
 
             <!-- Step 5: Delays & Intermediates -->
             <div class="form-step" id="step-5">
-                <h3>Delays & Intermediate Events</h3>
-                <p>Are there any waiting periods or dependencies (messages, timers, systems, or documents)?</p>
+                <h3 data-i18n="bpmn.step5_heading">Delays & Intermediate Events</h3>
+                <p data-i18n="bpmn.step5_desc">Are there any waiting periods or dependencies (messages, timers, systems, or documents)?</p>
                 <div class="form-group">
-                    <label for="intermediateEvents">Any reasons any tasks need to be waited? (Optional)</label>
-                    <textarea id="intermediateEvents" name="intermediateEvents" placeholder="e.g., Wait for payment confirmation; Wait 2 days for shipping; Wait for ERP delivery note; Wait for invoice PDF upload; Wait for DB update" rows="4"></textarea>
+                    <label for="intermediateEvents" data-i18n="bpmn.intermediate_label">Any reasons any tasks need to be waited? (Optional)</label>
+                    <textarea id="intermediateEvents" name="intermediateEvents" data-i18n-ph="bpmn.ph_intermediate" placeholder="e.g., Wait for payment confirmation; Wait 2 days for shipping; Wait for ERP delivery note; Wait for invoice PDF upload; Wait for DB update" rows="4"></textarea>
                 </div>
             </div>
 
             <!-- Step 6: Review & Generate -->
             <div class="form-step" id="step-6">
-                <h3>Review & Generate</h3>
-                <p>Review the AI analysis below. Use "Modify Inputs" to add feedback and refresh the analysis.</p>
+                <h3 data-i18n="bpmn.step6_heading">Review & Generate</h3>
+                <p data-i18n="bpmn.step6_desc">Review the AI analysis below. Use "Modify Inputs" to add feedback and refresh the analysis.</p>
                 
                 <div class="analysis-panel">
                     <div class="analysis-header">
-                        <h4>🤖 AI Analysis</h4>
-                        <span id="analysisStatus" class="analysis-status">Ready</span>
+                        <h4 data-i18n-html="bpmn.ai_analysis">🤖 AI Analysis</h4>
+                        <span id="analysisStatus" class="analysis-status" data-i18n="bpmn.analysis_ready">Ready</span>
                     </div>
                     <div id="analysisContent" class="analysis-content">
                         <div class="analysis-placeholder">
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                             </svg>
-                            <p>Click "Modify Inputs" to provide feedback and get AI insights about your process</p>
+                            <p data-i18n="bpmn.analysis_placeholder">Click "Modify Inputs" to provide feedback and get AI insights about your process</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- Inline override editor for quick changes on Review step -->
                 <div id="inlineOverrideContainer" class="inline-override" style="display: none; margin-top: 16px;">
-                    <label for="reviewOverride" class="override-label">Modify Inputs (free text)</label>
-                    <textarea id="reviewOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
+                    <label for="reviewOverride" class="override-label" data-i18n="bpmn.override_label">Modify Inputs (free text)</label>
+                    <textarea id="reviewOverride" rows="5" class="override-textarea" data-i18n-ph="bpmn.ph_override" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
                     <div class="override-actions">
-                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn">Refresh Analysis</button>
+                        <button type="button" class="btn btn-ghost" id="reviewAgainBtn" data-i18n="bpmn.refresh_analysis">Refresh Analysis</button>
                     </div>
-                    <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
+                    <p class="override-hint" data-i18n="bpmn.override_hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
                 </div>
 
                 <div class="cta-panel">
-                    <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
+                    <p data-i18n="bpmn.cta_text">When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
                     <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" id="editBtnReview">Modify Inputs</button>
-                        <button type="button" class="btn btn-primary" id="generateBtn">Generate BPMN</button>
+                        <button type="button" class="btn btn-secondary" id="editBtnReview" data-i18n="bpmn.btn_modify">Modify Inputs</button>
+                        <button type="button" class="btn btn-primary" id="generateBtn" data-i18n="bpmn.btn_generate">Generate BPMN</button>
                     </div>
                 </div>
             </div>
@@ -186,11 +193,11 @@
 
         <div class="form-navigation">
             <div class="nav-left">
-                <button type="button" class="btn btn-ghost btn-reset-link" id="editBtn">Reset Form</button>
+                <button type="button" class="btn btn-ghost btn-reset-link" id="editBtn" data-i18n="bpmn.btn_reset">Reset Form</button>
             </div>
             <div class="nav-right">
-                <button type="button" class="btn btn-secondary" id="prevBtn">Previous</button>
-                <button type="button" class="btn btn-primary" id="nextBtn">Next</button>
+                <button type="button" class="btn btn-secondary" id="prevBtn" data-i18n="bpmn.btn_previous">Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn" data-i18n="bpmn.btn_next">Next</button>
             </div>
         </div>
         </div><!-- /form-mode -->
@@ -198,8 +205,8 @@
         <!-- Upload & Analyze Mode -->
         <div class="mode-panel" id="upload-mode">
             <div class="upload-section">
-                <h3>Upload Document for Analysis</h3>
-                <p>Upload a PNG, JPG, or PDF file containing any process-related content — diagrams, flowcharts, descriptions, or documents — for AI analysis and BPMN generation.</p>
+                <h3 data-i18n="bpmn.upload_heading">Upload Document for Analysis</h3>
+                <p data-i18n="bpmn.upload_desc">Upload a PNG, JPG, or PDF file containing any process-related content — diagrams, flowcharts, descriptions, or documents — for AI analysis and BPMN generation.</p>
 
                 <div class="upload-area" id="bpmn-upload-area">
                     <div class="upload-placeholder">
@@ -208,8 +215,8 @@
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
-                        <p>Drag & drop your file here or click to select</p>
-                        <p class="upload-hint">Supports PNG, JPG, and PDF files</p>
+                        <p data-i18n="bpmn.upload_drop">Drag & drop your file here or click to select</p>
+                        <p class="upload-hint" data-i18n="bpmn.upload_hint">Supports PNG, JPG, and PDF files</p>
                     </div>
                     <input type="file" id="bpmn-file-input" accept=".png,.jpg,.jpeg,.pdf" hidden>
                 </div>
@@ -236,7 +243,7 @@
                         <circle cx="11" cy="11" r="8"></circle>
                         <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
-                    Analyze File
+                    <span data-i18n="bpmn.upload_analyze">Analyze File</span>
                 </button>
             </div>
 
@@ -251,26 +258,26 @@
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                         </svg>
-                        <p>Upload a file and click "Analyze File" to begin</p>
+                        <p data-i18n="bpmn.upload_analysis_placeholder">Upload a file and click "Analyze File" to begin</p>
                     </div>
                 </div>
             </div>
 
             <!-- Upload override editor for modify inputs -->
             <div id="uploadOverrideContainer" class="inline-override" style="display:none; margin-top:16px;">
-                <label for="uploadOverride" class="override-label">Modify Inputs (free text)</label>
-                <textarea id="uploadOverride" rows="5" class="override-textarea" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
+                <label for="uploadOverride" class="override-label" data-i18n="bpmn.override_label">Modify Inputs (free text)</label>
+                <textarea id="uploadOverride" rows="5" class="override-textarea" data-i18n-ph="bpmn.ph_override" placeholder="Describe your changes or corrections here. Press Ctrl+Enter to send, or click Refresh Analysis." maxlength="3000"></textarea>
                 <div class="override-actions">
-                    <button type="button" class="btn btn-ghost" id="uploadRefreshBtn">Refresh Analysis</button>
+                    <button type="button" class="btn btn-ghost" id="uploadRefreshBtn" data-i18n="bpmn.refresh_analysis">Refresh Analysis</button>
                 </div>
-                <p class="override-hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
+                <p class="override-hint" data-i18n="bpmn.override_hint">This will be sent to the AI to refresh the analysis and continue the chat.</p>
             </div>
 
             <div class="cta-panel" id="upload-cta-panel" style="display:none;">
-                <p>When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
+                <p data-i18n="bpmn.cta_text">When you're satisfied with the analysis, click Generate BPMN to create your diagram.</p>
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" id="uploadModifyBtn">Modify Inputs</button>
-                    <button type="button" class="btn btn-primary" id="uploadGenerateBtn" disabled>Generate BPMN</button>
+                    <button type="button" class="btn btn-secondary" id="uploadModifyBtn" data-i18n="bpmn.btn_modify">Modify Inputs</button>
+                    <button type="button" class="btn btn-primary" id="uploadGenerateBtn" disabled data-i18n="bpmn.btn_generate">Generate BPMN</button>
                 </div>
             </div>
         </div><!-- /upload-mode -->
