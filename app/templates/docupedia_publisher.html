@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Docupedia Publisher - BSH DSCP AI{% endblock %}
+
+{% block page_name %}Docupedia Publisher{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/docupedia_publisher.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">Docupedia | Quick Publish</p>
+        <h1>Docupedia Page Publisher</h1>
+        <p class="lede">Upload documents and images, let AI write the Confluence storage format, review and edit, then publish directly to Docupedia with all attachments in one flow.</p>
+    </div>
+</section>
+
+<div class="container dp-container">
+    <div class="dp-wizard">
+
+        <div class="dp-progress" id="dp-progress">
+            <div class="dp-progress-track">
+                <div class="dp-progress-fill" id="dp-progress-fill" style="width: 0%"></div>
+            </div>
+            <div class="dp-progress-steps">
+                <button class="dp-progress-step active" data-step="auth" type="button">
+                    <span class="dp-step-dot"></span>
+                    <span class="dp-step-text">Setup</span>
+                </button>
+                <button class="dp-progress-step" data-step="upload" type="button">
+                    <span class="dp-step-dot"></span>
+                    <span class="dp-step-text">Upload</span>
+                </button>
+                <button class="dp-progress-step" data-step="generate" type="button">
+                    <span class="dp-step-dot"></span>
+                    <span class="dp-step-text">Generate</span>
+                </button>
+                <button class="dp-progress-step" data-step="review" type="button">
+                    <span class="dp-step-dot"></span>
+                    <span class="dp-step-text">Review</span>
+                </button>
+                <button class="dp-progress-step" data-step="publish" type="button">
+                    <span class="dp-step-dot"></span>
+                    <span class="dp-step-text">Publish</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="dp-panels">
+
+            <!-- STEP 1: Auth & Target Setup -->
+            <section class="dp-panel is-active" data-panel="auth">
+                <div class="dp-panel-card">
+                    <div class="dp-panel-head">
+                        <span class="dp-badge">Step 1</span>
+                        <div>
+                            <h2>Confluence Connection</h2>
+                            <p>Set your Docupedia/Confluence target and authenticate with a Personal Access Token before uploading content.</p>
+                        </div>
+                    </div>
+
+                    <div class="dp-pat-guide">
+                        <div class="dp-pat-guide-head">
+                            <span class="dp-pat-icon">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            </span>
+                            <strong>How to get your Personal Access Token</strong>
+                        </div>
+                        <ol class="dp-pat-steps">
+                            <li>Open your Docupedia or Confluence instance and go to <strong>Profile &rarr; Settings &rarr; Personal Access Tokens</strong>.</li>
+                            <li>Click <strong>Create token</strong>, give it a name (e.g. "DSCP Publisher"), and copy the generated value.</li>
+                            <li>Paste the token below. It is only sent with your publish request and is never stored.</li>
+                        </ol>
+                    </div>
+
+                    <div class="dp-form-grid">
+                        <div class="form-group">
+                            <label for="dp-confluence-url">Confluence Base URL</label>
+                            <input type="url" id="dp-confluence-url" value="https://inside-docupedia.bosch.com/confluence2" placeholder="https://your-instance.atlassian.net/wiki">
+                        </div>
+                        <div class="form-group">
+                            <label for="dp-space-key">Space Key <span class="required-tag">Required</span></label>
+                            <input type="text" id="dp-space-key" placeholder="E.g. DPS, TEAM, DOC">
+                        </div>
+                        <div class="form-group">
+                            <label for="dp-parent-id">Parent Page ID <span class="required-tag">Required</span></label>
+                            <input type="text" id="dp-parent-id" placeholder="Numeric ID of the parent page">
+                        </div>
+                        <div class="form-group dp-pat-field">
+                            <label for="dp-pat">Personal Access Token <span class="required-tag">Required</span></label>
+                            <div class="dp-pat-input-wrap">
+                                <input type="password" id="dp-pat" placeholder="Paste your PAT here">
+                                <button class="dp-pat-toggle" id="dp-pat-toggle" type="button" aria-label="Toggle PAT visibility">
+                                    <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dp-connection-status" id="dp-connection-status" hidden>
+                        <span class="dp-status-icon"></span>
+                        <span class="dp-status-text"></span>
+                    </div>
+
+                    <div class="dp-panel-actions">
+                        <button class="btn btn-primary" id="dp-next-auth" type="button" disabled>
+                            <span class="dp-btn-label">Verify &amp; Continue</span>
+                            <span class="dp-btn-spinner" hidden>
+                                <svg class="dp-spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/></svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 2: Upload Files -->
+            <section class="dp-panel" data-panel="upload">
+                <div class="dp-panel-card">
+                    <div class="dp-panel-head">
+                        <span class="dp-badge">Step 2</span>
+                        <div>
+                            <h2>Upload Content</h2>
+                            <p>Upload PDFs, images, and documents. Mark which images should appear in the page body (max 10).</p>
+                        </div>
+                    </div>
+
+                    <div class="dp-user-greeting" id="dp-user-greeting" hidden>
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                        <span>Publishing as <strong id="dp-user-name"></strong></span>
+                    </div>
+
+                    <div class="dp-upload-zone" id="dp-upload-zone">
+                        <div class="dp-upload-inner">
+                            <span class="dp-upload-icon">
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            </span>
+                            <p class="dp-upload-title">Drop files here or click to browse</p>
+                            <p class="dp-upload-hint">AI reads up to <strong>4 files</strong> (PDF &amp; images). Other files can be attached or displayed.</p>
+                        </div>
+                        <input type="file" id="dp-file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.gif,.svg,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.msg" hidden>
+                    </div>
+
+                    <div class="dp-files-section" id="dp-files-section" hidden>
+                        <div class="dp-files-head">
+                            <h3>Uploaded Files</h3>
+                            <div class="dp-files-head-actions">
+                                <span class="dp-display-counter" id="dp-display-counter">0 / 10 display images</span>
+                                <button class="btn btn-secondary btn-sm" id="dp-add-more" type="button">Add More</button>
+                            </div>
+                        </div>
+                        <div class="dp-files-grid" id="dp-files-grid"></div>
+                    </div>
+
+                    <div class="dp-panel-actions">
+                        <button class="btn btn-ghost-text" id="dp-back-auth" type="button">Back</button>
+                        <button class="btn btn-primary" id="dp-next-upload" type="button" disabled>Continue to Generate</button>
+                    </div>
+                </div>
+
+                <div class="dp-panel-card dp-tips-card">
+                    <div class="dp-tips-head">
+                        <strong>File Role Guide</strong>
+                    </div>
+                    <div class="dp-tips-grid">
+                        <div class="dp-tip">
+                            <span class="dp-tip-label">AI Source</span>
+                            <p>PDFs and images that AI reads to draft the page content.</p>
+                        </div>
+                        <div class="dp-tip">
+                            <span class="dp-tip-label">Display in Page</span>
+                            <p>Images shown inside the page body (limit 10). They get clean canonical filenames.</p>
+                        </div>
+                        <div class="dp-tip">
+                            <span class="dp-tip-label">Attach to Page</span>
+                            <p>Files published to Confluence as page attachments for download or reference.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 3: Generate -->
+            <section class="dp-panel" data-panel="generate">
+                <div class="dp-panel-card">
+                    <div class="dp-panel-head">
+                        <span class="dp-badge">Step 3</span>
+                        <div>
+                            <h2>Generate Content</h2>
+                            <p>Give the AI a title hint and instructions, then generate the Confluence-ready draft.</p>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dp-title-hint">Page Title <span class="optional-tag">(Optional)</span></label>
+                        <input type="text" id="dp-title-hint" placeholder="Leave blank and AI picks a title based on your content">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dp-instructions">Drafting Instructions <span class="optional-tag">(Optional)</span></label>
+                        <textarea id="dp-instructions" rows="4" maxlength="2500" placeholder="E.g. Write a support article for this product issue. Show the images side by side. Keep the tone professional."></textarea>
+                    </div>
+
+                    <div class="dp-generate-summary" id="dp-generate-summary">
+                        <div class="dp-gen-stat">
+                            <span class="dp-gen-stat-num" id="dp-stat-ai">0</span>
+                            <span class="dp-gen-stat-label">AI Sources</span>
+                        </div>
+                        <div class="dp-gen-stat">
+                            <span class="dp-gen-stat-num" id="dp-stat-display">0</span>
+                            <span class="dp-gen-stat-label">Display Images</span>
+                        </div>
+                        <div class="dp-gen-stat">
+                            <span class="dp-gen-stat-num" id="dp-stat-attach">0</span>
+                            <span class="dp-gen-stat-label">Attachments</span>
+                        </div>
+                    </div>
+
+                    <div class="dp-generate-loading" id="dp-loading-card" hidden>
+                        <div class="dp-generate-loading-inner">
+                            <div class="lp-rings">
+                                <div class="lp-ring lp-ring-outer"></div>
+                                <div class="lp-ring lp-ring-inner"></div>
+                            </div>
+                            <div class="lp-status">
+                                <span class="lp-text" id="dp-loading-msg">Reading source files...</span>
+                                <span class="lp-dots"><i></i><i></i><i></i></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dp-panel-actions">
+                        <button class="btn btn-ghost-text" id="dp-back-upload" type="button">Back</button>
+                        <button class="btn btn-primary" id="dp-generate-btn" type="button">Generate Draft</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 4: Review & Edit -->
+            <section class="dp-panel" data-panel="review">
+                <div class="dp-panel-card dp-review-card">
+                    <div class="dp-panel-head">
+                        <span class="dp-badge">Step 4</span>
+                        <div>
+                            <h2>Review &amp; Edit</h2>
+                            <p>Inspect the AI draft, edit title, summary, and storage format directly. Refine with AI or regenerate if needed.</p>
+                        </div>
+                    </div>
+
+                    <div class="dp-review-topbar">
+                        <div class="form-group dp-review-title-field">
+                            <label for="dp-draft-title">Page Title</label>
+                            <input type="text" id="dp-draft-title" placeholder="Final page title">
+                        </div>
+                        <div class="dp-review-actions">
+                            <button class="btn btn-secondary btn-sm" id="dp-copy-xml" type="button">Copy XML</button>
+                            <button class="btn btn-secondary btn-sm" id="dp-regenerate-btn" type="button">Regenerate</button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dp-draft-summary">AI Summary</label>
+                        <textarea id="dp-draft-summary" rows="3" maxlength="2500" placeholder="Summary of what AI produced"></textarea>
+                    </div>
+
+                    <div class="dp-review-body">
+                        <div class="dp-xml-pane">
+                            <div class="dp-xml-head">
+                                <h3>Confluence Storage Format</h3>
+                                <span class="dp-xml-status" id="dp-xml-status">No content yet</span>
+                            </div>
+                            <textarea id="dp-storage-xml" class="dp-xml-editor" spellcheck="false" placeholder="Generated Confluence storage format appears here..."></textarea>
+                        </div>
+
+                        <div class="dp-sidebar">
+                            <div class="dp-sidebar-section">
+                                <h4>Display Images</h4>
+                                <div class="dp-ref-list" id="dp-display-refs"></div>
+                            </div>
+                            <div class="dp-sidebar-section">
+                                <h4>Attachment References</h4>
+                                <div class="dp-ref-list" id="dp-attach-refs"></div>
+                            </div>
+                            <div class="dp-sidebar-section dp-warnings-section" id="dp-warnings-section" hidden>
+                                <h4>Warnings</h4>
+                                <ul class="dp-warning-list" id="dp-warning-list"></ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="dp-refine-section" id="dp-refine-section">
+                        <div class="dp-refine-head">
+                            <h4>Refine with AI</h4>
+                            <p>Ask AI to adjust structure, rewrite sections, or improve the draft.</p>
+                        </div>
+                        <div class="dp-chat-history" id="dp-chat-history"></div>
+                        <div class="dp-refine-input">
+                            <textarea id="dp-refine-text" rows="2" maxlength="1500" placeholder="E.g. Move the image gallery to the top, make the introduction shorter."></textarea>
+                            <button class="btn btn-primary btn-sm" id="dp-refine-btn" type="button">Refine</button>
+                        </div>
+                    </div>
+
+                    <div class="dp-panel-actions">
+                        <button class="btn btn-ghost-text" id="dp-back-generate" type="button">Back to Generate</button>
+                        <button class="btn btn-primary" id="dp-next-review" type="button">Continue to Publish</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- STEP 5: Publish -->
+            <section class="dp-panel" data-panel="publish">
+                <div class="dp-panel-card">
+                    <div class="dp-panel-head">
+                        <span class="dp-badge">Step 5</span>
+                        <div>
+                            <h2>Publish to Confluence</h2>
+                            <p>Review your target details and publish the page with all attachments in one click.</p>
+                        </div>
+                    </div>
+
+                    <div class="dp-publish-summary">
+                        <div class="dp-pub-stat">
+                            <span class="dp-pub-label">Title</span>
+                            <strong class="dp-pub-value" id="dp-pub-title">-</strong>
+                        </div>
+                        <div class="dp-pub-stat">
+                            <span class="dp-pub-label">Space</span>
+                            <strong class="dp-pub-value" id="dp-pub-space">-</strong>
+                        </div>
+                        <div class="dp-pub-stat">
+                            <span class="dp-pub-label">Parent Page</span>
+                            <strong class="dp-pub-value" id="dp-pub-parent">-</strong>
+                        </div>
+                        <div class="dp-pub-stat">
+                            <span class="dp-pub-label">Attachments</span>
+                            <strong class="dp-pub-value" id="dp-pub-attachments">-</strong>
+                        </div>
+                    </div>
+
+                    <div class="dp-pub-warnings" id="dp-pub-warnings" hidden>
+                        <p class="dp-pub-warnings-title">Pre-publish warnings</p>
+                        <ul id="dp-pub-warnings-list"></ul>
+                    </div>
+
+                    <div class="dp-panel-actions dp-publish-actions">
+                        <button class="btn btn-ghost-text" id="dp-back-review" type="button">Back to Review</button>
+                        <button class="btn btn-primary" id="dp-publish-btn" type="button">Publish to Docupedia</button>
+                    </div>
+
+                    <div class="dp-publish-result" id="dp-publish-result" hidden></div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/docupedia_publisher.js') }}?v={{ css_version }}"></script>
+{% endblock %}

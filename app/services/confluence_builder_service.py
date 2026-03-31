@@ -731,6 +731,66 @@ def extract_confluence_error_message(response_text: str, status_code: int | None
     return cleaned_text[:500]
 
 
+async def verify_confluence_connection(
+    confluence_url: str,
+    pat: str,
+    space_key: str,
+    parent_page_id: str,
+) -> dict[str, Any]:
+    base = confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL
+    headers = {
+        "Accept": "application/json",
+        "Authorization": f"Bearer {pat}",
+    }
+    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
+
+    async with httpx.AsyncClient(**client_kwargs) as client:
+        # 1. Verify PAT by fetching current user
+        try:
+            user_resp = await client.get(
+                f"{base}/rest/api/user/current",
+                headers=headers,
+                timeout=15.0,
+            )
+        except httpx.ConnectError:
+            return {"error": True, "detail": "Cannot reach Confluence. Check the base URL."}
+        except httpx.TimeoutException:
+            return {"error": True, "detail": "Connection timed out. Check the base URL."}
+
+        if user_resp.is_error:
+            return {"error": True, "detail": "Invalid Personal Access Token."}
+
+        user_data = user_resp.json()
+        display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
+
+        # 2. Verify space key
+        space_resp = await client.get(
+            f"{base}/rest/api/space/{space_key}",
+            headers=headers,
+            timeout=15.0,
+        )
+        if space_resp.is_error:
+            return {"error": True, "detail": f"Space '{space_key}' not found or not accessible."}
+
+        # 3. Verify parent page
+        page_resp = await client.get(
+            f"{base}/rest/api/content/{parent_page_id}",
+            headers=headers,
+            timeout=15.0,
+        )
+        if page_resp.is_error:
+            return {"error": True, "detail": f"Parent page '{parent_page_id}' not found or not accessible."}
+
+        page_title = page_resp.json().get("title", "")
+
+    return {
+        "error": False,
+        "displayName": display_name,
+        "spaceKey": space_key,
+        "parentPageTitle": page_title,
+    }
+
+
 async def _create_confluence_page(
     *,
     confluence_url: str,
