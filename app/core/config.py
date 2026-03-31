@@ -17,6 +17,3 @@ CLIENT_LOG_LEVEL = os.getenv("CLIENT_LOG_LEVEL", "error" if IS_PRODUCTION else "
 
 # Brain API Configuration
 BRAIN_API_BASE_URL = os.getenv("BRAIN_API_BASE_URL", "https://ews-emea.api.bosch.com:443/it/application/dia-brain/v1/api")
-
-# Dev proxy (VPN). None in prod so BTP is never affected.
-PROXY_URL = None if IS_PRODUCTION else os.getenv("HTTPS_PROXY")

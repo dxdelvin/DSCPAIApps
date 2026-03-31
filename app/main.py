@@ -6,6 +6,12 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(ROOT_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
+# Strip proxy env vars in production — .env may set them for local VPN but
+# they would break DNS resolution on SAP BTP.
+if os.getenv("ENVIRONMENT", "dev").lower() == "prod":
+    for _key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
+        os.environ.pop(_key, None)
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse

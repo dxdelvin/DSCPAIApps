@@ -7,7 +7,7 @@ import os
 from typing import Optional, List, Tuple, Dict
 from fastapi import HTTPException, UploadFile
 from app.services.brain_auth import get_brain_access_token
-from app.core.config import IS_PRODUCTION, BRAIN_API_BASE_URL, PROXY_URL
+from app.core.config import BRAIN_API_BASE_URL
 
 
 def _require_env(value: str, name: str) -> str:
@@ -41,7 +41,7 @@ async def create_chat_history(brain_id: str) -> dict:
     
     url = f"{base_url}/chat-histories/{brain_id}"
     
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION, "proxy": PROXY_URL}
+    client_kwargs = {"verify": False, "trust_env": True}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -83,7 +83,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
         files_data.append(("files", (file.filename, content, file.content_type)))
         await file.seek(0)
     
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION, "proxy": PROXY_URL}
+    client_kwargs = {"verify": False, "trust_env": True}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -149,7 +149,7 @@ async def call_brain_workflow_chat(
     if workflow_id:
         payload["workflowId"] = workflow_id
 
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION, "proxy": PROXY_URL}
+    client_kwargs = {"verify": False, "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -206,7 +206,7 @@ async def call_brain_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION, "proxy": PROXY_URL}
+    client_kwargs = {"verify": False, "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -265,7 +265,7 @@ async def call_brain_pure_llm_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION, "proxy": PROXY_URL}
+    client_kwargs = {"verify": False, "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
