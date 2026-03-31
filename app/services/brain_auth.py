@@ -1,6 +1,7 @@
 import httpx
 import os
 from fastapi import HTTPException
+from app.core.config import TRUST_ENV
 
 
 async def get_brain_access_token():
@@ -21,7 +22,7 @@ async def get_brain_access_token():
 
     request_kwargs = {
         "verify": False,
-        "trust_env": True
+        "trust_env": TRUST_ENV
     }
     
     async with httpx.AsyncClient(**request_kwargs) as client:
