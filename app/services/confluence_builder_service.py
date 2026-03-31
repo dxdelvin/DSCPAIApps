@@ -743,18 +743,22 @@ async def verify_confluence_connection(
     base = (confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL).rstrip("/")
     headers = {
         "Accept": "application/json",
+        "Content-Type": "application/json",
         "Authorization": f"Bearer {pat}",
     }
 
     logger.info("[verify] Starting connection check for %s, space=%s, parent=%s", base, space_key, parent_page_id)
 
-    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=True) as client:
+    # Do NOT follow redirects automatically — a redirect itself usually means
+    # SSO is intercepting.  Handle it explicitly so the auth header isn't
+    # silently stripped during the redirect chain.
+    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
             logger.info("[verify] GET %s", user_url)
             user_resp = await client.get(user_url, headers=headers)
-            logger.info("[verify] user/current status=%s", user_resp.status_code)
+            logger.info("[verify] user/current status=%s headers=%s", user_resp.status_code, dict(user_resp.headers))
         except httpx.ConnectError as exc:
             logger.error("[verify] ConnectError reaching %s: %s", user_url, exc)
             return {"error": True, "detail": f"Cannot reach Confluence at {base}. Connection refused."}
@@ -764,6 +768,12 @@ async def verify_confluence_connection(
         except Exception as exc:
             logger.exception("[verify] Unexpected error calling %s", user_url)
             return {"error": True, "detail": f"Unexpected error: {exc}"}
+
+        # Redirect means SSO or URL misconfiguration
+        if user_resp.is_redirect:
+            location = user_resp.headers.get("location", "unknown")
+            logger.error("[verify] Got redirect %s -> %s", user_resp.status_code, location)
+            return {"error": True, "detail": f"Confluence redirected (HTTP {user_resp.status_code}) to {location}. This usually means SSO is intercepting the request. Verify VPN is connected and PAT is valid."}
 
         if user_resp.is_error:
             body = user_resp.text[:500]
@@ -775,7 +785,7 @@ async def verify_confluence_connection(
         except json.JSONDecodeError:
             body = user_resp.text[:500]
             logger.error("[verify] PAT check received non-JSON: status=%s body=%s", user_resp.status_code, body)
-            return {"error": True, "detail": f"Received unexpected non-JSON response (HTTP {user_resp.status_code}). Ensure the Confluence URL is correct and not blocked by SSO."}
+            return {"error": True, "detail": f"Got HTML instead of JSON (HTTP {user_resp.status_code}). This usually means SSO/login is intercepting the API call. Check VPN and that your PAT has not expired. Response starts with: {body[:150]}"}
 
         logger.info("[verify] Authenticated as: %s", user_data)
         display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
