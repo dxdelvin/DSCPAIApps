@@ -752,7 +752,7 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False) as client:
+    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False, trust_env=IS_PRODUCTION) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
