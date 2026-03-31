@@ -1,6 +1,7 @@
 import httpx
 import os
 from fastapi import HTTPException
+from app.core.config import IS_PRODUCTION, PROXY_URL
 
 
 async def get_brain_access_token():
@@ -21,7 +22,8 @@ async def get_brain_access_token():
 
     request_kwargs = {
         "verify": False,
-        "trust_env": True
+        "trust_env": IS_PRODUCTION,
+        "proxy": PROXY_URL
     }
     
     async with httpx.AsyncClient(**request_kwargs) as client:
