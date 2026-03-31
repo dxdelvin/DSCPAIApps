@@ -106,7 +106,7 @@ class DocupediaPublisherApp {
         });
 
         // Auth fields
-        [this.el.confluenceUrl, this.el.spaceKey, this.el.parentId, this.el.pat].forEach((input) => {
+        [this.el.spaceKey, this.el.parentId, this.el.pat].forEach((input) => {
             input.addEventListener('input', () => {
                 this.invalidateVerification();
                 this.validateAuth();
@@ -267,7 +267,7 @@ class DocupediaPublisherApp {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    confluenceUrl: this.el.confluenceUrl.value.trim() || this.defaultConfluenceUrl,
+                    confluenceUrl: this.defaultConfluenceUrl,
                     pat: this.el.pat.value.trim(),
                     spaceKey: this.el.spaceKey.value.trim(),
                     parentPageId: this.el.parentId.value.trim(),

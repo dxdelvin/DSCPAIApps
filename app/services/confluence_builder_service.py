@@ -5,6 +5,7 @@ to Confluence using a Personal Access Token.
 """
 import io
 import json
+import logging
 import os
 import re
 from typing import Any
@@ -22,6 +23,8 @@ from app.services.common_service import (
 
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
 MAX_DISPLAY_IMAGES = 10
+
+logger = logging.getLogger(__name__)
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".svg"}
 PDF_EXTENSIONS = {".pdf"}
 SUPPORTED_UPLOAD_EXTENSIONS = IMAGE_EXTENSIONS | PDF_EXTENSIONS | {
@@ -737,52 +740,73 @@ async def verify_confluence_connection(
     space_key: str,
     parent_page_id: str,
 ) -> dict[str, Any]:
-    base = confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL
+    base = (confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL).rstrip("/")
     headers = {
         "Accept": "application/json",
         "Authorization": f"Bearer {pat}",
     }
-    client_kwargs = {"verify": False, "trust_env": IS_PRODUCTION}
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
+    logger.info("[verify] Starting connection check for %s, space=%s, parent=%s", base, space_key, parent_page_id)
+
+    async with httpx.AsyncClient(verify=False, timeout=20.0) as client:
         # 1. Verify PAT by fetching current user
+        user_url = f"{base}/rest/api/user/current"
         try:
-            user_resp = await client.get(
-                f"{base}/rest/api/user/current",
-                headers=headers,
-                timeout=15.0,
-            )
-        except httpx.ConnectError:
-            return {"error": True, "detail": "Cannot reach Confluence. Check the base URL."}
-        except httpx.TimeoutException:
+            logger.info("[verify] GET %s", user_url)
+            user_resp = await client.get(user_url, headers=headers)
+            logger.info("[verify] user/current status=%s", user_resp.status_code)
+        except httpx.ConnectError as exc:
+            logger.error("[verify] ConnectError reaching %s: %s", user_url, exc)
+            return {"error": True, "detail": f"Cannot reach Confluence at {base}. Connection refused."}
+        except httpx.TimeoutException as exc:
+            logger.error("[verify] Timeout reaching %s: %s", user_url, exc)
             return {"error": True, "detail": "Connection timed out. Check the base URL."}
+        except Exception as exc:
+            logger.exception("[verify] Unexpected error calling %s", user_url)
+            return {"error": True, "detail": f"Unexpected error: {exc}"}
 
         if user_resp.is_error:
-            return {"error": True, "detail": "Invalid Personal Access Token."}
+            body = user_resp.text[:500]
+            logger.error("[verify] PAT check failed: status=%s body=%s", user_resp.status_code, body)
+            return {"error": True, "detail": f"Invalid PAT (HTTP {user_resp.status_code}). Check your token."}
 
         user_data = user_resp.json()
+        logger.info("[verify] Authenticated as: %s", user_data)
         display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
 
         # 2. Verify space key
-        space_resp = await client.get(
-            f"{base}/rest/api/space/{space_key}",
-            headers=headers,
-            timeout=15.0,
-        )
+        space_url = f"{base}/rest/api/space/{space_key}"
+        try:
+            logger.info("[verify] GET %s", space_url)
+            space_resp = await client.get(space_url, headers=headers)
+            logger.info("[verify] space status=%s", space_resp.status_code)
+        except Exception as exc:
+            logger.exception("[verify] Error checking space %s", space_key)
+            return {"error": True, "detail": f"Error checking space: {exc}"}
+
         if space_resp.is_error:
-            return {"error": True, "detail": f"Space '{space_key}' not found or not accessible."}
+            body = space_resp.text[:500]
+            logger.error("[verify] Space check failed: status=%s body=%s", space_resp.status_code, body)
+            return {"error": True, "detail": f"Space '{space_key}' not found (HTTP {space_resp.status_code})."}
 
         # 3. Verify parent page
-        page_resp = await client.get(
-            f"{base}/rest/api/content/{parent_page_id}",
-            headers=headers,
-            timeout=15.0,
-        )
+        page_url = f"{base}/rest/api/content/{parent_page_id}"
+        try:
+            logger.info("[verify] GET %s", page_url)
+            page_resp = await client.get(page_url, headers=headers)
+            logger.info("[verify] parent page status=%s", page_resp.status_code)
+        except Exception as exc:
+            logger.exception("[verify] Error checking parent page %s", parent_page_id)
+            return {"error": True, "detail": f"Error checking parent page: {exc}"}
+
         if page_resp.is_error:
-            return {"error": True, "detail": f"Parent page '{parent_page_id}' not found or not accessible."}
+            body = page_resp.text[:500]
+            logger.error("[verify] Parent page check failed: status=%s body=%s", page_resp.status_code, body)
+            return {"error": True, "detail": f"Parent page '{parent_page_id}' not found (HTTP {page_resp.status_code})."}
 
         page_title = page_resp.json().get("title", "")
 
+    logger.info("[verify] All checks passed. user=%s space=%s parent='%s'", display_name, space_key, page_title)
     return {
         "error": False,
         "displayName": display_name,

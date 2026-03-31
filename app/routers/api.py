@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from typing import Any, Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Request
@@ -931,25 +932,36 @@ class ConfluenceVerifyRequest(BaseModel):
 @router.post("/confluence-builder/verify-connection")
 async def confluence_builder_verify(data: ConfluenceVerifyRequest):
     """Verify PAT, space key, and parent page before proceeding."""
+    logger = logging.getLogger("app.routers.api")
     if not data.pat or not data.spaceKey or not data.parentPageId:
         return JSONResponse(
             status_code=400,
             content={"status": "error", "detail": "PAT, Space Key, and Parent Page ID are required."},
         )
 
-    result = await verify_confluence_connection(
-        confluence_url=data.confluenceUrl,
-        pat=data.pat,
-        space_key=data.spaceKey,
-        parent_page_id=data.parentPageId,
-    )
+    logger.info("[verify-connection] Verifying space=%s parent=%s", data.spaceKey, data.parentPageId)
+    try:
+        result = await verify_confluence_connection(
+            confluence_url=data.confluenceUrl,
+            pat=data.pat,
+            space_key=data.spaceKey,
+            parent_page_id=data.parentPageId,
+        )
+    except Exception as exc:
+        logger.exception("[verify-connection] Unexpected exception")
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "detail": f"Server error: {exc}"},
+        )
 
     if result.get("error"):
+        logger.warning("[verify-connection] Failed: %s", result.get("detail"))
         return JSONResponse(
             status_code=400,
             content={"status": "error", "detail": result.get("detail", "Verification failed.")},
         )
 
+    logger.info("[verify-connection] Success: %s", result.get("displayName"))
     return {"status": "success", **result}
 
 

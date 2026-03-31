@@ -263,6 +263,12 @@
     color: var(--danger);
 }
 
+.dp-locked-input {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: var(--surface-secondary) !important;
+}
+
 /* ---- User Greeting ---- */
 
 .dp-user-greeting:not([hidden]) {
