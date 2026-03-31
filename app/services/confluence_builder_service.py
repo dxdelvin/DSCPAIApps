@@ -748,7 +748,7 @@ async def verify_confluence_connection(
 
     logger.info("[verify] Starting connection check for %s, space=%s, parent=%s", base, space_key, parent_page_id)
 
-    async with httpx.AsyncClient(verify=False, timeout=20.0) as client:
+    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=True) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
@@ -770,7 +770,13 @@ async def verify_confluence_connection(
             logger.error("[verify] PAT check failed: status=%s body=%s", user_resp.status_code, body)
             return {"error": True, "detail": f"Invalid PAT (HTTP {user_resp.status_code}). Check your token."}
 
-        user_data = user_resp.json()
+        try:
+            user_data = user_resp.json()
+        except json.JSONDecodeError:
+            body = user_resp.text[:500]
+            logger.error("[verify] PAT check received non-JSON: status=%s body=%s", user_resp.status_code, body)
+            return {"error": True, "detail": f"Received unexpected non-JSON response (HTTP {user_resp.status_code}). Ensure the Confluence URL is correct and not blocked by SSO."}
+
         logger.info("[verify] Authenticated as: %s", user_data)
         display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
 
@@ -804,7 +810,10 @@ async def verify_confluence_connection(
             logger.error("[verify] Parent page check failed: status=%s body=%s", page_resp.status_code, body)
             return {"error": True, "detail": f"Parent page '{parent_page_id}' not found (HTTP {page_resp.status_code})."}
 
-        page_title = page_resp.json().get("title", "")
+        try:
+            page_title = page_resp.json().get("title", "")
+        except json.JSONDecodeError:
+            page_title = "Unknown (non-JSON response)"
 
     logger.info("[verify] All checks passed. user=%s space=%s parent='%s'", display_name, space_key, page_title)
     return {
