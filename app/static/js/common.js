@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    initEasterMode();
+    initSpringMode();
 
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
@@ -688,98 +688,99 @@ const LoadingPanel = {
 };
 
 /**
- * Easter / Festive Mode
- * Adds pastel color overrides, floating eggs, cursor trails,   
- * and confetti bursts — works on top of light or dark theme.
+ * Spring Mode
+ * Fresh, clean, and energetic theme with vibrant greens,
+ * soft yellows, floating leaves, blooming flowers, and
+ * petal bursts — works on top of light or dark theme.
  */
-function initEasterMode() {
-    const toggle = document.getElementById('easterToggle');
+function initSpringMode() {
+    const toggle = document.getElementById('springToggle');
     if (!toggle) return;
 
-    const EGGS = ['🥚', '🐣', '🐰', '🌷', '🐥', '🌸', '🎀', '🪺'];
-    const CONFETTI_COLORS = ['#fbbf24', '#fb923c', '#f472b6', '#c084fc', '#60a5fa', '#34d399'];
-    let eggContainer = null;
-    let eggInterval = null;
+    const LEAVES = ['🍃', '🌿', '🌱', '🌸', '🌼', '🌻', '☘️', '🌺'];
+    const PETAL_COLORS = ['#4ade80', '#86efac', '#facc15', '#a3e635', '#fef08a', '#16a34a'];
+    let leafContainer = null;
+    let leafInterval = null;
     let trailThrottle = 0;
 
-    if (localStorage.getItem('dscp_easter') === 'on') {
-        activateEaster(false);
+    if (localStorage.getItem('dscp_spring') === 'on') {
+        activateSpring(false);
     }
 
     toggle.addEventListener('click', () => {
-        const isActive = document.body.classList.contains('easter-mode');
+        const isActive = document.body.classList.contains('spring-mode');
         if (isActive) {
-            deactivateEaster();
+            deactivateSpring();
         } else {
-            activateEaster(true);
+            activateSpring(true);
         }
     });
 
-    function activateEaster(withFanfare) {
-        document.body.classList.add('easter-mode');
-        localStorage.setItem('dscp_easter', 'on');
+    function activateSpring(withFanfare) {
+        document.body.classList.add('spring-mode');
+        localStorage.setItem('dscp_spring', 'on');
 
-        if (!eggContainer) {
-            eggContainer = document.createElement('div');
-            eggContainer.className = 'easter-eggs-container';
-            eggContainer.id = 'easterEggsContainer';
-            document.body.appendChild(eggContainer);
+        if (!leafContainer) {
+            leafContainer = document.createElement('div');
+            leafContainer.className = 'spring-leaves-container';
+            leafContainer.id = 'springLeavesContainer';
+            document.body.appendChild(leafContainer);
         }
 
-        eggInterval = setInterval(spawnFloatingEgg, 2500);
-        for (let i = 0; i < 3; i++) setTimeout(spawnFloatingEgg, i * 400);
+        leafInterval = setInterval(spawnFloatingLeaf, 2500);
+        for (let i = 0; i < 3; i++) setTimeout(spawnFloatingLeaf, i * 400);
 
         document.addEventListener('mousemove', handleCursorTrail);
 
-        document.addEventListener('click', handleConfetti);
+        document.addEventListener('click', handlePetalBurst);
 
         if (withFanfare) {
-            for (let i = 0; i < 8; i++) setTimeout(spawnFloatingEgg, i * 150);
-            showToast('🐣 Happy Easter Season', 'info', 3000);
+            for (let i = 0; i < 8; i++) setTimeout(spawnFloatingLeaf, i * 150);
+            showToast('🌸 Hello Spring!', 'info', 3000);
         }
     }
 
-    function deactivateEaster() {
-        document.body.classList.remove('easter-mode');
-        localStorage.setItem('dscp_easter', 'off');
+    function deactivateSpring() {
+        document.body.classList.remove('spring-mode');
+        localStorage.setItem('dscp_spring', 'off');
 
-        if (eggInterval) { clearInterval(eggInterval); eggInterval = null; }
-        if (eggContainer) { eggContainer.remove(); eggContainer = null; }
+        if (leafInterval) { clearInterval(leafInterval); leafInterval = null; }
+        if (leafContainer) { leafContainer.remove(); leafContainer = null; }
 
         document.removeEventListener('mousemove', handleCursorTrail);
-        document.removeEventListener('click', handleConfetti);
+        document.removeEventListener('click', handlePetalBurst);
     }
 
-    function spawnFloatingEgg() {
-        if (!eggContainer) return;
-        const egg = document.createElement('span');
-        egg.className = 'easter-egg-float';
-        egg.textContent = EGGS[Math.floor(Math.random() * EGGS.length)];
-        egg.style.left = Math.random() * 95 + '%';
-        egg.style.fontSize = (18 + Math.random() * 16) + 'px';
-        egg.style.animationDuration = (5 + Math.random() * 6) + 's';
-        eggContainer.appendChild(egg);
-        egg.addEventListener('animationend', () => egg.remove());
+    function spawnFloatingLeaf() {
+        if (!leafContainer) return;
+        const leaf = document.createElement('span');
+        leaf.className = 'spring-leaf-float';
+        leaf.textContent = LEAVES[Math.floor(Math.random() * LEAVES.length)];
+        leaf.style.left = Math.random() * 95 + '%';
+        leaf.style.fontSize = (18 + Math.random() * 16) + 'px';
+        leaf.style.animationDuration = (7 + Math.random() * 8) + 's';
+        leafContainer.appendChild(leaf);
+        leaf.addEventListener('animationend', () => leaf.remove());
     }
 
     function handleCursorTrail(e) {
-        if (!document.body.classList.contains('easter-mode')) return;
+        if (!document.body.classList.contains('spring-mode')) return;
         const now = Date.now();
         if (now - trailThrottle < 120) return;
         trailThrottle = now;
 
         const trail = document.createElement('span');
-        trail.className = 'easter-trail';
-        trail.textContent = EGGS[Math.floor(Math.random() * EGGS.length)];
+        trail.className = 'spring-trail';
+        trail.textContent = LEAVES[Math.floor(Math.random() * LEAVES.length)];
         trail.style.left = e.clientX + 'px';
         trail.style.top = e.clientY + 'px';
         document.body.appendChild(trail);
         trail.addEventListener('animationend', () => trail.remove());
     }
 
-    function handleConfetti(e) {
-        if (!document.body.classList.contains('easter-mode')) return;
-        const target = e.target.closest('.btn, .app-card, .easter-toggle');
+    function handlePetalBurst(e) {
+        if (!document.body.classList.contains('spring-mode')) return;
+        const target = e.target.closest('.btn, .app-card, .spring-toggle');
         if (!target) return;
 
         const rect = target.getBoundingClientRect();
@@ -787,17 +788,17 @@ function initEasterMode() {
         const cy = rect.top + rect.height / 2;
 
         for (let i = 0; i < 12; i++) {
-            const dot = document.createElement('span');
-            dot.className = 'easter-confetti';
-            dot.style.left = cx + 'px';
-            dot.style.top = cy + 'px';
-            dot.style.background = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+            const petal = document.createElement('span');
+            petal.className = 'spring-petal';
+            petal.style.left = cx + 'px';
+            petal.style.top = cy + 'px';
+            petal.style.background = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
             const angle = (Math.PI * 2 * i) / 12;
             const dist = 40 + Math.random() * 60;
-            dot.style.setProperty('--confetti-x', Math.cos(angle) * dist + 'px');
-            dot.style.setProperty('--confetti-y', Math.sin(angle) * dist + 'px');
-            document.body.appendChild(dot);
-            dot.addEventListener('animationend', () => dot.remove());
+            petal.style.setProperty('--confetti-x', Math.cos(angle) * dist + 'px');
+            petal.style.setProperty('--confetti-y', Math.sin(angle) * dist + 'px');
+            document.body.appendChild(petal);
+            petal.addEventListener('animationend', () => petal.remove());
         }
     }
 }

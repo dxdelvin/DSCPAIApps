@@ -1,8 +1,9 @@
+import json
 import os
-from typing import Optional, List
+from typing import Any, Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 # Import from organized service files
 from app.services.common_service import create_chat_history
@@ -29,6 +30,11 @@ from app.services.diagram_generator_service import (
     refine_diagram,
     build_drawio_download,
     copy_image_as_diagram,
+)
+from app.services.confluence_builder_service import (
+    generate_confluence_builder_draft,
+    refine_confluence_builder_draft,
+    publish_confluence_builder_page,
 )
 
 router = APIRouter()
@@ -897,3 +903,140 @@ async def ppt_download(data: PptDownloadRequest):
                 "detail": str(e),
             },
         )
+
+
+class ConfluenceDraftPayload(BaseModel):
+    title: str = ""
+    summary: str = ""
+    storageXml: str = ""
+    attachmentReferences: list[dict[str, Any]] = Field(default_factory=list)
+    displayImages: list[dict[str, Any]] = Field(default_factory=list)
+    warnings: list[str] = Field(default_factory=list)
+
+
+class ConfluenceRefineRequest(BaseModel):
+    chatHistoryId: str = ""
+    instruction: str = ""
+    draft: ConfluenceDraftPayload
+
+
+@router.post("/confluence-builder/generate")
+async def confluence_builder_generate(
+    files: List[UploadFile] = File(...),
+    uploadManifest: str = Form(...),
+    requestedTitle: Optional[str] = Form(None),
+    instructions: Optional[str] = Form(None),
+):
+    """Generate a Confluence-ready draft from uploaded files."""
+    if not files:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "No files provided",
+                "detail": "Upload at least one file before generating the draft.",
+            },
+        )
+
+    result = await generate_confluence_builder_draft(
+        files,
+        uploadManifest,
+        requested_title=requestedTitle or "",
+        instructions=instructions or "",
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=result.get("status_code", 500),
+            content={
+                "status": "error",
+                "message": result.get("message", "Draft generation failed"),
+                "detail": result.get("detail", "The AI service could not generate the draft."),
+            },
+        )
+
+    return {
+        "status": "success",
+        **result,
+    }
+
+
+@router.post("/confluence-builder/refine")
+async def confluence_builder_refine(data: ConfluenceRefineRequest):
+    """Refine an existing Confluence draft."""
+    result = await refine_confluence_builder_draft(
+        data.draft.model_dump(),
+        data.instruction,
+        chat_history_id=data.chatHistoryId,
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=result.get("status_code", 500),
+            content={
+                "status": "error",
+                "message": result.get("message", "Draft refinement failed"),
+                "detail": result.get("detail", "The AI service could not refine the draft."),
+            },
+        )
+
+    return {
+        "status": "success",
+        **result,
+    }
+
+
+@router.post("/confluence-builder/publish")
+async def confluence_builder_publish(
+    uploadManifest: str = Form(...),
+    draft: str = Form(...),
+    confluenceUrl: str = Form(""),
+    pat: str = Form(""),
+    spaceKey: str = Form(""),
+    parentPageId: str = Form(""),
+    files: Optional[List[UploadFile]] = File(None),
+):
+    """Publish the reviewed Confluence draft and upload selected attachments."""
+    try:
+        draft_payload = json.loads(draft)
+    except json.JSONDecodeError:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Invalid draft payload",
+                "detail": "The reviewed draft could not be parsed on the server.",
+            },
+        )
+
+    if not isinstance(draft_payload, dict):
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Invalid draft payload",
+                "detail": "The reviewed draft must be a JSON object.",
+            },
+        )
+
+    result = await publish_confluence_builder_page(
+        confluence_url=confluenceUrl,
+        pat=pat,
+        space_key=spaceKey,
+        parent_page_id=parentPageId,
+        draft=draft_payload,
+        files=files or [],
+        upload_manifest_json=uploadManifest,
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=result.get("status_code", 500),
+            content={
+                "status": "error",
+                "message": result.get("message", "Publish failed"),
+                "detail": result.get("detail", "The page could not be published to Confluence."),
+            },
+        )
+
+    return result

@@ -61,6 +61,11 @@ async def ppt_creator(request: Request):
 async def diagram_generator(request: Request):
     return _render_template(request, "diagram_generator.html")
 
+
+@router.get("/confluence-builder")
+async def confluence_builder(request: Request):
+    return _render_template(request, "confluence_builder.html")
+
 @router.get("/health")
 async def health_check():
     """Service health check."""

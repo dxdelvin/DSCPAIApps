@@ -2345,13 +2345,14 @@ body.dark-mode .confirmation-btn-cancel:hover {
 }
 
 /* ══════════════════════════════════════════════
-   Easter / Festive Mode
-   Complements light & dark themes with pastel
-   overrides, egg decorations, and animations.
+   Spring Mode
+   Fresh, clean, and energetic theme with vibrant
+   greens, soft yellows, blooming flowers, and
+   gently falling leaves.
    ══════════════════════════════════════════════ */
 
-/* Easter toggle button */
-.easter-toggle {
+/* Spring toggle button */
+.spring-toggle {
     background: none;
     border: 1px solid var(--border);
     border-radius: 0.5rem;
@@ -2364,136 +2365,167 @@ body.dark-mode .confirmation-btn-cancel:hover {
     position: relative;
 }
 
-.easter-toggle:hover {
+.spring-toggle:hover {
     background: var(--slate-100);
     border-color: var(--navy-900);
     transform: scale(1.1) rotate(-8deg);
 }
 
-body.dark-mode .easter-toggle:hover {
+body.dark-mode .spring-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
-.easter-toggle-icon {
+.spring-toggle-icon {
     font-size: 18px;
     line-height: 1;
     display: block;
     transition: transform 0.3s ease;
 }
 
-.easter-toggle:hover .easter-toggle-icon {
-    animation: egg-wobble 0.5s ease;
+.spring-toggle:hover .spring-toggle-icon {
+    animation: leaf-sway 0.6s ease;
 }
 
 /* Active state glow */
-body.easter-mode .easter-toggle {
-    border-color: #c084fc;
-    background: linear-gradient(135deg, rgba(251,191,36,0.15), rgba(192,132,252,0.15));
-    box-shadow: 0 0 12px rgba(192,132,252,0.3);
+body.spring-mode .spring-toggle {
+    border-color: #4ade80;
+    background: linear-gradient(135deg, rgba(74,222,128,0.15), rgba(250,204,21,0.15));
+    box-shadow: 0 0 12px rgba(74,222,128,0.3);
 }
 
-body.easter-mode .easter-toggle-icon {
-    animation: egg-bounce 2s ease-in-out infinite;
+body.spring-mode .spring-toggle-icon {
+    animation: bloom-pulse 2s ease-in-out infinite;
 }
 
-/* ── Easter Mode Light Theme overrides ─── */
-body.easter-mode {
-    --brand-orange: #c084fc;
-    --brand-orange-700: #a855f7;
-    --border: #e9d5ff;
-    --surface-hover: #fef9ff;
-    --bg: #faf5ff;
+/* ── Spring Mode Light Theme overrides ─── */
+body.spring-mode {
+    --brand-orange: #16a34a;
+    --brand-orange-700: #15803d;
+    --border: #bbf7d0;
+    --surface-hover: #f0fdf4;
+    --bg: #f7fef9;
 }
 
-body.easter-mode {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cellipse cx='12' cy='14' rx='6' ry='8' fill='%23fbbf24' stroke='%23f59e0b' stroke-width='1.4'/%3E%3Ccircle cx='9' cy='11' r='1.2' fill='%23f472b6'/%3E%3Ccircle cx='14.5' cy='9.5' r='1.1' fill='%2360a5fa'/%3E%3Ccircle cx='14' cy='15' r='1.1' fill='%2334d399'/%3E%3C/svg%3E") 12 14, auto;
+body.spring-mode {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 8 4 12 4 15a8 8 0 0016 0c0-3-2.5-7-8-13z' fill='%234ade80' stroke='%2316a34a' stroke-width='1'/%3E%3Cpath d='M12 10v8M9 14l3-3 3 3' fill='none' stroke='%23166534' stroke-width='1.2'/%3E%3C/svg%3E") 12 14, auto;
 }
 
-body.easter-mode a,
-body.easter-mode button,
-body.easter-mode .btn,
-body.easter-mode [role='button'],
-body.easter-mode summary,
-body.easter-mode label[for],
-body.easter-mode input[type='checkbox'],
-body.easter-mode input[type='radio'],
-body.easter-mode input[type='range'],
-body.easter-mode input[type='file'],
-body.easter-mode select {
-    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Cellipse cx='14' cy='18' rx='7' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5'/%3E%3Cellipse cx='10.5' cy='8.5' rx='2.5' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5' transform='rotate(-10 10.5 8.5)'/%3E%3Cellipse cx='17.5' cy='8.5' rx='2.5' ry='6' fill='%23ffffff' stroke='%23d8b4fe' stroke-width='1.5' transform='rotate(10 17.5 8.5)'/%3E%3Ccircle cx='11.5' cy='17' r='1.1' fill='%23334155'/%3E%3Ccircle cx='16.5' cy='17' r='1.1' fill='%23334155'/%3E%3Ccircle cx='14' cy='19.5' r='1.1' fill='%23f472b6'/%3E%3C/svg%3E") 14 10, pointer;
+body.spring-mode a,
+body.spring-mode button,
+body.spring-mode .btn,
+body.spring-mode [role='button'],
+body.spring-mode summary,
+body.spring-mode label[for],
+body.spring-mode input[type='checkbox'],
+body.spring-mode input[type='radio'],
+body.spring-mode input[type='range'],
+body.spring-mode input[type='file'],
+body.spring-mode select {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28' viewBox='0 0 28 28'%3E%3Ccircle cx='14' cy='14' r='8' fill='%23fef08a' stroke='%23facc15' stroke-width='1.5'/%3E%3Ccircle cx='14' cy='14' r='4' fill='%23facc15'/%3E%3Cline x1='14' y1='2' x2='14' y2='6' stroke='%23facc15' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='14' y1='22' x2='14' y2='26' stroke='%23facc15' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='2' y1='14' x2='6' y2='14' stroke='%23facc15' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='22' y1='14' x2='26' y2='14' stroke='%23facc15' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 14 14, pointer;
 }
 
-body.easter-mode textarea,
-body.easter-mode input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
+body.spring-mode textarea,
+body.spring-mode input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='file']) {
     cursor: text;
 }
 
-body.easter-mode .navbar {
-    background: rgba(250,245,255,0.92);
+body.spring-mode .navbar {
+    background: rgba(247,254,249,0.92);
     border-bottom: 2px solid transparent;
-    border-image: linear-gradient(90deg, #fbbf24, #fb923c, #f472b6, #c084fc, #60a5fa, #34d399) 1;
+    border-image: linear-gradient(90deg, #4ade80, #86efac, #facc15, #fef08a, #a3e635, #4ade80) 1;
 }
 
-body.easter-mode .beta-banner {
-    background: linear-gradient(90deg, rgba(251,191,36,0.08), rgba(244,114,182,0.08), rgba(192,132,252,0.08));
-    border-bottom: 1px solid rgba(192,132,252,0.2);
-    color: #a855f7;
+body.spring-mode .beta-banner {
+    background: linear-gradient(90deg, rgba(74,222,128,0.08), rgba(250,204,21,0.08), rgba(163,230,53,0.08));
+    border-bottom: 1px solid rgba(74,222,128,0.2);
+    color: #16a34a;
 }
 
-body.easter-mode .brand-mark {
-    background: linear-gradient(135deg, #fbbf24, #fb923c, #f472b6, #c084fc);
+body.spring-mode .brand-mark {
+    background: linear-gradient(135deg, #4ade80, #a3e635, #facc15, #16a34a);
 }
 
-body.easter-mode .btn-primary:not(.btn-open) {
-    background: linear-gradient(135deg, #c084fc 0%, #a855f7 50%, #f472b6 100%);
-    box-shadow: 0 2px 12px rgba(192,132,252,0.3);
+body.spring-mode .btn-primary:not(.btn-open) {
+    background: linear-gradient(135deg, #4ade80 0%, #16a34a 50%, #a3e635 100%);
+    box-shadow: 0 2px 12px rgba(74,222,128,0.3);
 }
 
-body.easter-mode .btn-primary:not(.btn-open):hover {
-    box-shadow: 0 4px 20px rgba(192,132,252,0.4);
+body.spring-mode .btn-primary:not(.btn-open):hover {
+    box-shadow: 0 4px 20px rgba(74,222,128,0.4);
 }
 
-body.easter-mode .btn-secondary:hover {
-    border-color: #c084fc;
-    color: #a855f7;
+body.spring-mode .btn-secondary:hover {
+    border-color: #4ade80;
+    color: #16a34a;
 }
 
-body.easter-mode input:focus,
-body.easter-mode textarea:focus,
-body.easter-mode select:focus {
-    border-color: #c084fc;
-    box-shadow: 0 0 0 3px rgba(192,132,252,0.15);
+body.spring-mode input:focus,
+body.spring-mode textarea:focus,
+body.spring-mode select:focus {
+    border-color: #4ade80;
+    box-shadow: 0 0 0 3px rgba(74,222,128,0.15);
 }
 
-/* ── Easter Mode + Dark Theme overrides ─── */
-body.dark-mode.easter-mode {
-    --bg: #0f0a1a;
-    --card: #1a1228;
-    --border: #2d1f4e;
-    --surface-hover: #221838;
+/* ── Spring Mode + Dark Theme overrides ─── */
+body.dark-mode.spring-mode {
+    --bg: #0c1210;
+    --card: #131e19;
+    --border: #1e3028;
+    --surface-hover: #182822;
 }
 
-body.dark-mode.easter-mode .navbar {
-    background: rgba(15,10,26,0.95);
+body.dark-mode.spring-mode .navbar {
+    background: rgba(12,18,16,0.95);
     border-bottom: 2px solid transparent;
-    border-image: linear-gradient(90deg, #fbbf24, #fb923c, #f472b6, #c084fc, #60a5fa, #34d399) 1;
-    box-shadow: 0 2px 20px rgba(192,132,252,0.15);
+    border-image: linear-gradient(90deg, rgba(74,222,128,0.5), rgba(134,239,172,0.4), rgba(250,204,21,0.35), rgba(163,230,53,0.4), rgba(74,222,128,0.5)) 1;
+    box-shadow: 0 2px 16px rgba(74,222,128,0.08);
 }
 
-body.dark-mode.easter-mode .beta-banner {
-    background: linear-gradient(90deg, rgba(251,191,36,0.06), rgba(244,114,182,0.06), rgba(192,132,252,0.06));
-    color: #d8b4fe;
+body.dark-mode.spring-mode .beta-banner {
+    background: linear-gradient(90deg, rgba(74,222,128,0.04), rgba(250,204,21,0.04), rgba(163,230,53,0.04));
+    color: rgba(134,239,172,0.8);
 }
 
-body.dark-mode.easter-mode input:focus,
-body.dark-mode.easter-mode textarea:focus,
-body.dark-mode.easter-mode select:focus {
-    border-color: #c084fc;
-    box-shadow: 0 0 0 3px rgba(192,132,252,0.25);
+body.dark-mode.spring-mode input:focus,
+body.dark-mode.spring-mode textarea:focus,
+body.dark-mode.spring-mode select:focus {
+    border-color: rgba(74,222,128,0.6);
+    box-shadow: 0 0 0 3px rgba(74,222,128,0.12);
 }
 
-/* ── Floating Egg Container ─── */
-.easter-eggs-container {
+body.dark-mode.spring-mode .spring-toggle {
+    border-color: rgba(74,222,128,0.4);
+    background: linear-gradient(135deg, rgba(74,222,128,0.08), rgba(250,204,21,0.06));
+    box-shadow: 0 0 8px rgba(74,222,128,0.12);
+}
+
+body.dark-mode.spring-mode .btn-primary:not(.btn-open) {
+    background: linear-gradient(135deg, rgba(74,222,128,0.8) 0%, #15803d 50%, rgba(163,230,53,0.7) 100%);
+    box-shadow: 0 2px 10px rgba(74,222,128,0.15);
+}
+
+/* ── Spring Mode hero override ─── */
+body.spring-mode .builder-hero {
+    background: linear-gradient(135deg, #071a0f 0%, #0f2518 100%);
+}
+
+body.dark-mode.spring-mode .builder-hero {
+    background:
+        linear-gradient(180deg, rgba(74,222,128,0.15) 0%, #0c1210 100%),
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+    background-blend-mode: normal;
+}
+
+body.spring-mode .builder-hero .eyebrow {
+    color: #4ade80;
+}
+
+body.dark-mode.spring-mode .app-card:hover {
+    box-shadow: 0 8px 24px rgba(74,222,128,0.1), 0 0 0 1px rgba(74,222,128,0.08);
+}
+
+/* ── Floating Leaf Container ─── */
+.spring-leaves-container {
     position: fixed;
     top: 0;
     left: 0;
@@ -2504,40 +2536,40 @@ body.dark-mode.easter-mode select:focus {
     overflow: hidden;
 }
 
-.easter-egg-float {
+.spring-leaf-float {
     position: absolute;
     font-size: 24px;
     opacity: 0;
     pointer-events: none;
-    animation: egg-fall linear forwards;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+    animation: leaf-fall linear forwards;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.10));
 }
 
-/* ── Hover egg pop on interactive elements ─── */
-body.easter-mode .btn:hover,
-body.easter-mode .app-card:hover,
-body.easter-mode .theme-toggle:hover,
-body.easter-mode .changelog-bell:hover {
+/* ── Hover flower pop on interactive elements ─── */
+body.spring-mode .btn:hover,
+body.spring-mode .app-card:hover,
+body.spring-mode .theme-toggle:hover,
+body.spring-mode .changelog-bell:hover {
     position: relative;
 }
 
-body.easter-mode .app-card {
+body.spring-mode .app-card {
     transition: all 0.3s ease;
 }
 
-body.easter-mode .app-card:hover {
+body.spring-mode .app-card:hover {
     transform: translateY(-4px) rotate(-0.5deg);
-    box-shadow: 0 8px 30px rgba(192,132,252,0.2), 0 0 0 2px rgba(192,132,252,0.1);
+    box-shadow: 0 8px 30px rgba(74,222,128,0.2), 0 0 0 2px rgba(74,222,128,0.1);
 }
 
-body.easter-mode .app-card::after {
+body.spring-mode .app-card::after {
     content: '';
     position: absolute;
     top: -6px;
     right: -6px;
     width: 28px;
     height: 28px;
-    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 120'%3E%3Cellipse cx='50' cy='65' rx='38' ry='50' fill='%23fbbf24'/%3E%3Cellipse cx='50' cy='65' rx='38' ry='50' fill='none' stroke='%23f59e0b' stroke-width='2'/%3E%3Ccircle cx='35' cy='50' r='4' fill='%23f472b6'/%3E%3Ccircle cx='55' cy='40' r='3' fill='%2360a5fa'/%3E%3Ccircle cx='65' cy='60' r='3.5' fill='%2334d399'/%3E%3Ccircle cx='40' cy='75' r='3' fill='%23c084fc'/%3E%3Ccircle cx='60' cy='80' r='2.5' fill='%23fb923c'/%3E%3C/svg%3E") center/contain no-repeat;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='12' fill='%23facc15'/%3E%3Cellipse cx='50' cy='25' rx='10' ry='16' fill='%234ade80' opacity='0.9'/%3E%3Cellipse cx='50' cy='75' rx='10' ry='16' fill='%234ade80' opacity='0.9'/%3E%3Cellipse cx='25' cy='50' rx='16' ry='10' fill='%234ade80' opacity='0.9'/%3E%3Cellipse cx='75' cy='50' rx='16' ry='10' fill='%234ade80' opacity='0.9'/%3E%3Cellipse cx='32' cy='32' rx='10' ry='16' fill='%2386efac' opacity='0.8' transform='rotate(-45 32 32)'/%3E%3Cellipse cx='68' cy='32' rx='10' ry='16' fill='%2386efac' opacity='0.8' transform='rotate(45 68 32)'/%3E%3Cellipse cx='32' cy='68' rx='10' ry='16' fill='%2386efac' opacity='0.8' transform='rotate(45 32 68)'/%3E%3Cellipse cx='68' cy='68' rx='10' ry='16' fill='%2386efac' opacity='0.8' transform='rotate(-45 68 68)'/%3E%3C/svg%3E") center/contain no-repeat;
     opacity: 0;
     transform: scale(0) rotate(-20deg);
     transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -2545,29 +2577,29 @@ body.easter-mode .app-card::after {
     z-index: 2;
 }
 
-body.easter-mode .app-card:hover::after {
+body.spring-mode .app-card:hover::after {
     opacity: 1;
     transform: scale(1) rotate(8deg);
 }
 
-/* ── Confetti burst on click ─── */
-.easter-confetti {
+/* ── Petal burst on click ─── */
+.spring-petal {
     position: fixed;
     pointer-events: none;
     z-index: 10000;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    animation: confetti-burst 0.8s ease-out forwards;
+    width: 10px;
+    height: 10px;
+    border-radius: 50% 0 50% 50%;
+    animation: petal-burst 1s ease-out forwards;
 }
 
-/* ── Easter egg nest in footer ─── */
-body.easter-mode .site-footer {
+/* ── Spring flower garden in footer ─── */
+body.spring-mode .site-footer {
     position: relative;
 }
 
-body.easter-mode .site-footer::before {
-    content: '🥚🐣🥚';
+body.spring-mode .site-footer::before {
+    content: '🌱🌸🌿';
     position: absolute;
     top: -14px;
     left: 50%;
@@ -2575,11 +2607,11 @@ body.easter-mode .site-footer::before {
     font-size: 16px;
     letter-spacing: 8px;
     opacity: 0.6;
-    animation: egg-wobble 3s ease-in-out infinite;
+    animation: leaf-sway 3s ease-in-out infinite;
 }
 
-/* ── Easter egg cursor trail ─── */
-.easter-trail {
+/* ── Spring cursor trail ─── */
+.spring-trail {
     position: fixed;
     pointer-events: none;
     z-index: 9998;
@@ -2588,37 +2620,64 @@ body.easter-mode .site-footer::before {
     animation: trail-fade 0.6s ease-out forwards;
 }
 
+/* ── Spring Mode spinner override ─── */
+body.spring-mode .spinner {
+    border-color: rgba(74,222,128,0.25);
+    border-top-color: #16a34a;
+    border-radius: 50%;
+    position: relative;
+}
+
+body.spring-mode .spinner::after {
+    content: '🌼';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 12px;
+    animation: bloom-pulse 1.5s ease-in-out infinite;
+}
+
 /* ── Keyframes ─── */
-@keyframes egg-wobble {
+@keyframes leaf-sway {
     0%, 100% { transform: rotate(0deg); }
-    25% { transform: rotate(-10deg); }
-    75% { transform: rotate(10deg); }
+    25% { transform: rotate(-8deg); }
+    75% { transform: rotate(8deg); }
 }
 
-@keyframes egg-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-3px); }
+@keyframes bloom-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
 }
 
-@keyframes egg-fall {
+@keyframes leaf-fall {
     0% {
-        opacity: 0.9;
-        transform: translateY(-40px) rotate(0deg);
+        opacity: 0.85;
+        transform: translateY(-40px) rotate(0deg) translateX(0);
+    }
+    25% {
+        transform: translateY(calc(25vh)) rotate(90deg) translateX(30px);
+    }
+    50% {
+        transform: translateY(calc(50vh)) rotate(180deg) translateX(-20px);
+    }
+    75% {
+        transform: translateY(calc(75vh)) rotate(270deg) translateX(25px);
     }
     100% {
         opacity: 0;
-        transform: translateY(calc(100vh + 40px)) rotate(720deg);
+        transform: translateY(calc(100vh + 40px)) rotate(360deg) translateX(-10px);
     }
 }
 
-@keyframes confetti-burst {
+@keyframes petal-burst {
     0% {
         opacity: 1;
-        transform: translate(0, 0) scale(1);
+        transform: translate(0, 0) scale(1) rotate(0deg);
     }
     100% {
         opacity: 0;
-        transform: translate(var(--confetti-x), var(--confetti-y)) scale(0);
+        transform: translate(var(--confetti-x), var(--confetti-y)) scale(0) rotate(180deg);
     }
 }
 
@@ -2633,7 +2692,7 @@ body.easter-mode .site-footer::before {
     }
 }
 
-@keyframes rainbow-border {
-    0% { border-image-source: linear-gradient(0deg, #fbbf24, #fb923c, #f472b6, #c084fc, #60a5fa, #34d399); }
-    100% { border-image-source: linear-gradient(360deg, #fbbf24, #fb923c, #f472b6, #c084fc, #60a5fa, #34d399); }
+@keyframes spring-border {
+    0% { border-image-source: linear-gradient(0deg, #4ade80, #86efac, #facc15, #fef08a, #a3e635, #4ade80); }
+    100% { border-image-source: linear-gradient(360deg, #4ade80, #86efac, #facc15, #fef08a, #a3e635, #4ade80); }
 }

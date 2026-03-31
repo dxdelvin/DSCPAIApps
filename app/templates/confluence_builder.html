@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}AI Confluence Builder - BSH DSCP AI{% endblock %}
+
+{% block page_name %}Confluence Builder{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', path='css/confluence_builder.css') }}?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">Docupedia | Confluence Publishing</p>
+        <h1>AI Confluence Builder</h1>
+        <p class="lede">Upload PDFs, images, and attachments, let AI prepare Confluence storage format content, review the draft, and publish the page under the correct parent page faster.</p>
+    </div>
+</section>
+
+<div class="container cb-container">
+    <div class="cb-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">Documentation Workflow</p>
+                <h2 class="builder-title">Create and publish Confluence-ready pages</h2>
+            </div>
+            <div class="cb-steps" id="cb-steps">
+                <div class="cb-step active" data-step="upload">
+                    <span class="cb-step-num">1</span>
+                    <span class="cb-step-label">Upload</span>
+                </div>
+                <div class="cb-step" data-step="review">
+                    <span class="cb-step-num">2</span>
+                    <span class="cb-step-label">Review</span>
+                </div>
+                <div class="cb-step" data-step="post">
+                    <span class="cb-step-num">3</span>
+                    <span class="cb-step-label">Post</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cb-stage-panels">
+            <section class="cb-stage-panel is-visible" data-view-step="upload">
+                <section class="cb-card workflow-card cb-step-card" data-panel-step="upload">
+                    <div class="cb-card-head">
+                        <span class="cb-section-badge">Step 1</span>
+                        <div>
+                            <h3>Upload Content</h3>
+                            <p>Upload PDFs, screenshots, and business files. Then decide which items should guide AI, be attached to the page, or be displayed in the page body.</p>
+                        </div>
+                    </div>
+
+                    <div class="upload-section">
+                        <h4>Source and attachment files</h4>
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">FILES</span>
+                                <p>Drag and drop files here or click to select</p>
+                                <p class="upload-hint">AI can read PDF, PNG, JPG, JPEG, GIF, and SVG. Other uploaded files can still be posted as attachments.</p>
+                            </div>
+                            <input
+                                type="file"
+                                id="file-input"
+                                multiple
+                                accept=".pdf,.png,.jpg,.jpeg,.gif,.svg,.txt,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.msg"
+                                hidden
+                            >
+                        </div>
+                    </div>
+
+                    <div class="files-list-section" id="files-panel" hidden>
+                        <div class="files-panel-head">
+                            <h4>Uploaded file roles</h4>
+                            <button class="btn btn-secondary btn-sm" id="add-more-btn" type="button">Add More Files</button>
+                        </div>
+                        <div class="cb-files-list" id="files-list"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="requested-title">Page Title Hint <span class="optional-tag">(Optional)</span></label>
+                        <input type="text" id="requested-title" placeholder="Leave blank if AI should generate the title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="draft-instructions">Drafting Instructions <span class="optional-tag">(Optional)</span></label>
+                        <textarea id="draft-instructions" rows="4" maxlength="2500" placeholder="E.g. create a support article, keep the tone formal, show the selected images in a side-by-side layout, and add an attachment section at the end."></textarea>
+                    </div>
+
+                    <div class="warning-notice">
+                        <span class="warning-icon">!</span>
+                        <div class="warning-content">
+                            <strong>Practical note</strong>
+                            PDFs and images can guide the AI draft. Other files are preserved for publishing but do not influence the generated text unless you also upload an AI-readable source file.
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="generate-btn" type="button" disabled>Generate Draft</button>
+                        <button class="btn btn-secondary" id="regenerate-btn" type="button" disabled>Regenerate</button>
+                        <button class="btn btn-ghost-text" id="reset-btn" type="button">Reset</button>
+                    </div>
+                </section>
+
+                <section class="cb-card step-doc-card">
+                    <div class="step-doc-head">
+                        <p class="eyebrow">Upload Focus</p>
+                        <h4>What the user should decide here</h4>
+                    </div>
+                    <div class="step-doc-grid">
+                        <article class="step-doc-item">
+                            <h5>AI Source</h5>
+                            <p>Use PDFs and images when you want AI to read and draft the page content.</p>
+                        </article>
+                        <article class="step-doc-item">
+                            <h5>Attach to Page</h5>
+                            <p>Keep files available for publishing even when they should not drive the draft.</p>
+                        </article>
+                        <article class="step-doc-item">
+                            <h5>Display in Page</h5>
+                            <p>Select only the images that should appear in the final Confluence storage format. Limit is 10.</p>
+                        </article>
+                    </div>
+                </section>
+            </section>
+
+            <section class="cb-stage-panel" data-view-step="review">
+                <section class="results-container workflow-card cb-step-card" data-panel-step="review">
+                    <div class="results-head">
+                        <div>
+                            <p class="eyebrow">Step 2</p>
+                            <h3>Review Workspace</h3>
+                            <p>Check the generated title, summary, image references, and Confluence storage format before publishing.</p>
+                        </div>
+                        <div class="results-head-actions">
+                            <span class="review-stage-pill" id="draft-state-chip">Waiting for upload</span>
+                            <button class="btn btn-secondary btn-sm" id="open-post-btn" type="button" disabled>Continue to Post</button>
+                        </div>
+                    </div>
+
+                    <div class="review-shell" id="review-shell" hidden>
+                        <div class="review-topbar">
+                            <div class="form-group review-title-group">
+                                <label for="draft-title">Page Title</label>
+                                <input type="text" id="draft-title" placeholder="AI will generate the title if left blank">
+                            </div>
+                            <div class="review-topbar-actions">
+                                <button class="btn btn-secondary btn-sm" id="copy-xml-btn" type="button">Copy Storage Format</button>
+                            </div>
+                        </div>
+
+                        <div class="summary-card">
+                            <label for="draft-summary">AI Summary</label>
+                            <textarea id="draft-summary" rows="4" maxlength="2500" placeholder="AI summary appears here after generation."></textarea>
+                        </div>
+
+                        <div class="review-grid">
+                            <div class="review-main">
+                                <div class="xml-card">
+                                    <div class="xml-card-head">
+                                        <div>
+                                            <h4>Confluence Storage Format</h4>
+                                            <p>Review and edit the storage format directly before posting.</p>
+                                        </div>
+                                        <span class="xml-status" id="xml-status">Ready for review</span>
+                                    </div>
+                                    <textarea id="storage-xml" class="xml-editor" spellcheck="false" placeholder="Generated Confluence storage format will appear here."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="review-side">
+                                <div class="reference-card">
+                                    <div class="reference-card-head">
+                                        <h4>Display Images</h4>
+                                        <p>Images selected to appear in the content body.</p>
+                                    </div>
+                                    <div class="reference-list" id="display-reference-list"></div>
+                                </div>
+
+                                <div class="reference-card">
+                                    <div class="reference-card-head">
+                                        <h4>Attachment References</h4>
+                                        <p>Track which attachment filenames are already referenced in the storage format.</p>
+                                    </div>
+                                    <div class="reference-list" id="attachment-reference-list"></div>
+                                </div>
+
+                                <div class="reference-card warning-card" id="warning-card" hidden>
+                                    <div class="reference-card-head">
+                                        <h4>Draft Warnings</h4>
+                                        <p>Resolve these before publishing if possible.</p>
+                                    </div>
+                                    <ul class="warning-list" id="warning-list"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" id="empty-state">
+                        <div class="guide-panel">
+                            <div class="guide-header">
+                                <span class="guide-header-icon">DOCS</span>
+                                <div>
+                                    <p class="eyebrow">Quick Start</p>
+                                    <h4>How to Use This Builder</h4>
+                                </div>
+                            </div>
+
+                            <ol class="guide-steps">
+                                <li class="guide-step">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-body">
+                                        <strong>Upload files and assign roles</strong>
+                                        <span>Choose which files should guide AI, which should be attached to the page, and which images should appear in the content body.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-body">
+                                        <strong>Generate and review the draft</strong>
+                                        <span>Edit the AI summary, adjust the title, and tune the Confluence storage format directly inside the workspace.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-body">
+                                        <strong>Refine or regenerate</strong>
+                                        <span>Ask AI for another version if the structure is off, or keep polishing the storage format manually until it is ready.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-body">
+                                        <strong>Publish with your PAT</strong>
+                                        <span>Provide Confluence URL, Space Key, Parent Page ID, and PAT, then publish the page and attachments in one step.</span>
+                                    </div>
+                                </li>
+                            </ol>
+
+                            <div class="guide-tips">
+                                <p class="guide-tips-title">Business Tips</p>
+                                <ul>
+                                    <li>Use PDFs with readable text for the strongest first draft.</li>
+                                    <li>Keep only the most relevant screenshots as display images so the page stays clean and purposeful.</li>
+                                    <li>Use the storage format warning panel to catch missing attachment references before posting.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="loading-state" id="loading-state" style="display:none"></div>
+                </section>
+
+                <section class="cb-card workflow-card cb-step-card" id="refine-panel" data-panel-step="review" hidden>
+                    <div class="cb-card-head">
+                        <span class="cb-section-badge">Refine</span>
+                        <div>
+                            <h3>Refine With AI</h3>
+                            <p>Ask AI to tighten structure, rewrite sections, or improve the flow after you review the first draft.</p>
+                        </div>
+                    </div>
+
+                    <div class="chat-messages" id="refine-history"></div>
+                    <div class="form-group">
+                        <label for="refine-instruction">Refinement Request</label>
+                        <textarea id="refine-instruction" rows="3" maxlength="1500" placeholder="E.g. make the opening more concise, add a troubleshooting section, and keep the image gallery at the end."></textarea>
+                    </div>
+                    <div class="form-actions">
+                        <button class="btn btn-primary btn-sm" id="refine-btn" type="button">Refine Draft</button>
+                    </div>
+                </section>
+            </section>
+
+            <section class="cb-stage-panel" data-view-step="post">
+                <aside class="cb-card publish-panel workflow-card cb-step-card" data-panel-step="post">
+                    <div class="cb-card-head">
+                        <span class="cb-section-badge">Step 3</span>
+                        <div>
+                            <h3>Publish Details</h3>
+                            <p>Publishing stays locked until the draft exists and all required Confluence details are filled in.</p>
+                        </div>
+                    </div>
+
+                    <div class="publish-status-grid">
+                        <div class="publish-status-card">
+                            <span class="publish-status-label">Draft status</span>
+                            <strong class="publish-status-value" id="draft-status">No draft yet</strong>
+                        </div>
+                        <div class="publish-status-card">
+                            <span class="publish-status-label">Display images</span>
+                            <strong class="publish-status-value" id="display-count">0 / 10 selected</strong>
+                        </div>
+                        <div class="publish-status-card">
+                            <span class="publish-status-label">Attachments</span>
+                            <strong class="publish-status-value" id="attachment-count">0 selected</strong>
+                        </div>
+                    </div>
+
+                    <div class="pat-guide">
+                        <p class="pat-guide-title">PAT guidance</p>
+                        <ol class="pat-guide-list">
+                            <li>Create a Personal Access Token in Confluence or Docupedia from your account settings.</li>
+                            <li>Paste the token here only when you are ready to publish.</li>
+                            <li>The token is used only for the publish request and is never stored in this app.</li>
+                        </ol>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confluence-url">Confluence URL</label>
+                        <input type="url" id="confluence-url" value="https://inside-docupedia.bosch.com/confluence2">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="space-key">Space Key <span class="required-tag">Required</span></label>
+                        <input type="text" id="space-key" placeholder="E.g. DPS">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="parent-page-id">Parent Page ID <span class="required-tag">Required</span></label>
+                        <input type="text" id="parent-page-id" placeholder="Enter the parent page ID">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="confluence-pat">Confluence PAT <span class="required-tag">Required</span></label>
+                        <input type="password" id="confluence-pat" placeholder="Paste your personal access token">
+                    </div>
+
+                    <div class="form-actions publish-actions">
+                        <button class="btn btn-primary" id="publish-btn" type="button" disabled>Publish to Confluence</button>
+                    </div>
+
+                    <div class="publish-result" id="publish-result" hidden></div>
+                </aside>
+
+                <section class="cb-card step-doc-card">
+                    <div class="step-doc-head">
+                        <p class="eyebrow">Post Focus</p>
+                        <h4>What to confirm before publishing</h4>
+                    </div>
+                    <div class="step-doc-list">
+                        <div class="step-doc-line">
+                            <strong>Parent Page ID is mandatory</strong>
+                            <span>The new page is always created under the parent you provide in this step.</span>
+                        </div>
+                        <div class="step-doc-line">
+                            <strong>PAT is used only here</strong>
+                            <span>The Personal Access Token is only sent with the publish request and is not stored in the app.</span>
+                        </div>
+                        <div class="step-doc-line">
+                            <strong>Review first, then post</strong>
+                            <span>If the storage format or file references look wrong, go back to Review before publishing.</span>
+                        </div>
+                    </div>
+                </section>
+            </section>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', path='js/confluence_builder.js') }}?v={{ css_version }}"></script>
+{% endblock %}
