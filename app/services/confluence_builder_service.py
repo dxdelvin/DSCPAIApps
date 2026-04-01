@@ -740,7 +740,6 @@ async def verify_confluence_connection(
     parent_page_id: str,
 ) -> dict[str, Any]:
     base = (confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL).rstrip("/")
-    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -752,7 +751,7 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False) as client:
+    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False, trust_env=True) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
@@ -844,7 +843,6 @@ async def _create_confluence_page(
     storage_xml: str,
 ) -> dict[str, Any]:
     api_url = f"{confluence_url.rstrip('/')}/rest/api/content"
-    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -857,8 +855,9 @@ async def _create_confluence_page(
         "ancestors": [{"id": str(parent_page_id)}],
         "body": {"storage": {"value": storage_xml, "representation": "storage"}},
     }
+    client_kwargs = {"verify": False, "trust_env": True}
 
-    async with httpx.AsyncClient(verify=False, timeout=30.0) as client:
+    async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(api_url, headers=headers, json=payload, timeout=30.0)
         if response.is_error:
             detail = extract_confluence_error_message(response.text, response.status_code)
@@ -896,14 +895,14 @@ async def _upload_confluence_attachment(
     content_type: str | None,
 ) -> dict[str, Any]:
     api_url = f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment"
-    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "X-Atlassian-Token": "nocheck",
         "Authorization": f"Bearer {pat}",
     }
+    client_kwargs = {"verify": False, "trust_env": True}
 
-    async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
+    async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(
             api_url,
             headers=headers,
