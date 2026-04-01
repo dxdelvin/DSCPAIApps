@@ -7,8 +7,12 @@ proxy.  This module reads the binding from VCAP_SERVICES, obtains a
 short-lived OAuth token from the Connectivity Service token endpoint, and
 returns the proxy URL + extra headers that httpx needs.
 
-Locally (no VCAP_SERVICES or no connectivity binding) it returns None so
-callers can fall back to a direct connection.
+The SAP Connectivity proxy does NOT support HTTPS CONNECT tunneling.  Instead,
+target URLs must use the ``http://`` scheme — the Cloud Connector handles TLS
+to the on-premise backend.  Use ``rewrite_url_for_proxy()`` to convert URLs.
+
+Locally (no VCAP_SERVICES or no connectivity binding) everything is a no-op
+and callers fall back to direct connections.
 """
 
 import json
@@ -51,6 +55,20 @@ def _get_connectivity_credentials() -> dict[str, Any] | None:
     return creds
 
 
+def is_proxy_active() -> bool:
+    """Return True when the Connectivity Service binding is present."""
+    return bool(_get_connectivity_credentials())
+
+
+def rewrite_url_for_proxy(url: str) -> str:
+    """Downgrade ``https://`` to ``http://`` when the SAP Connectivity proxy
+    is in use.  The Cloud Connector handles TLS to the on-premise backend, so
+    the proxy itself only accepts plain HTTP forwarding (no CONNECT tunnel)."""
+    if is_proxy_active() and url.lower().startswith("https://"):
+        return "http://" + url[len("https://"):]
+    return url
+
+
 async def _fetch_connectivity_token(creds: dict[str, Any]) -> str:
     """Get an OAuth token from the Connectivity Service token endpoint."""
     token_url = creds["token_service_url"] + "/oauth/token"
@@ -72,8 +90,8 @@ async def get_onpremise_proxy_config() -> dict[str, Any] | None:
     Return proxy kwargs for httpx to reach on-premise hosts via SAP Cloud Connector.
 
     Returns a dict with keys:
-        proxy_url  – the HTTPS proxy URL (e.g. http://host:20003)
-        headers    – extra headers to add to every request (Proxy-Authorization, etc.)
+        proxy_url  – the HTTP proxy URL (e.g. http://host:20003)
+        headers    – extra headers (Proxy-Authorization, etc.)
 
     Returns None when no connectivity binding is available (local dev).
     """
@@ -82,7 +100,7 @@ async def get_onpremise_proxy_config() -> dict[str, Any] | None:
         return None
 
     proxy_host = creds.get("onpremise_proxy_host")
-    proxy_port = creds.get("onpremise_proxy_https_port", "20003")
+    proxy_port = creds.get("onpremise_proxy_port", "20003")
 
     if not proxy_host:
         logger.warning("Connectivity Service bound but onpremise_proxy_host missing")
@@ -111,24 +129,27 @@ async def build_httpx_client_kwargs(extra_headers: dict | None = None) -> dict[s
     Build kwargs dict for httpx.AsyncClient that routes through the
     Connectivity Service proxy when available, or falls back to direct.
 
-    Usage:
-        kw = await build_httpx_client_kwargs(extra_headers={...})
+    Callers MUST also use ``rewrite_url_for_proxy(url)`` on every target URL
+    to downgrade HTTPS → HTTP so httpx uses plain forwarding instead of
+    CONNECT tunneling (which the SAP proxy rejects with 405).
+
+    Usage::
+
+        kw = await build_httpx_client_kwargs()
         async with httpx.AsyncClient(**kw) as client:
-            ...
+            resp = await client.get(rewrite_url_for_proxy(url), headers=...)
     """
     base: dict[str, Any] = {"verify": False, "trust_env": True}
 
     proxy_cfg = await get_onpremise_proxy_config()
     if proxy_cfg:
-        # Proxy-Authorization must be sent during the CONNECT handshake,
-        # so it goes on the httpx.Proxy object — NOT as a regular header.
-        base["proxy"] = httpx.Proxy(
-            url=proxy_cfg["proxy_url"],
-            headers=proxy_cfg["headers"],
-        )
+        # Plain string proxy URL — for http:// targets httpx uses regular
+        # forwarding (GET/POST through proxy) rather than CONNECT tunneling.
+        base["proxy"] = proxy_cfg["proxy_url"]
+        # Proxy-Authorization + any caller headers merged together.
+        merged = {**(extra_headers or {}), **proxy_cfg["headers"]}
+        base["headers"] = merged
         base["trust_env"] = False
-        if extra_headers:
-            base["headers"] = extra_headers
         logger.info("Using SAP Connectivity proxy at %s", proxy_cfg["proxy_url"])
     else:
         if extra_headers:

@@ -18,7 +18,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
 )
-from app.services.sap_connectivity import build_httpx_client_kwargs
+from app.services.sap_connectivity import build_httpx_client_kwargs, rewrite_url_for_proxy
 
 
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
@@ -741,6 +741,7 @@ async def verify_confluence_connection(
     parent_page_id: str,
 ) -> dict[str, Any]:
     base = (confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL).rstrip("/")
+    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -756,7 +757,7 @@ async def verify_confluence_connection(
     client_kw.update({"timeout": 20.0, "follow_redirects": False})
     async with httpx.AsyncClient(**client_kw) as client:
         # 1. Verify PAT by fetching current user
-        user_url = f"{base}/rest/api/user/current"
+        user_url = rewrite_url_for_proxy(f"{base}/rest/api/user/current")
         try:
             logger.info("[verify] GET %s", user_url)
             user_resp = await client.get(user_url, headers=headers)
@@ -793,7 +794,7 @@ async def verify_confluence_connection(
         display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
 
         # 2. Verify space key
-        space_url = f"{base}/rest/api/space/{space_key}"
+        space_url = rewrite_url_for_proxy(f"{base}/rest/api/space/{space_key}")
         try:
             logger.info("[verify] GET %s", space_url)
             space_resp = await client.get(space_url, headers=headers)
@@ -808,7 +809,7 @@ async def verify_confluence_connection(
             return {"error": True, "detail": f"Space '{space_key}' not found (HTTP {space_resp.status_code})."}
 
         # 3. Verify parent page
-        page_url = f"{base}/rest/api/content/{parent_page_id}"
+        page_url = rewrite_url_for_proxy(f"{base}/rest/api/content/{parent_page_id}")
         try:
             logger.info("[verify] GET %s", page_url)
             page_resp = await client.get(page_url, headers=headers)
@@ -845,7 +846,8 @@ async def _create_confluence_page(
     title: str,
     storage_xml: str,
 ) -> dict[str, Any]:
-    api_url = f"{confluence_url.rstrip('/')}/rest/api/content"
+    api_url = rewrite_url_for_proxy(f"{confluence_url.rstrip('/')}/rest/api/content")
+    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -897,7 +899,8 @@ async def _upload_confluence_attachment(
     file_bytes: bytes,
     content_type: str | None,
 ) -> dict[str, Any]:
-    api_url = f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment"
+    api_url = rewrite_url_for_proxy(f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment")
+    pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "X-Atlassian-Token": "nocheck",
