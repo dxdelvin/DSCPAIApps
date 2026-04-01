@@ -262,38 +262,61 @@ class DocupediaPublisherApp {
         if (this.el.nextAuthLabel) this.el.nextAuthLabel.textContent = 'Verifying...';
         if (this.el.nextAuthSpinner) this.el.nextAuthSpinner.hidden = false;
 
-        try {
-            const response = await fetch('/api/confluence-builder/verify-connection', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    confluenceUrl: this.defaultConfluenceUrl,
-                    pat: this.el.pat.value.trim(),
-                    spaceKey: this.el.spaceKey.value.trim(),
-                    parentPageId: this.el.parentId.value.trim(),
-                }),
-            });
-            const data = await response.json();
+        const base = (this.el.confluenceUrl?.value?.trim() || this.defaultConfluenceUrl).replace(/\/$/, '');
+        const pat = this.el.pat.value.trim();
+        const spaceKey = this.el.spaceKey.value.trim();
+        const parentId = this.el.parentId.value.trim();
+        const apiBase = `${base}/rest/api`;
+        const headers = { 'Accept': 'application/json', 'Authorization': `Bearer ${pat}` };
 
-            if (!response.ok || data.status === 'error') {
-                this.showConnectionResult(false, data.detail || 'Verification failed.');
-                showToast(data.detail || 'Connection verification failed.', 'error');
+        try {
+            // 1. Verify PAT
+            const userResp = await fetch(`${apiBase}/user/current`, { headers });
+            if (!userResp.ok) {
+                const msg = userResp.status === 401 ? 'Invalid PAT. Check your token.' : `PAT check failed (HTTP ${userResp.status}).`;
+                this.showConnectionResult(false, msg);
+                showToast(msg, 'error');
+                return;
+            }
+            const userData = await userResp.json();
+            const displayName = userData.displayName || userData.username || 'Unknown';
+
+            // 2. Verify space
+            const spaceResp = await fetch(`${apiBase}/space/${spaceKey}`, { headers });
+            if (!spaceResp.ok) {
+                const msg = `Space '${spaceKey}' not found (HTTP ${spaceResp.status}).`;
+                this.showConnectionResult(false, msg);
+                showToast(msg, 'error');
                 return;
             }
 
-            this.isVerified = true;
-            this.verifiedUser = data.displayName || '';
-            this.showConnectionResult(true, `Verified as ${this.verifiedUser}`);
+            // 3. Verify parent page
+            const pageResp = await fetch(`${apiBase}/content/${parentId}`, { headers });
+            if (!pageResp.ok) {
+                const msg = `Parent page '${parentId}' not found (HTTP ${pageResp.status}).`;
+                this.showConnectionResult(false, msg);
+                showToast(msg, 'error');
+                return;
+            }
+            const pageData = await pageResp.json();
+            const parentTitle = pageData.title || parentId;
 
-            if (this.el.userName) this.el.userName.textContent = this.verifiedUser;
+            this.isVerified = true;
+            this.verifiedUser = displayName;
+            this.showConnectionResult(true, `Verified as ${displayName} · Space: ${spaceKey} · Parent: ${parentTitle}`);
+
+            if (this.el.userName) this.el.userName.textContent = displayName;
             if (this.el.userGreeting) this.el.userGreeting.hidden = false;
 
-            showToast(`Connected as ${this.verifiedUser}`, 'success');
+            showToast(`Connected as ${displayName}`, 'success');
             this.goTo('upload');
         } catch (error) {
             AppLogger.error('Connection verification error', error);
-            this.showConnectionResult(false, 'Server connection failed. Please try again.');
-            showToast('Server connection failed.', 'error');
+            const msg = error.name === 'TypeError'
+                ? 'Cannot reach Confluence. Check network connection or CORS settings.'
+                : 'Verification failed. Please try again.';
+            this.showConnectionResult(false, msg);
+            showToast(msg, 'error');
         } finally {
             this.el.nextAuth.disabled = !this.isAuthValid();
             if (this.el.nextAuthLabel) this.el.nextAuthLabel.textContent = this.isVerified ? 'Verified' : 'Verify & Continue';
@@ -615,40 +638,104 @@ class DocupediaPublisherApp {
             });
         }
 
-        const formData = new FormData();
-        this.files.forEach((r) => formData.append('files', r.file));
-        formData.append('uploadManifest', JSON.stringify(this.serializeManifest()));
-        formData.append('draft', JSON.stringify(this.getDraftPayload()));
-        formData.append('confluenceUrl', this.el.confluenceUrl.value.trim() || this.defaultConfluenceUrl);
-        formData.append('spaceKey', this.el.spaceKey.value.trim());
-        formData.append('parentPageId', this.el.parentId.value.trim());
-        formData.append('pat', this.el.pat.value.trim());
+        const base = (this.el.confluenceUrl?.value?.trim() || this.defaultConfluenceUrl).replace(/\/$/, '');
+        const pat = this.el.pat.value.trim();
+        const spaceKey = this.el.spaceKey.value.trim();
+        const parentPageId = this.el.parentId.value.trim();
+        const apiBase = `${base}/rest/api`;
+        const draft = this.getDraftPayload();
 
         try {
-            const response = await fetch('/api/confluence-builder/publish', {
+            // 1. Create page
+            const pageResp = await fetch(`${apiBase}/content`, {
                 method: 'POST',
-                body: formData,
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${pat}`,
+                },
+                body: JSON.stringify({
+                    type: 'page',
+                    title: draft.title,
+                    space: { key: spaceKey },
+                    ancestors: [{ id: String(parentPageId) }],
+                    body: { storage: { value: draft.storageXml, representation: 'storage' } },
+                }),
             });
-            const data = await response.json();
 
-            if (!response.ok || data.status === 'error') {
-                AppLogger.error('Docupedia publish failed', data);
-                showToast(data.detail || 'Publish failed.', 'error');
+            if (!pageResp.ok) {
+                let detail = `Page creation failed (HTTP ${pageResp.status}).`;
+                try {
+                    const errData = await pageResp.json();
+                    detail = errData.message || errData.reason || detail;
+                } catch (_) {}
+                showToast(detail, 'error');
                 return;
             }
 
-            this.publishResult = data;
+            const pageData = await pageResp.json();
+            const pageId = String(pageData.id || '');
+            const webui = pageData._links?.webui || '';
+            const pageBase = pageData._links?.base || base;
+            const pageLink = webui.startsWith('/') ? `${pageBase}${webui}` : webui || `${base}/pages/viewpage.action?pageId=${pageId}`;
+
+            // 2. Upload attachments
+            const attachRefs = this.currentDraft?.attachmentReferences || [];
+            const uploadResults = [];
+
+            for (const ref of attachRefs) {
+                if (!ref.attachToPage || !ref.canonicalName) continue;
+                const fileRecord = this.files.find((r) => r.id === ref.sourceId);
+                if (!fileRecord) continue;
+
+                const fd = new FormData();
+                fd.append('file', fileRecord.file, ref.canonicalName);
+
+                const uploadResp = await fetch(`${apiBase}/content/${pageId}/child/attachment`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Atlassian-Token': 'nocheck',
+                        'Authorization': `Bearer ${pat}`,
+                    },
+                    body: fd,
+                });
+
+                uploadResults.push({
+                    sourceId: ref.sourceId,
+                    originalName: ref.originalName,
+                    uploadedAs: ref.canonicalName,
+                    success: uploadResp.ok,
+                    statusCode: uploadResp.status,
+                });
+            }
+
+            const uploadedCount = uploadResults.filter((r) => r.success).length;
+            const failedUploads = uploadResults.filter((r) => !r.success);
+
+            this.publishResult = {
+                status: failedUploads.length ? 'partial_success' : 'success',
+                pageId,
+                title: draft.title,
+                pageLink,
+                uploadedCount,
+                failedUploadCount: failedUploads.length,
+                uploadResults,
+            };
             this.renderPublishResult();
             this.syncProgress();
 
-            if (data.status === 'partial_success') {
+            if (failedUploads.length) {
                 showToast('Page created, but some attachments failed.', 'warning');
             } else {
                 showToast('Page published!', 'success');
             }
         } catch (error) {
             AppLogger.error('Docupedia publish error', error);
-            showToast('Server connection failed.', 'error');
+            const msg = error.name === 'TypeError'
+                ? 'Cannot reach Confluence. Check network connection or CORS settings.'
+                : 'Publish failed. Please try again.';
+            showToast(msg, 'error');
         } finally {
             if (typeof LoadingOverlay !== 'undefined') LoadingOverlay.hide();
         }

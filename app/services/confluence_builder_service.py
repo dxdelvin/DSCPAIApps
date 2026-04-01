@@ -18,7 +18,6 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
 )
-from app.services.sap_connectivity import build_httpx_client_kwargs, rewrite_url_for_proxy
 
 
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
@@ -753,11 +752,9 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    client_kw = await build_httpx_client_kwargs()
-    client_kw.update({"timeout": 20.0, "follow_redirects": False})
-    async with httpx.AsyncClient(**client_kw) as client:
+    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False) as client:
         # 1. Verify PAT by fetching current user
-        user_url = rewrite_url_for_proxy(f"{base}/rest/api/user/current")
+        user_url = f"{base}/rest/api/user/current"
         try:
             logger.info("[verify] GET %s", user_url)
             user_resp = await client.get(user_url, headers=headers)
@@ -794,7 +791,7 @@ async def verify_confluence_connection(
         display_name = user_data.get("displayName") or user_data.get("username") or "Unknown"
 
         # 2. Verify space key
-        space_url = rewrite_url_for_proxy(f"{base}/rest/api/space/{space_key}")
+        space_url = f"{base}/rest/api/space/{space_key}"
         try:
             logger.info("[verify] GET %s", space_url)
             space_resp = await client.get(space_url, headers=headers)
@@ -809,7 +806,7 @@ async def verify_confluence_connection(
             return {"error": True, "detail": f"Space '{space_key}' not found (HTTP {space_resp.status_code})."}
 
         # 3. Verify parent page
-        page_url = rewrite_url_for_proxy(f"{base}/rest/api/content/{parent_page_id}")
+        page_url = f"{base}/rest/api/content/{parent_page_id}"
         try:
             logger.info("[verify] GET %s", page_url)
             page_resp = await client.get(page_url, headers=headers)
@@ -846,7 +843,7 @@ async def _create_confluence_page(
     title: str,
     storage_xml: str,
 ) -> dict[str, Any]:
-    api_url = rewrite_url_for_proxy(f"{confluence_url.rstrip('/')}/rest/api/content")
+    api_url = f"{confluence_url.rstrip('/')}/rest/api/content"
     pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
@@ -860,9 +857,8 @@ async def _create_confluence_page(
         "ancestors": [{"id": str(parent_page_id)}],
         "body": {"storage": {"value": storage_xml, "representation": "storage"}},
     }
-    client_kwargs = await build_httpx_client_kwargs()
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
+    async with httpx.AsyncClient(verify=False, timeout=30.0) as client:
         response = await client.post(api_url, headers=headers, json=payload, timeout=30.0)
         if response.is_error:
             detail = extract_confluence_error_message(response.text, response.status_code)
@@ -899,16 +895,15 @@ async def _upload_confluence_attachment(
     file_bytes: bytes,
     content_type: str | None,
 ) -> dict[str, Any]:
-    api_url = rewrite_url_for_proxy(f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment")
+    api_url = f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment"
     pat = re.sub(r"[^\x20-\x7E]", "", pat).strip()
     headers = {
         "Accept": "application/json",
         "X-Atlassian-Token": "nocheck",
         "Authorization": f"Bearer {pat}",
     }
-    client_kwargs = await build_httpx_client_kwargs()
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
+    async with httpx.AsyncClient(verify=False, timeout=60.0) as client:
         response = await client.post(
             api_url,
             headers=headers,

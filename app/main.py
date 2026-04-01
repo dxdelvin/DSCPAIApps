@@ -90,7 +90,26 @@ SESSION_SECRET = os.getenv("SESSION_SECRET", "fallback-dev-secret-change-in-prod
 # Detect production environment for strict cookie security
 IS_PROD_ENV = bool(os.getenv("VCAP_SERVICES")) or os.getenv("ENVIRONMENT") == "prod"
 
+CONFLUENCE_HOST = os.getenv("CONFLUENCE_HOST", "https://inside-docupedia.bosch.com")
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            f"connect-src 'self' {CONFLUENCE_HOST}; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: blob:; "
+            "worker-src blob:;"
+        )
+        return response
+
+
 # Add Auth middleware FIRST (will execute AFTER Session)
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(AuthMiddleware)
 
 # Add Session middleware LAST (will execute FIRST)
