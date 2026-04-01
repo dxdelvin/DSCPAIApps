@@ -267,10 +267,16 @@
                     <div class="dp-review-body">
                         <div class="dp-xml-pane">
                             <div class="dp-xml-head">
-                                <h3>Confluence Storage Format</h3>
+                                <div class="dp-view-tabs">
+                                    <button class="dp-view-tab is-active" data-view="preview" type="button">Preview</button>
+                                    <button class="dp-view-tab" data-view="code" type="button">Code</button>
+                                </div>
                                 <span class="dp-xml-status" id="dp-xml-status">No content yet</span>
                             </div>
-                            <textarea id="dp-storage-xml" class="dp-xml-editor" spellcheck="false" placeholder="Generated Confluence storage format appears here..."></textarea>
+                            <div class="dp-preview-frame" id="dp-preview-frame">
+                                <div class="dp-preview-content" id="dp-preview-content"></div>
+                            </div>
+                            <textarea id="dp-storage-xml" class="dp-xml-editor" spellcheck="false" placeholder="Generated Confluence storage format appears here..." hidden></textarea>
                         </div>
 
                         <div class="dp-sidebar">
