@@ -120,10 +120,15 @@ async def build_httpx_client_kwargs(extra_headers: dict | None = None) -> dict[s
 
     proxy_cfg = await get_onpremise_proxy_config()
     if proxy_cfg:
-        base["proxy"] = proxy_cfg["proxy_url"]
-        merged = {**(extra_headers or {}), **proxy_cfg["headers"]}
-        base["headers"] = merged
+        # Proxy-Authorization must be sent during the CONNECT handshake,
+        # so it goes on the httpx.Proxy object — NOT as a regular header.
+        base["proxy"] = httpx.Proxy(
+            url=proxy_cfg["proxy_url"],
+            headers=proxy_cfg["headers"],
+        )
         base["trust_env"] = False
+        if extra_headers:
+            base["headers"] = extra_headers
         logger.info("Using SAP Connectivity proxy at %s", proxy_cfg["proxy_url"])
     else:
         if extra_headers:
