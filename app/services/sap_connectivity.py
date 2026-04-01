@@ -63,10 +63,19 @@ def is_proxy_active() -> bool:
 def rewrite_url_for_proxy(url: str) -> str:
     """Downgrade ``https://`` to ``http://`` when the SAP Connectivity proxy
     is in use.  The Cloud Connector handles TLS to the on-premise backend, so
-    the proxy itself only accepts plain HTTP forwarding (no CONNECT tunnel)."""
-    if is_proxy_active() and url.lower().startswith("https://"):
-        return "http://" + url[len("https://"):]
-    return url
+    the proxy itself only accepts plain HTTP forwarding (no CONNECT tunnel).
+
+    Port 443 is made explicit so the Cloud Connector can match the virtual host
+    mapping (``https://host/path`` → ``http://host:443/path``)."""
+    if not is_proxy_active() or not url.lower().startswith("https://"):
+        return url
+    remainder = url[len("https://"):]          # e.g. "host/path" or "host:443/path"
+    host_and_rest = remainder.split("/", 1)
+    host_part = host_and_rest[0]               # "host" or "host:443"
+    path_part = "/" + host_and_rest[1] if len(host_and_rest) > 1 else ""
+    if ":" not in host_part:
+        host_part += ":443"
+    return f"http://{host_part}{path_part}"
 
 
 async def _fetch_connectivity_token(creds: dict[str, Any]) -> str:
