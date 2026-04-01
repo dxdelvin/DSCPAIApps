@@ -18,6 +18,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
 )
+from app.services.sap_connectivity import build_httpx_client_kwargs
 
 
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
@@ -751,7 +752,9 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False, trust_env=True) as client:
+    client_kw = await build_httpx_client_kwargs()
+    client_kw.update({"timeout": 20.0, "follow_redirects": False})
+    async with httpx.AsyncClient(**client_kw) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
@@ -855,7 +858,7 @@ async def _create_confluence_page(
         "ancestors": [{"id": str(parent_page_id)}],
         "body": {"storage": {"value": storage_xml, "representation": "storage"}},
     }
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = await build_httpx_client_kwargs()
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(api_url, headers=headers, json=payload, timeout=30.0)
@@ -900,7 +903,7 @@ async def _upload_confluence_attachment(
         "X-Atlassian-Token": "nocheck",
         "Authorization": f"Bearer {pat}",
     }
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = await build_httpx_client_kwargs()
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(

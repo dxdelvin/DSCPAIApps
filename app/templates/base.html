@@ -56,99 +56,16 @@
                 <button class="btn-close" type="button" id="closeChangelog">&times;</button>
             </div>
             <div class="changelog-content">
+            {% for entry in changelog %}
             <div class="changelog-section">
-                <h3 class="changelog-date">Mar 30th, 2026: <span class="badge-new">NEW</span> <span class="badge-version">v3.1.0</span></h3>
+                <h3 class="changelog-date">{{ entry.date }}: {% if entry.isNew %}<span class="badge-new">NEW</span> {% endif %}<span class="badge-version">{{ entry.version }}</span></h3>
                 <ul class="changelog-list">
-                    <li>New: Copy as Diagram feature added in AI Diagram Generator.</li>
-                    <li>New: Mouse cursor effect added in Spring mode.</li>
-                    <li>New: In AI BPMN Builder Form, now you can Drag Lanes and Sublanes </li>
-                    <li>Fix: Diagram Generator Capabilities Updated</li>
+                    {% for item in entry.changes %}
+                    <li>{{ item }}</li>
+                    {% endfor %}
                 </ul>
             </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Mar 24th, 2026: <span class="badge-version">v3.0.0</span></h3>
-                <ul class="changelog-list">
-                    <li>AI Diagram Generator now includes a visual diagram guide with previews to help users choose the right diagram type faster.</li>
-                    <li>Added clear step-by-step guides in PowerPoint Creator, AI Diagram Generator, and Audit Checker for easier first-time use.</li>
-                    <li>PowerPoint Creator and AI Diagram Generator now support PDF, PNG, JPG, and JPEG uploads.</li>
-                    <li>PowerPoint Creator App now includes 4 new SmartArt layouts, Improved the Presentation output, added a orange theme button</li>
-                    <li>Added Spring Mode Button in navigation for a fresh seasonal theme. (Testing Feature)</li>
-                    <li>Updated the Logo, Colors, Font according to the BSH Design Guidelines across the application.</li>
-                    <li>Added a filter option in search to easily find AI Apps by categories.</li>
-                    <li>Lots of Fixes and Improvements across different apps for better performance and user experience.</li>
-                    <li>Added Better loading Animations </li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Mar 17th, 2026:  <span class="badge-version">v2.5.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Mobile User Experience significantly improved with optimized responsive CSS across all tools.</li>
-                    <li>Added a new "Upload &amp; Analyze" feature in the Signavio BPMN Builder, complementing the existing Form Builder mode.</li>
-                    <li>Launched AI Diagram Generator to analyze uploaded PDFs and generate downloadable draw.io diagram types with refined result cards.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Mar 9th, 2026: <span class="badge-version">v2.3.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Learn Signavio app linked - Interactive learning website with games to master BPMN modeling.</li>
-                    <li>Functional Spec content and structure updated for better document quality.</li>
-                    <li>Enhanced JSON export/import support for saving and resuming document work.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Mar 5th, 2026: <span class="badge-version">v2.2.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Document Builder now supports both Functional Spec and Business Requirement document creation.</li>
-                    <li>Mode selector added to switch between Functional Spec and BR document types.</li>
-                    <li>You can now export and import BR documents in JSON format to resume work.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Mar 2nd, 2026: <span class="badge-version">v2.1.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Home Page UI updated for better user experience. </li>
-                    <li>Document Creator launched for Functional Spec document generation. [NON-AI]</li>
-                    <li>PowerPoint Creator added to Create Quick Powerpoints using PDFS to BSH Powerpoint Template.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Jan 31st, 2026:  <span class="badge-version">v2.0.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Beta Version Launch!</li>
-                    <li>Dark Mode support added across the entire application.</li>
-                    <li>Search functionality implemented for AI Apps on the Home page.</li>
-                    <li>Changelog and Notification system updated.</li>
-                    <li>Added new hosting environment on SAP BTP Cloud Foundry.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Jan 30th, 2026: <span class="badge-version">v1.4.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Implemented user authentication.</li>
-                    <li>Fixed bugs in Apps.</li>
-                    <li>Workflows updated for better performance.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Jan 19th, 2026: <span class="badge-version">v1.3.0</span></h3>
-                <ul class="changelog-list">
-                    <li>BPMN Diagram Checker launched with Problem/Solution findings and PDF+image support.</li>
-                    <li>Results panel simplified to show direct actionable guidance.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Jan 17th, 2026: <span class="badge-version">v1.2.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Audit Checker fully functional with PDF validation.</li>
-                    <li>Signavio BPMN Generator ready for end-to-end BPMN export.</li>
-                </ul>
-            </div>
-            <div class="changelog-section">
-                <h3 class="changelog-date">Jan 11th, 2026: <span class="badge-version">v1.1.0</span></h3>
-                <ul class="changelog-list">
-                    <li>Initial UIs for Audit Check and Signavio BPMN Generator shipped (non-functional beta).</li>
-                </ul>
-            </div>
+            {% endfor %}
             </div>
         </div>
     </div>

@@ -1,11 +1,20 @@
+import json
 from fastapi import APIRouter, Request
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import TEMPLATES_DIR, CSS_VERSION, APP_ENV, CLIENT_LOGGING_ENABLED, CLIENT_LOG_LEVEL
+from app.core.config import TEMPLATES_DIR, STATIC_DIR, CSS_VERSION, APP_ENV, CLIENT_LOGGING_ENABLED, CLIENT_LOG_LEVEL, IS_PRODUCTION
 from app.services.auth_service import get_current_user
 
 router = APIRouter()
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+_changelog_file = STATIC_DIR / "data" / ("changelog_prod.json" if IS_PRODUCTION else "changelog_dev.json")
+
+def _load_changelog() -> list:
+    try:
+        return json.loads(_changelog_file.read_text(encoding="utf-8"))
+    except Exception:
+        return []
 
 
 def _template_context(request: Request, extra: dict | None = None):
@@ -15,6 +24,7 @@ def _template_context(request: Request, extra: dict | None = None):
         "app_env": APP_ENV,
         "client_logging_enabled": CLIENT_LOGGING_ENABLED,
         "client_log_level": CLIENT_LOG_LEVEL,
+        "changelog": _load_changelog(),
     }
     if extra:
         context.update(extra)

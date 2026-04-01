@@ -19,7 +19,7 @@ from app.services.audit_service import (
     continue_audit_chat,
 )
 from app.services.bpmn_checker_service import check_bpmn_diagram
-from app.services.fs_br_document_service import generate_functional_spec_docx, generate_br_docx
+from app.services.fs_br_document_service import generate_functional_spec_docx, generate_br_docx, generate_fs_variant_docx
 from app.services.ppt_creator_service import (
     extract_pdf_content,
     refine_ppt_content,
@@ -479,6 +479,71 @@ async def export_business_requirement(data: BRExportRequest):
             content={
                 "status": "error",
                 "message": "Business Requirement document generation failed",
+                "detail": str(e),
+            },
+        )
+
+
+# ============== FS Template (Variant) Export ==============
+
+class FSVariantExportRequest(BaseModel):
+    description: str = ""
+    writtenBy: str = ""
+    date: str = ""
+    updatedBy: str = ""
+    version: str = ""
+    revisionHistory: list = []
+    purpose: str = ""
+    type: str = ""
+    latency: str = ""
+    frequency: str = ""
+    system: str = ""
+    impactedSystem: str = ""
+    processingLogic: str = ""
+    prerequisites: str = ""
+    selectionScreen: list = []
+    reportCharacteristics: dict = {}
+    reportDelivery: str = ""
+    reportLayout: str = ""
+    reportAttributes: str = ""
+    customTransitions: str = ""
+    printerRequirements: str = ""
+    exclusions: str = ""
+    outputFileLocation: str = ""
+    outputFileRemarks: str = ""
+    exceptionHandling: str = ""
+    constraints: str = ""
+    dependencies: str = ""
+    scheduling: str = ""
+    roleAuthorization: str = ""
+    testScenarios: list = []
+    testData: str = ""
+    testSystem: str = ""
+    testClient: str = ""
+    changeHistory: list = []
+
+
+@router.post("/export-fs-variant")
+async def export_fs_variant(data: FSVariantExportRequest):
+    """Generate a .docx FS Template (variant) document from form data."""
+    from fastapi.responses import StreamingResponse
+
+    try:
+        buffer = generate_fs_variant_docx(data.model_dump())
+        safe_title = "".join(c if c.isalnum() or c in "_ -" else "" for c in data.description).replace(" ", "_") or "FS_Template"
+        filename = f"{safe_title}_Functional_Specification.docx"
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "FS Template document generation failed",
                 "detail": str(e),
             },
         )

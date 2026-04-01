@@ -1,0 +1,115 @@
+[
+  {
+    "date": "Apr 8th, 2026",
+    "version": "v3.2.0",
+    "isNew": true,
+    "changes": [
+      "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages.",
+      "Fix: Resolved connectivity issues for some AI services."
+    ]
+  },
+  {
+    "date": "Mar 30th, 2026",
+    "version": "v3.1.0",
+    "changes": [
+      "New: Copy as Diagram feature added in AI Diagram Generator.",
+      "New: Mouse cursor effect added in Spring mode.",
+      "New: In AI BPMN Builder Form, now you can Drag Lanes and Sublanes.",
+      "Fix: Diagram Generator Capabilities Updated."
+    ]
+  },
+  {
+    "date": "Mar 24th, 2026",
+    "version": "v3.0.0",
+    "changes": [
+      "AI Diagram Generator now includes a visual diagram guide with previews to help users choose the right diagram type faster.",
+      "Added clear step-by-step guides in PowerPoint Creator, AI Diagram Generator, and Audit Checker for easier first-time use.",
+      "PowerPoint Creator and AI Diagram Generator now support PDF, PNG, JPG, and JPEG uploads.",
+      "PowerPoint Creator App now includes 4 new SmartArt layouts, Improved the Presentation output, added a orange theme button.",
+      "Added Spring Mode Button in navigation for a fresh seasonal theme. (Testing Feature)",
+      "Updated the Logo, Colors, Font according to the BSH Design Guidelines across the application.",
+      "Added a filter option in search to easily find AI Apps by categories.",
+      "Lots of Fixes and Improvements across different apps for better performance and user experience.",
+      "Added Better loading Animations."
+    ]
+  },
+  {
+    "date": "Mar 17th, 2026",
+    "version": "v2.5.0",
+    "changes": [
+      "Mobile User Experience significantly improved with optimized responsive CSS across all tools.",
+      "Added a new \"Upload & Analyze\" feature in the Signavio BPMN Builder, complementing the existing Form Builder mode.",
+      "Launched AI Diagram Generator to analyze uploaded PDFs and generate downloadable draw.io diagram types with refined result cards."
+    ]
+  },
+  {
+    "date": "Mar 9th, 2026",
+    "version": "v2.3.0",
+    "changes": [
+      "Learn Signavio app linked - Interactive learning website with games to master BPMN modeling.",
+      "Functional Spec content and structure updated for better document quality.",
+      "Enhanced JSON export/import support for saving and resuming document work."
+    ]
+  },
+  {
+    "date": "Mar 5th, 2026",
+    "version": "v2.2.0",
+    "changes": [
+      "Document Builder now supports both Functional Spec and Business Requirement document creation.",
+      "Mode selector added to switch between Functional Spec and BR document types.",
+      "You can now export and import BR documents in JSON format to resume work."
+    ]
+  },
+  {
+    "date": "Mar 2nd, 2026",
+    "version": "v2.1.0",
+    "changes": [
+      "Home Page UI updated for better user experience.",
+      "Document Creator launched for Functional Spec document generation. [NON-AI]",
+      "PowerPoint Creator added to Create Quick Powerpoints using PDFS to BSH Powerpoint Template."
+    ]
+  },
+  {
+    "date": "Jan 31st, 2026",
+    "version": "v2.0.0",
+    "changes": [
+      "Beta Version Launch!",
+      "Dark Mode support added across the entire application.",
+      "Search functionality implemented for AI Apps on the Home page.",
+      "Changelog and Notification system updated.",
+      "Added new hosting environment on SAP BTP Cloud Foundry."
+    ]
+  },
+  {
+    "date": "Jan 30th, 2026",
+    "version": "v1.4.0",
+    "changes": [
+      "Implemented user authentication.",
+      "Fixed bugs in Apps.",
+      "Workflows updated for better performance."
+    ]
+  },
+  {
+    "date": "Jan 19th, 2026",
+    "version": "v1.3.0",
+    "changes": [
+      "BPMN Diagram Checker launched with Problem/Solution findings and PDF+image support.",
+      "Results panel simplified to show direct actionable guidance."
+    ]
+  },
+  {
+    "date": "Jan 17th, 2026",
+    "version": "v1.2.0",
+    "changes": [
+      "Audit Checker fully functional with PDF validation.",
+      "Signavio BPMN Generator ready for end-to-end BPMN export."
+    ]
+  },
+  {
+    "date": "Jan 11th, 2026",
+    "version": "v1.1.0",
+    "changes": [
+      "Initial UIs for Audit Check and Signavio BPMN Generator shipped (non-functional beta)."
+    ]
+  }
+]

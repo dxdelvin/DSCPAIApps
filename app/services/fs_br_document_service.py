@@ -22,6 +22,11 @@ BR_TEMPLATE_PATH = os.path.join(
     "Business_requirement_template.docx",
 )
 
+FS_VARIANT_TEMPLATE_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "static", "docs",
+    "FS Template.docx",
+)
+
 # XML namespace for Word 2010 checkbox SDT elements
 W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml"
 
@@ -123,6 +128,37 @@ def _clear_section_set_text(doc, heading_para, text: str):
     # Remove all remaining content paragraphs
     for p in content_paras[1:]:
         _remove_paragraph(p)
+
+
+def _ensure_table_rows(table, needed_data_rows: int, header_rows: int = 1):
+    """Expand a Word table so it has at least `needed_data_rows` data rows
+    (below `header_rows` header rows). Rows are cloned from the last existing
+    data row to preserve formatting. Existing rows are NOT removed."""
+    import copy
+    current_total = len(table.rows)
+    current_data = current_total - header_rows
+    if needed_data_rows <= current_data:
+        return
+    last_row_elem = table.rows[-1]._tr
+    for _ in range(needed_data_rows - current_data):
+        new_tr = copy.deepcopy(last_row_elem)
+        for cell_el in new_tr.findall(qn("w:tc")):
+            for p_el in cell_el.findall(qn("w:p")):
+                for r_el in p_el.findall(qn("w:r")):
+                    for t_el in r_el.findall(qn("w:t")):
+                        t_el.text = ""
+        table._tbl.append(new_tr)
+
+
+def _fill_table(table, data_rows, num_cols, header_rows=1):
+    """Expand a table if needed, then fill it with the provided data rows."""
+    _ensure_table_rows(table, len(data_rows), header_rows)
+    for i, row_data in enumerate(data_rows):
+        row_idx = i + header_rows
+        for col_idx in range(min(len(row_data), num_cols)):
+            val = row_data[col_idx].strip() if row_data[col_idx] else ""
+            if val:
+                _set_table_cell(table, row_idx, col_idx, val)
 
 
 # ─── Functional Specification generator ───────────────────
@@ -314,43 +350,22 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     # 4. PREVIOUS STEPS TABLE (Table 1)
     # ================================================================
     prev_steps = data.get("previousSteps", [])
-    prev_table = tables[1]
-    for i, row_data in enumerate(prev_steps):
-        if i >= 3:
-            break  # template has 3 data rows (1-3)
-        row_idx = i + 1
-        for col_idx in range(min(len(row_data), 4)):
-            val = row_data[col_idx].strip() if row_data[col_idx] else ""
-            if val:
-                _set_table_cell(prev_table, row_idx, col_idx, val)
+    if prev_steps:
+        _fill_table(tables[1], prev_steps, 4)
 
     # ================================================================
     # 5. GLOSSARY TABLE (Table 2)
     # ================================================================
     glossary = data.get("glossary", [])
-    glossary_table = tables[2]
-    for i, row_data in enumerate(glossary):
-        if i >= 7:
-            break  # template has 7 data rows (1-7)
-        row_idx = i + 1
-        for col_idx in range(min(len(row_data), 2)):
-            val = row_data[col_idx].strip() if row_data[col_idx] else ""
-            if val:
-                _set_table_cell(glossary_table, row_idx, col_idx, val)
+    if glossary:
+        _fill_table(tables[2], glossary, 2)
 
     # ================================================================
     # 6. DOCUMENT HISTORY TABLE (Table 3)
     # ================================================================
     doc_history = data.get("docHistory", [])
-    history_table = tables[3]
-    for i, row_data in enumerate(doc_history):
-        if i >= 3:
-            break  # template has 3 data rows (1-3)
-        row_idx = i + 1
-        for col_idx in range(min(len(row_data), 5)):
-            val = row_data[col_idx].strip() if row_data[col_idx] else ""
-            if val:
-                _set_table_cell(history_table, row_idx, col_idx, val)
+    if doc_history:
+        _fill_table(tables[3], doc_history, 5)
 
     # ================================================================
     # 7. FOOTER — update title in footer
@@ -374,10 +389,13 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
 def _set_table_cell(table, row_idx, col_idx, text: str):
     """Set text in a specific table cell, preserving first run formatting."""
     cell = table.rows[row_idx].cells[col_idx]
-    if cell.paragraphs and cell.paragraphs[0].runs:
-        cell.paragraphs[0].runs[0].text = text
+    para = cell.paragraphs[0]
+    if para.runs:
+        para.runs[0].text = text
+        for r in para.runs[1:]:
+            r.text = ""
     else:
-        cell.paragraphs[0].text = text
+        para.text = text
 
 
 def _append_text_after_heading(doc, heading_para, text: str):
@@ -651,6 +669,11 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     cost_rows = costs.get("rows", [])
     cost_table = tables[12]
 
+    # Expand table if more than 3 data rows (totals row will shift down)
+    needed_data = max(len(cost_rows), 3)
+    _ensure_table_rows(cost_table, needed_data + 1, header_rows=1)  # +1 for totals row
+    totals_row_idx = needed_data + 1  # row after last data row
+
     total_initial = 0
     total_running = 0
     total_savings = 0
@@ -658,7 +681,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     period_sum = 0
     period_count = 0
 
-    for i, cr in enumerate(cost_rows[:3]):
+    for i, cr in enumerate(cost_rows):
         row_idx = i + 1  # data rows start at 1
         it_prod = cr.get("itProduct", "").strip()
         catsnr = cr.get("catsnr", "").strip()
@@ -698,14 +721,14 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         total_savings += savings_f
         total_payback += payback
 
-    # Fill totals row (row 4)
+    # Fill totals row
     has_data = total_initial or total_running or total_savings
     if has_data:
-        _set_table_cell(cost_table, 4, 2, f"{total_initial:.0f}")
-        _set_table_cell(cost_table, 4, 3, f"{total_running:.0f}")
-        _set_table_cell(cost_table, 4, 4, f"{total_savings:.0f}")
-        _set_table_cell(cost_table, 4, 5, f"{total_payback:.0f}")
-        _set_table_cell(cost_table, 4, 6, f"{period_sum / period_count:.1f}" if period_count else "-")
+        _set_table_cell(cost_table, totals_row_idx, 2, f"{total_initial:.0f}")
+        _set_table_cell(cost_table, totals_row_idx, 3, f"{total_running:.0f}")
+        _set_table_cell(cost_table, totals_row_idx, 4, f"{total_savings:.0f}")
+        _set_table_cell(cost_table, totals_row_idx, 5, f"{total_payback:.0f}")
+        _set_table_cell(cost_table, totals_row_idx, 6, f"{period_sum / period_count:.1f}" if period_count else "-")
 
     # -- Write to buffer --
     buffer = io.BytesIO()
@@ -742,3 +765,250 @@ def _set_custom_checkbox(table, row_idx, col_idx, checked: bool):
 
     # Center the character
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+# ─── FS Template (Variant) generator ──────────────────────
+
+def generate_fs_variant_docx(data: dict) -> io.BytesIO:
+    """
+    Fill the FS Template (variant) with form data.
+    Returns an in-memory BytesIO buffer ready for streaming.
+
+    Template structure (FS Template.docx):
+      Cover page paragraphs:
+        [4]  Description:
+        [10] Written By:
+        [11] Date:
+      Table 0 (6x8): Revision History
+      §1  Purpose (para 55) + Type / Latency / Frequency / System / Impacted System
+      §2  Detail Processing Logic (after heading at para 66)
+          Prerequisites/Assumptions (para 68)
+      §3  Program Inputs
+        3.1 Selection Screen  — Table 1 (3 rows x 6 cols)
+        3.2 Report Characteristic — Table 2 (5 rows x 3 cols)
+        3.3 Report Delivery (para 84-85)
+        3.4 Report/Form Layout (after heading at para 86)
+        3.5 Report Attributes (para 89)
+        3.6 Custom Transitions (para 92)
+        3.7 Printer Requirements (para 95)
+        3.8 Exclusions (para 97) + Output Files
+        3.9 Exception Handling (para 103)
+        3.11 Constraints (para 105)
+        3.10 Dependencies (para 107)
+        3.12 Scheduling Requirements (para 109)
+        3.13 Role/Authorization (para 111)
+        3.14 Test Specification — Table 5 (5x4), Table 6 (2x2)
+      §4  Change History — Table 7 (7x4)
+    """
+    doc = Document(FS_VARIANT_TEMPLATE_PATH)
+    paras = doc.paragraphs
+    tables = doc.tables
+
+    # ================================================================
+    # 1. COVER PAGE — Description, Written By, Date
+    # ================================================================
+    description_text = data.get("description", "").strip()
+    written_by = data.get("writtenBy", "").strip()
+    date_val = data.get("date", "").strip()
+
+    if description_text and len(paras) > 4:
+        _set_para_text(paras[4], f"Description: {description_text}")
+    if written_by and len(paras) > 10:
+        _set_para_text(paras[10], f"Written By: {written_by}")
+    if date_val and len(paras) > 11:
+        _set_para_text(paras[11], f"Date: {date_val}")
+
+    # Footer — "Updated By : …" and "Version : …"
+    updated_by = data.get("updatedBy", "").strip()
+    version_val = data.get("version", "").strip()
+    if updated_by or version_val:
+        for section in doc.sections:
+            footer = section.footer
+            if footer:
+                for ft in footer.tables:
+                    if len(ft.rows) >= 1 and len(ft.columns) >= 3:
+                        if updated_by:
+                            _set_table_cell(ft, 0, 0, f"Updated By : {updated_by}")
+                        if version_val:
+                            _set_table_cell(ft, 0, 2, f"Version : {version_val}")
+
+    # ================================================================
+    # 2. REVISION HISTORY TABLE (Table 0)
+    #    Cols: Version, Effective Date, Brief Description, Reference,
+    #          Affected Sections, Prepared By, Reviewed By, Approved By
+    # ================================================================
+    revision_history = data.get("revisionHistory", [])
+    if revision_history:
+        _fill_table(tables[0], revision_history, 8)
+
+    # ================================================================
+    # 3. PURPOSE SECTION
+    # ================================================================
+    purpose = data.get("purpose", "").strip()
+    if purpose and len(paras) > 55:
+        _set_para_text(paras[55], purpose)
+
+    # Type checkboxes (para 57)
+    type_val = data.get("type", "").strip()
+    if type_val and len(paras) > 57:
+        _set_para_text(paras[57], f"Type:\t{type_val}")
+
+    # Latency (para 59)
+    latency = data.get("latency", "").strip()
+    if latency and len(paras) > 59:
+        _set_para_text(paras[59], f"Latency: {latency}")
+
+    # Frequency (para 61)
+    frequency = data.get("frequency", "").strip()
+    if frequency and len(paras) > 61:
+        _set_para_text(paras[61], f"Frequency: \t{frequency}")
+        if len(paras) > 62:
+            _set_para_text(paras[62], "")
+
+    # System (para 64)
+    system = data.get("system", "").strip()
+    if system and len(paras) > 64:
+        _set_para_text(paras[64], f"System\t\t{system}")
+
+    # Impacted System (para 65)
+    impacted_system = data.get("impactedSystem", "").strip()
+    if impacted_system and len(paras) > 65:
+        _set_para_text(paras[65], f"Impacted System:\t{impacted_system}")
+
+    # ================================================================
+    # 4. DETAIL PROCESSING LOGIC
+    # ================================================================
+    processing_logic = data.get("processingLogic", "").strip()
+    if processing_logic:
+        heading = _find_heading_para(doc, "2. Detail Processing Logic")
+        if heading:
+            content = _first_content_para_after(doc, heading)
+            if content:
+                _set_para_text(content, processing_logic)
+            else:
+                _append_text_after_heading(doc, heading, processing_logic)
+
+    prerequisites = data.get("prerequisites", "").strip()
+    if prerequisites and len(paras) > 69:
+        # Para 68 is "Prerequisites/Assumptions" label, 69 is content
+        prereq_heading = _find_heading_para(doc, "Prerequisites")
+        if not prereq_heading:
+            # It's a normal paragraph, find para 68 and add content after
+            _set_para_text(paras[69], prerequisites)
+
+    # ================================================================
+    # 5. SELECTION SCREEN TABLE (Table 1)
+    #    Cols: Screen Label, Referenced Field, Range of Value,
+    #          Attributes/Defaults, Validations, Comments
+    # ================================================================
+    selection_screen = data.get("selectionScreen", [])
+    if selection_screen:
+        _fill_table(tables[1], selection_screen, 6)
+
+    # ================================================================
+    # 6. REPORT CHARACTERISTICS (Table 2)
+    #    Rows: Standard, Interactive, Drill-Down, ALV, Other
+    #    Cols: Type, Yes/No, Comments
+    # ================================================================
+    report_chars = data.get("reportCharacteristics", {})
+    char_table = tables[2]
+    char_map = {
+        0: "standard",
+        1: "interactive",
+        2: "drillDown",
+        3: "alv",
+        4: "other",
+    }
+    for row_idx, key in char_map.items():
+        entry = report_chars.get(key, {})
+        yn = entry.get("value", "").strip()
+        comment = entry.get("comments", "").strip()
+        if yn:
+            _set_table_cell(char_table, row_idx, 1, yn)
+        if comment:
+            _set_table_cell(char_table, row_idx, 2, comment)
+
+    # ================================================================
+    # 7. REPORT DELIVERY (para 84-85)
+    # ================================================================
+    report_delivery = data.get("reportDelivery", "").strip()
+    if report_delivery and len(paras) > 84:
+        _set_para_text(paras[84], report_delivery)
+        if len(paras) > 85:
+            _set_para_text(paras[85], "")
+
+    # ================================================================
+    # 8. SIMPLE SECTIONS (heading → content para replacement)
+    # ================================================================
+    simple_sections = [
+        ("Report/Form Layout", "reportLayout"),
+        ("Report Attributes", "reportAttributes"),
+        ("Custom Transitions", "customTransitions"),
+        ("Printer Requirements", "printerRequirements"),
+        ("Exclusions", "exclusions"),
+        ("Exception Handling", "exceptionHandling"),
+        ("Constraints", "constraints"),
+        ("Dependencies", "dependencies"),
+        ("Scheduling Requirements", "scheduling"),
+        ("Role/Authorization", "roleAuthorization"),
+    ]
+
+    for heading_text, data_key in simple_sections:
+        user_text = data.get(data_key, "").strip()
+        if not user_text:
+            continue
+        heading_para = _find_heading_para(doc, heading_text)
+        if not heading_para:
+            continue
+        content_para = _first_content_para_after(doc, heading_para)
+        if content_para:
+            _set_para_text(content_para, user_text)
+
+    # Output Files section (paras 98-100, under Exclusions heading)
+    output_file_location = data.get("outputFileLocation", "").strip()
+    if output_file_location and len(paras) > 99:
+        _set_para_text(paras[99], f"Output File Location: {output_file_location}")
+
+    output_file_remarks = data.get("outputFileRemarks", "").strip()
+    if output_file_remarks and len(paras) > 100:
+        _set_para_text(paras[100], f"Additional Output File Location Remarks: {output_file_remarks}")
+
+    # ================================================================
+    # 9. TEST SPECIFICATION
+    # ================================================================
+    # Table 5 (5x4): Test scenarios — ID, Test Scenario, Expected Results, Comments
+    test_scenarios = data.get("testScenarios", [])
+    if test_scenarios:
+        _fill_table(tables[5], test_scenarios, 4)
+
+    # Test Data text (after "Test Data & Other Needs" heading)
+    test_data = data.get("testData", "").strip()
+    if test_data:
+        td_heading = _find_heading_para(doc, "Test Data")
+        if td_heading:
+            content = _first_content_para_after(doc, td_heading)
+            if content:
+                _set_para_text(content, test_data)
+
+    # Table 6 (2x2): Test System & Client
+    test_system = data.get("testSystem", "").strip()
+    test_client = data.get("testClient", "").strip()
+    env_table = tables[6]
+    if test_system:
+        _set_table_cell(env_table, 0, 1, test_system)
+    if test_client:
+        _set_table_cell(env_table, 1, 1, test_client)
+
+    # ================================================================
+    # 10. CHANGE HISTORY TABLE (Table 7)
+    #     Cols: Date, Author, Version, Change brief
+    # ================================================================
+    change_history = data.get("changeHistory", [])
+    if change_history:
+        _fill_table(tables[7], change_history, 4)
+
+    # -- Write to buffer --
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+    return buffer

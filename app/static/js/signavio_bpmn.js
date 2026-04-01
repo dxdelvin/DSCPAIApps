@@ -11,6 +11,11 @@ let uploadChatHistoryId = null;
 let uploadedFile = null;
 let uploadDocumentValid = true;
 
+// BPMN Viewer state
+let bpmnViewer = null;
+let lastGeneratedXml = null;
+let lastGeneratedFilename = null;
+
 const BPMN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="8.5" y="14" width="7" height="7" rx="1.5"/><line x1="6.5" y1="10" x2="6.5" y2="14" opacity="0.5"/><line x1="17.5" y1="10" x2="17.5" y2="14" opacity="0.5"/><line x1="6.5" y1="14" x2="8.5" y2="14" opacity="0.5"/><line x1="17.5" y1="14" x2="15.5" y2="14" opacity="0.5"/></svg>';
 const BPMN_GENERATE_MESSAGES = ['Analyzing process structure', 'Building BPMN elements', 'Arranging swimlanes', 'Generating diagram file'];
 
@@ -423,17 +428,10 @@ async function generateUploadBPMN() {
             return;
         }
 
-        const blob = new Blob([result.xml], { type: 'application/xml' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        showToast('BPMN generated and downloaded successfully.', 'success');
+        lastGeneratedXml = result.xml;
+        lastGeneratedFilename = result.filename;
+        await showBpmnViewer(result.xml);
+        showToast('BPMN generated successfully! Preview your diagram below.', 'success');
 
     } catch (error) {
         AppLogger.error('Upload BPMN generation error:', error);
@@ -448,6 +446,83 @@ function escapeHtml(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+}
+
+// ============== BPMN Viewer Functions ==============
+
+async function showBpmnViewer(xml) {
+    const panel = document.getElementById('bpmnViewerPanel');
+    const canvas = document.getElementById('bpmnCanvas');
+    if (!panel || !canvas) return;
+
+    if (bpmnViewer) {
+        bpmnViewer.destroy();
+        bpmnViewer = null;
+    }
+
+    panel.style.display = 'block';
+
+    bpmnViewer = new BpmnJS({ container: canvas });
+
+    try {
+        await bpmnViewer.importXML(xml);
+        bpmnViewer.get('canvas').zoom('fit-viewport');
+    } catch (err) {
+        AppLogger.error('BPMN render error:', err);
+        canvas.innerHTML = '<div style="padding:40px;text-align:center;color:var(--slate-500);">Could not render BPMN preview. The file will still download correctly.</div>';
+    }
+
+    panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    initBpmnViewerControls();
+}
+
+function initBpmnViewerControls() {
+    const zoomIn = document.getElementById('bpmnZoomIn');
+    const zoomOut = document.getElementById('bpmnZoomOut');
+    const fitView = document.getElementById('bpmnFitView');
+    const downloadBtn = document.getElementById('bpmnDownloadBtn');
+    const closeBtn = document.getElementById('bpmnCloseViewer');
+
+    zoomIn?.replaceWith(zoomIn.cloneNode(true));
+    zoomOut?.replaceWith(zoomOut.cloneNode(true));
+    fitView?.replaceWith(fitView.cloneNode(true));
+    downloadBtn?.replaceWith(downloadBtn.cloneNode(true));
+    closeBtn?.replaceWith(closeBtn.cloneNode(true));
+
+    document.getElementById('bpmnZoomIn')?.addEventListener('click', () => {
+        if (bpmnViewer) bpmnViewer.get('canvas').zoom(bpmnViewer.get('canvas').zoom() * 1.2);
+    });
+    document.getElementById('bpmnZoomOut')?.addEventListener('click', () => {
+        if (bpmnViewer) bpmnViewer.get('canvas').zoom(bpmnViewer.get('canvas').zoom() / 1.2);
+    });
+    document.getElementById('bpmnFitView')?.addEventListener('click', () => {
+        if (bpmnViewer) bpmnViewer.get('canvas').zoom('fit-viewport');
+    });
+    document.getElementById('bpmnDownloadBtn')?.addEventListener('click', downloadBpmn);
+    document.getElementById('bpmnCloseViewer')?.addEventListener('click', closeBpmnViewer);
+}
+
+function downloadBpmn() {
+    if (!lastGeneratedXml) return;
+    const blob = new Blob([lastGeneratedXml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = lastGeneratedFilename || 'diagram.bpmn';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('BPMN file downloaded.', 'success');
+}
+
+function closeBpmnViewer() {
+    const panel = document.getElementById('bpmnViewerPanel');
+    if (panel) panel.style.display = 'none';
+    if (bpmnViewer) {
+        bpmnViewer.destroy();
+        bpmnViewer = null;
+    }
 }
 
 // Lane Management Functions
@@ -1156,24 +1231,10 @@ async function generateBPMN() {
             return;
         }
 
-        // 1. Create a Blob from the extracted XML string
-        const blob = new Blob([result.xml], { type: 'application/xml' });
-        
-        // 2. Create a temporary URL for the Blob
-        const url = URL.createObjectURL(blob);
-        
-        // 3. Create a hidden link and click it to trigger the download
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = result.filename; // Uses the safe filename from the backend
-        document.body.appendChild(link);
-        link.click();
-        
-        // 4. Cleanup
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        showToast('BPMN generated and downloaded successfully.', 'success');
+        lastGeneratedXml = result.xml;
+        lastGeneratedFilename = result.filename;
+        await showBpmnViewer(result.xml);
+        showToast('BPMN generated successfully! Preview your diagram below.', 'success');
         
     } catch (error) {
         AppLogger.error('BPMN generation error:', error);

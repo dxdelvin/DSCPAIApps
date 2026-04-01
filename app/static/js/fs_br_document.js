@@ -8,7 +8,7 @@
 // ═══════════════════════════════════════════════════
 // Shared state
 // ═══════════════════════════════════════════════════
-let currentMode = 'functional-spec';  // 'functional-spec' | 'business-req'
+let currentMode = 'functional-spec';  // 'functional-spec' | 'business-req' | 'fs-variant'
 
 // ── Functional Spec state ──
 let fsCurrentStep = 1;
@@ -19,6 +19,11 @@ let fsMaxAccessibleStep = 1;
 let brCurrentStep = 1;
 const brTotalSteps = 8;
 let brMaxAccessibleStep = 1;
+
+// ── FS Variant state ──
+let fvCurrentStep = 1;
+const fvTotalSteps = 9;
+let fvMaxAccessibleStep = 1;
 
 window.addEventListener('DOMContentLoaded', () => {
     initModeSwitch();
@@ -36,6 +41,11 @@ window.addEventListener('DOMContentLoaded', () => {
     initBrJsonLoad();
     initBrDecisionToggle();
     updateBrNav();
+    // FS Variant
+    initFvNavigation();
+    initFvDynamicTables();
+    initFvJsonLoad();
+    updateFvNav();
 });
 
 /* ═══════════════════════════════════════════════════
@@ -73,6 +83,7 @@ function initMobileStepJumpers() {
     const configs = [
         { indicatorId: 'fs-step-indicator', mode: 'fs', totalSteps: fsTotalSteps },
         { indicatorId: 'br-step-indicator', mode: 'br', totalSteps: brTotalSteps },
+        { indicatorId: 'fv-step-indicator', mode: 'fv', totalSteps: fvTotalSteps },
     ];
 
     configs.forEach(cfg => {
@@ -113,8 +124,11 @@ function initMobileStepJumpers() {
                 if (cfg.mode === 'fs') {
                     if (i <= fsMaxAccessibleStep) fsGoToStep(i);
                     else showToast('Complete previous steps before jumping ahead.', 'warning');
-                } else {
+                } else if (cfg.mode === 'br') {
                     if (i <= brMaxAccessibleStep) brGoToStep(i);
+                    else showToast('Complete previous steps before jumping ahead.', 'warning');
+                } else if (cfg.mode === 'fv') {
+                    if (i <= fvMaxAccessibleStep) fvGoToStep(i);
                     else showToast('Complete previous steps before jumping ahead.', 'warning');
                 }
                 closeAllStepJumpMenus();
@@ -891,7 +905,9 @@ function updateMobileStepProgress(indicatorId, currentStep, totalSteps) {
     indicator.setAttribute('data-progress-label', `Step ${currentStep} of ${totalSteps}`);
     indicator.setAttribute('data-step-title', activeLabel);
 
-    const maxAccessible = indicatorId === 'fs-step-indicator' ? fsMaxAccessibleStep : brMaxAccessibleStep;
+    const maxAccessible = indicatorId === 'fs-step-indicator' ? fsMaxAccessibleStep
+        : indicatorId === 'fv-step-indicator' ? fvMaxAccessibleStep
+        : brMaxAccessibleStep;
     indicator.querySelectorAll('.mobile-step-jump-item').forEach(item => {
         const step = parseInt(item.dataset.step, 10);
         item.classList.toggle('is-active', step === currentStep);
@@ -1436,3 +1452,514 @@ function loadBrFromJson(data) {
 }
 
 
+/* ═══════════════════════════════════════════════════
+   FS VARIANT — Navigation
+   ═══════════════════════════════════════════════════ */
+
+function initFvNavigation() {
+    const nextBtn = document.getElementById('fvNextBtn');
+    const prevBtn = document.getElementById('fvPrevBtn');
+    const resetBtn = document.getElementById('fvResetBtn');
+    const exportBtn = document.getElementById('fvExportBtn');
+    const editBtn = document.getElementById('fvEditFromReviewBtn');
+    const downloadJsonBtn = document.getElementById('fvDownloadJsonBtn');
+
+    if (nextBtn) nextBtn.addEventListener('click', fvNextStep);
+    if (prevBtn) prevBtn.addEventListener('click', fvPrevStep);
+    if (resetBtn) resetBtn.addEventListener('click', () => {
+        showConfirmation(
+            'Reset Form?',
+            'All your inputs will be cleared. This cannot be undone.',
+            () => { fvResetForm(); fvGoToStep(1); },
+            { icon: '⚠️', confirmText: 'Reset', cancelText: 'Cancel' }
+        );
+    });
+    if (exportBtn) exportBtn.addEventListener('click', exportFvDocx);
+    if (editBtn) editBtn.addEventListener('click', () => fvGoToStep(1));
+    if (downloadJsonBtn) downloadJsonBtn.addEventListener('click', downloadFvJson);
+
+    document.querySelectorAll('#fv-step-indicator .step').forEach(el => {
+        el.addEventListener('click', () => {
+            const target = parseInt(el.dataset.fvStep, 10);
+            if (target <= fvMaxAccessibleStep) {
+                fvGoToStep(target);
+            } else {
+                showToast('Complete previous steps before jumping ahead.', 'warning');
+            }
+        });
+    });
+}
+
+function fvNextStep() {
+    if (fvCurrentStep < fvTotalSteps) {
+        if (!validateFvStep(fvCurrentStep)) return;
+        fvGoToStep(fvCurrentStep + 1);
+    }
+}
+
+function fvPrevStep() {
+    if (fvCurrentStep > 1) fvGoToStep(fvCurrentStep - 1);
+}
+
+function fvGoToStep(n) {
+    if (n < 1 || n > fvTotalSteps) return;
+
+    document.querySelectorAll('#fs-variant-mode .field-error').forEach(el => el.classList.remove('field-error'));
+    document.querySelectorAll('.fv-form-step').forEach(s => s.classList.remove('active'));
+    const target = document.getElementById(`fv-step-${n}`);
+    if (target) target.classList.add('active');
+
+    fvCurrentStep = n;
+    if (n > fvMaxAccessibleStep) fvMaxAccessibleStep = n;
+
+    if (n === fvTotalSteps) buildFvReviewSummary();
+
+    updateFvNav();
+    const container = document.querySelector('#fv-form-container');
+    if (container) container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function updateFvNav() {
+    const prevBtn = document.getElementById('fvPrevBtn');
+    const nextBtn = document.getElementById('fvNextBtn');
+
+    if (prevBtn) prevBtn.style.display = fvCurrentStep > 1 ? '' : 'none';
+    if (nextBtn) {
+        nextBtn.style.display = fvCurrentStep < fvTotalSteps ? '' : 'none';
+        nextBtn.textContent = fvCurrentStep === fvTotalSteps - 1 ? 'Review' : 'Next';
+    }
+
+    document.querySelectorAll('#fv-step-indicator .step').forEach(el => {
+        const s = parseInt(el.dataset.fvStep, 10);
+        el.classList.remove('step-active', 'step-completed');
+        if (s === fvCurrentStep) el.classList.add('step-active');
+        else if (s < fvCurrentStep) el.classList.add('step-completed');
+    });
+
+    updateMobileStepProgress('fv-step-indicator', fvCurrentStep, fvTotalSteps);
+}
+
+function fvResetForm() {
+    document.querySelectorAll('#fs-variant-mode input[type="text"], #fs-variant-mode input[type="date"], #fs-variant-mode input[type="number"], #fs-variant-mode textarea').forEach(el => { el.value = ''; });
+    document.querySelectorAll('#fs-variant-mode input[type="radio"]').forEach(el => { el.checked = false; });
+    document.querySelectorAll('#fs-variant-mode input[type="checkbox"]').forEach(el => { el.checked = false; });
+    // Reset dynamic tables
+    const dtMeta = {
+        fvRevHistoryTable: { cols: 8, dateCols: [1] },
+        fvSelScreenTable: { cols: 6, dateCols: [] },
+        fvTestScenariosTable: { cols: 4, dateCols: [] },
+        fvChangeHistoryTable: { cols: 4, dateCols: [0] },
+    };
+    for (const [id, meta] of Object.entries(dtMeta)) {
+        const table = document.getElementById(id);
+        if (!table) continue;
+        const tbody = table.querySelector('tbody');
+        tbody.innerHTML = _buildDynamicRow(meta.cols, meta.dateCols);
+        _bindRemoveButtons(tbody);
+    }
+    fvMaxAccessibleStep = 1;
+    showToast('FS Template form has been reset', 'info');
+}
+
+/* ═══════════════════════════════════════════════════
+   FV Dynamic Tables
+   ═══════════════════════════════════════════════════ */
+
+const FV_DT_DATE_COLS = {
+    fvRevHistoryTable: [1],
+    fvChangeHistoryTable: [0],
+};
+
+function initFvDynamicTables() {
+    document.querySelectorAll('#fs-variant-mode .btn-add-row').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tableId = btn.dataset.table;
+            const cols = parseInt(btn.dataset.cols, 10);
+            const table = document.getElementById(tableId);
+            if (!table) return;
+            const tbody = table.querySelector('tbody');
+            const dateCols = FV_DT_DATE_COLS[tableId] || [];
+            tbody.insertAdjacentHTML('beforeend', _buildDynamicRow(cols, dateCols));
+            _bindRemoveButtons(tbody);
+        });
+    });
+
+    document.querySelectorAll('#fs-variant-mode .dynamic-table tbody').forEach(tbody => {
+        _bindRemoveButtons(tbody);
+    });
+}
+
+/* ═══════════════════════════════════════════════════
+   FV Step Validation
+   ═══════════════════════════════════════════════════ */
+
+function validateFvStep(step) {
+    document.querySelectorAll('#fs-variant-mode .field-error').forEach(el => el.classList.remove('field-error'));
+    const missing = [];
+
+    const requireText = (id, label) => {
+        if (!val(id)) {
+            const el = document.getElementById(id);
+            if (el) el.classList.add('field-error');
+            missing.push(label);
+        }
+    };
+
+    switch (step) {
+        case 1:
+            requireText('fvDescription', 'Description');
+            requireText('fvWrittenBy', 'Written By');
+            requireText('fvDate', 'Date');
+            break;
+        case 3:
+            requireText('fvPurpose', 'Purpose');
+            break;
+        case 4:
+            requireText('fvProcessingLogic', 'Processing Logic');
+            break;
+    }
+
+    if (missing.length) {
+        showToast(`Please fill in: ${missing.join(', ')}`, 'warning');
+        const firstError = document.querySelector('#fs-variant-mode .field-error');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+    }
+    return true;
+}
+
+/* ═══════════════════════════════════════════════════
+   FV Collect Form Data
+   ═══════════════════════════════════════════════════ */
+
+function _collectCheckedValues(name) {
+    return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el => el.value);
+}
+
+function _getRadioValue(name) {
+    const checked = document.querySelector(`input[name="${name}"]:checked`);
+    return checked ? checked.value : '';
+}
+
+function _fvCharValue(name) {
+    const selected = _getRadioValue(name);
+    if (!selected) return '';
+    const yMark = selected === 'Yes' ? 'X' : '  ';
+    const nMark = selected === 'No' ? 'X' : '  ';
+    return `( ${yMark} ) Yes   ( ${nMark} ) No`;
+}
+
+function collectFvFormData() {
+    const allTypeOptions = ['User-Exit', 'Core Code Change', 'Forms', 'Custom Program/Transaction', 'Other'];
+    const typeValues = _collectCheckedValues('fvType');
+    const typeStr = allTypeOptions.map(v => typeValues.includes(v) ? `(X) ${v}` : `( ) ${v}`).join('  ');
+
+    const allLatencyOptions = ['Real-Time', 'Batch', 'Others'];
+    const latency = _getRadioValue('fvLatency');
+    const latencyStr = allLatencyOptions.map(v => v === latency ? `(X) ${v}` : `( ) ${v}`).join('  ');
+
+    const allFreqOptions = ['Annually', 'Quarterly', 'Monthly', 'Weekly', 'Daily', 'On Demand', 'Other'];
+    const freqValues = _collectCheckedValues('fvFrequency');
+    const freqStr = allFreqOptions.map(v => freqValues.includes(v) ? `(X) ${v}` : `( ) ${v}`).join('  ');
+
+    const allSystemOptions = ['SAP R/3', 'SAP S4'];
+    const system = _getRadioValue('fvSystem');
+    const systemStr = allSystemOptions.map(v => v === system ? `(*) ${v}` : `( ) ${v}`).join('  ');
+
+    const allDeliveryOptions = ['Online', 'Spool', 'Printed', 'Send to Excel', 'Local Download', 'Other'];
+    const deliveryValues = _collectCheckedValues('fvDelivery');
+    const deliveryStr = allDeliveryOptions.map(v => deliveryValues.includes(v) ? `(*) ${v}` : `( ) ${v}`).join('  ');
+
+    return {
+        description: val('fvDescription'),
+        writtenBy: val('fvWrittenBy'),
+        date: val('fvDate'),
+        updatedBy: val('fvUpdatedBy'),
+        version: val('fvVersion'),
+        revisionHistory: _collectDynamicTable('fvRevHistoryTable'),
+        purpose: val('fvPurpose'),
+        type: typeStr,
+        latency: latencyStr,
+        frequency: freqStr,
+        system: systemStr,
+        impactedSystem: val('fvImpactedSystem'),
+        processingLogic: val('fvProcessingLogic'),
+        prerequisites: val('fvPrerequisites'),
+        selectionScreen: _collectDynamicTable('fvSelScreenTable'),
+        reportCharacteristics: {
+            standard: { value: _fvCharValue('fvCharStandard'), comments: val('fvCharStandardComment') },
+            interactive: { value: _fvCharValue('fvCharInteractive'), comments: val('fvCharInteractiveComment') },
+            drillDown: { value: _fvCharValue('fvCharDrillDown'), comments: val('fvCharDrillDownComment') },
+            alv: { value: _fvCharValue('fvCharAlv'), comments: val('fvCharAlvComment') },
+            other: { value: _fvCharValue('fvCharOther'), comments: val('fvCharOtherComment') },
+        },
+        reportDelivery: deliveryStr,
+        reportLayout: val('fvReportLayout'),
+        reportAttributes: val('fvReportAttributes'),
+        customTransitions: val('fvCustomTransitions'),
+        printerRequirements: val('fvPrinterReq'),
+        exclusions: val('fvExclusions'),
+        outputFileLocation: val('fvOutputFileLoc'),
+        outputFileRemarks: val('fvOutputFileRemarks'),
+        exceptionHandling: val('fvExceptionHandling'),
+        dependencies: val('fvDependencies'),
+        constraints: val('fvConstraints'),
+        scheduling: val('fvScheduling'),
+        roleAuthorization: val('fvRoleAuth'),
+        testScenarios: _collectDynamicTable('fvTestScenariosTable'),
+        testData: val('fvTestData'),
+        testSystem: val('fvTestSystem'),
+        testClient: val('fvTestClient'),
+        changeHistory: _collectDynamicTable('fvChangeHistoryTable'),
+    };
+}
+
+/* ═══════════════════════════════════════════════════
+   FV Review Summary Builder
+   ═══════════════════════════════════════════════════ */
+
+function buildFvReviewSummary() {
+    const data = collectFvFormData();
+    const panel = document.getElementById('fvReviewPanel');
+    if (!panel) return;
+
+    let html = '';
+
+    html += section('Cover Page', [
+        row('Description', data.description),
+        row('Written By', data.writtenBy),
+        row('Date', data.date),
+        row('Updated By (Footer)', data.updatedBy),
+        row('Version (Footer)', data.version),
+    ]);
+
+    if (data.revisionHistory.length) {
+        const revRows = data.revisionHistory.map(r =>
+            row(`v${r[0] || '?'}`, [r[1], r[2], r[5]].filter(Boolean).join(' · '))
+        );
+        html += section('Revision History', revRows);
+    }
+
+    html += section('Purpose', [
+        row('Purpose', data.purpose),
+        row('Type', data.type),
+        row('Latency', data.latency),
+        row('Frequency', data.frequency),
+        row('System', data.system),
+        row('Impacted System', data.impactedSystem),
+    ]);
+
+    html += section('Detail Processing Logic', [
+        row('Processing Logic', data.processingLogic),
+        row('Prerequisites', data.prerequisites),
+    ]);
+
+    if (data.selectionScreen.length) {
+        const selRows = data.selectionScreen.map(r =>
+            row(r[0] || '—', [r[1], r[2], r[3], r[4], r[5]].filter(Boolean).join(' · '))
+        );
+        html += section('Selection Screen', selRows);
+    }
+
+    const charLabels = { standard: 'Standard Report', interactive: 'Interactive Report', drillDown: 'Drill-Down Report', alv: 'ALV Output', other: 'Other' };
+    const charRows = [];
+    for (const [key, label] of Object.entries(charLabels)) {
+        const c = data.reportCharacteristics[key] || {};
+        const parts = [c.value, c.comments].filter(Boolean);
+        if (parts.length) charRows.push(row(label, parts.join(' — ')));
+    }
+    if (charRows.length) html += section('Report Characteristics', charRows);
+
+    html += section('Report Configuration', [
+        row('Delivery', data.reportDelivery),
+        row('Layout', data.reportLayout),
+        row('Attributes', data.reportAttributes),
+    ]);
+
+    html += section('Additional Sections', [
+        row('Custom Transitions', data.customTransitions),
+        row('Printer Requirements', data.printerRequirements),
+        row('Exclusions', data.exclusions),
+        row('Output File Location', data.outputFileLocation),
+        row('Output File Remarks', data.outputFileRemarks),
+        row('Exception Handling', data.exceptionHandling),
+        row('Dependencies', data.dependencies),
+        row('Constraints', data.constraints),
+        row('Scheduling', data.scheduling),
+        row('Role/Authorization', data.roleAuthorization),
+    ]);
+
+    if (data.testScenarios.length) {
+        const testRows = data.testScenarios.map(r =>
+            row(`#${r[0] || '?'}`, [r[1], r[2], r[3]].filter(Boolean).join(' · '))
+        );
+        html += section('Test Scenarios', testRows);
+    }
+
+    html += section('Test Environment', [
+        row('Test Data', data.testData),
+        row('Test System', data.testSystem),
+        row('Client', data.testClient),
+    ]);
+
+    if (data.changeHistory.length) {
+        const chRows = data.changeHistory.map(r =>
+            row(`v${r[2] || '?'}`, [r[0], r[1], r[3]].filter(Boolean).join(' · '))
+        );
+        html += section('Change History', chRows);
+    }
+
+    panel.innerHTML = html;
+}
+
+/* ═══════════════════════════════════════════════════
+   FV Export .docx via API
+   ═══════════════════════════════════════════════════ */
+
+async function exportFvDocx() {
+    const data = collectFvFormData();
+
+    try {
+        LoadingOverlay.show({
+            messages: ['Collecting form data', 'Generating document structure', 'Building Word document', 'Preparing download']
+        });
+
+        const response = await fetch('/api/export-fs-variant', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.detail || err.message || 'Export failed');
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+
+        const safeName = (data.description || 'FS_Template').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+        a.download = `${safeName}_Functional_Specification.docx`;
+
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+
+        showToast('Document exported successfully!', 'success');
+    } catch (err) {
+        AppLogger.error('FV Export error:', err);
+        showToast('Document export failed. Please try again.', 'error');
+    } finally {
+        LoadingOverlay.hide();
+    }
+}
+
+/* ═══════════════════════════════════════════════════
+   FV JSON Save / Load
+   ═══════════════════════════════════════════════════ */
+
+function downloadFvJson() {
+    const data = collectFvFormData();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const safeName = (data.description || 'FS_Template').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
+    a.download = `${safeName}_FSVariant.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('JSON saved', 'success');
+}
+
+function initFvJsonLoad() {
+    const btn = document.getElementById('fvLoadJsonBtn');
+    const input = document.getElementById('fvJsonFileInput');
+    if (!btn || !input) return;
+
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', () => {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            try {
+                const data = JSON.parse(reader.result);
+                loadFvFromJson(data);
+                showToast('Loaded from JSON successfully', 'success');
+            } catch {
+                showToast('Invalid JSON file', 'error');
+            }
+        };
+        reader.readAsText(file);
+        input.value = '';
+    });
+}
+
+function loadFvFromJson(data) {
+    setVal('fvDescription', data.description);
+    setVal('fvWrittenBy', data.writtenBy);
+    setVal('fvDate', data.date);
+    setVal('fvUpdatedBy', data.updatedBy);
+    setVal('fvVersion', data.version);
+
+    if (data.revisionHistory) _loadFvDynamicTable('fvRevHistoryTable', data.revisionHistory, 8);
+
+    setVal('fvPurpose', data.purpose);
+    setVal('fvImpactedSystem', data.impactedSystem);
+
+    // Restore checkboxes/radios from formatted strings is complex,
+    // so we skip restoring type/latency/frequency/system radio states from JSON.
+    // Clear them so user can re-select.
+
+    setVal('fvProcessingLogic', data.processingLogic);
+    setVal('fvPrerequisites', data.prerequisites);
+
+    if (data.selectionScreen) _loadFvDynamicTable('fvSelScreenTable', data.selectionScreen, 6);
+
+    setVal('fvReportLayout', data.reportLayout);
+    setVal('fvReportAttributes', data.reportAttributes);
+    setVal('fvCustomTransitions', data.customTransitions);
+    setVal('fvPrinterReq', data.printerRequirements);
+    setVal('fvExclusions', data.exclusions);
+    setVal('fvOutputFileLoc', data.outputFileLocation);
+    setVal('fvOutputFileRemarks', data.outputFileRemarks);
+    setVal('fvExceptionHandling', data.exceptionHandling);
+    setVal('fvDependencies', data.dependencies);
+    setVal('fvConstraints', data.constraints);
+    setVal('fvScheduling', data.scheduling);
+    setVal('fvRoleAuth', data.roleAuthorization);
+
+    if (data.testScenarios) _loadFvDynamicTable('fvTestScenariosTable', data.testScenarios, 4);
+    setVal('fvTestData', data.testData);
+    setVal('fvTestSystem', data.testSystem);
+    setVal('fvTestClient', data.testClient);
+
+    if (data.changeHistory) _loadFvDynamicTable('fvChangeHistoryTable', data.changeHistory, 4);
+
+    fvMaxAccessibleStep = fvTotalSteps;
+    updateFvNav();
+}
+
+function _loadFvDynamicTable(tableId, data, cols) {
+    const table = document.getElementById(tableId);
+    if (!table || !data || !data.length) return;
+    const tbody = table.querySelector('tbody');
+    const dateCols = FV_DT_DATE_COLS[tableId] || [];
+    tbody.innerHTML = '';
+    data.forEach(rowData => {
+        let cells = '';
+        for (let i = 0; i < cols; i++) {
+            const v = (rowData[i] || '').replace(/"/g, '&quot;');
+            const inputType = dateCols.includes(i) ? 'date' : 'text';
+            cells += `<td><input type="${inputType}" class="dt-input" value="${v}" /></td>`;
+        }
+        cells += `<td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>`;
+        tbody.insertAdjacentHTML('beforeend', `<tr>${cells}</tr>`);
+    });
+    _bindRemoveButtons(tbody);
+}

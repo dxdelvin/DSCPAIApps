@@ -6,7 +6,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}?v={{ css_version }}">
-
+<link rel="stylesheet" href="https://unpkg.com/bpmn-js@18.6.3/dist/assets/bpmn-js.css">
 {% endblock %}
 
 {% block content %}
@@ -284,6 +284,33 @@
     </div>
 </div>
 
+<!-- BPMN Viewer Panel -->
+<div id="bpmnViewerPanel" class="bpmn-viewer-panel" style="display:none;">
+    <div class="bpmn-viewer-header">
+        <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="8.5" y="14" width="7" height="7" rx="1.5"/><line x1="6.5" y1="10" x2="6.5" y2="14" opacity="0.5"/><line x1="17.5" y1="10" x2="17.5" y2="14" opacity="0.5"/></svg>
+            Generated BPMN Diagram
+        </h3>
+        <div class="bpmn-viewer-actions">
+            <button type="button" class="btn btn-ghost btn-sm" id="bpmnZoomIn" title="Zoom In">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bpmnZoomOut" title="Zoom Out">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bpmnFitView" title="Fit to View">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="bpmnDownloadBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download .bpmn
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" id="bpmnCloseViewer" title="Close">&times;</button>
+        </div>
+    </div>
+    <div id="bpmnCanvas" class="bpmn-viewer-canvas"></div>
+</div>
+
 <!-- Info Modal -->
 <div id="infoModal" class="modal">
     <div class="modal-content">
@@ -299,5 +326,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://unpkg.com/bpmn-js@18.6.3/dist/bpmn-viewer.production.min.js"></script>
 <script src="{{ url_for('static', path='js/signavio_bpmn.js') }}"></script>
 {% endblock %}

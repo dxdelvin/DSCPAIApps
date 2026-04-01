@@ -28,6 +28,7 @@
             <div class="mode-tabs">
                 <button class="mode-tab active" data-mode="functional-spec">Functional Spec</button>
                 <button class="mode-tab" data-mode="business-req">Business Requirement</button>
+                <button class="mode-tab" data-mode="fs-variant">FS Template</button>
             </div>
         </div>
 
@@ -850,6 +851,415 @@ This information has to be forwarded to the GDS responsible in order to decide /
                 </div>
             </div>
         </div>
+
+        <!-- ═══════════════════════════════════════════════════════════
+             FS TEMPLATE (VARIANT) MODE
+             ═══════════════════════════════════════════════════════════ -->
+        <div class="mode-panel" id="fs-variant-mode">
+            <div class="step-indicator" id="fv-step-indicator">
+                <div class="step step-active" data-fv-step="1"><span class="step-number">1</span><span class="step-label">Cover Page</span></div>
+                <div class="step" data-fv-step="2"><span class="step-number">2</span><span class="step-label">Revision</span></div>
+                <div class="step" data-fv-step="3"><span class="step-number">3</span><span class="step-label">Purpose</span></div>
+                <div class="step" data-fv-step="4"><span class="step-number">4</span><span class="step-label">Processing</span></div>
+                <div class="step" data-fv-step="5"><span class="step-number">5</span><span class="step-label">Inputs</span></div>
+                <div class="step" data-fv-step="6"><span class="step-number">6</span><span class="step-label">Report</span></div>
+                <div class="step" data-fv-step="7"><span class="step-number">7</span><span class="step-label">More Sections</span></div>
+                <div class="step" data-fv-step="8"><span class="step-number">8</span><span class="step-label">Testing</span></div>
+                <div class="step" data-fv-step="9"><span class="step-number">9</span><span class="step-label">Review</span></div>
+            </div>
+
+            <div class="form-container" id="fv-form-container">
+
+                <!-- ========== FV Step 1: Cover Page ========== -->
+                <div class="fv-form-step active" id="fv-step-1">
+                    <h3>Cover Page Information</h3>
+                    <p>Provide the document cover page details.</p>
+
+                    <div class="json-load-bar">
+                        <button type="button" class="btn btn-ghost btn-sm" id="fvLoadJsonBtn">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            Load from JSON
+                        </button>
+                        <input type="file" id="fvJsonFileInput" accept=".json" hidden />
+                        <span class="json-load-hint">Resume a previously saved FS Template</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fvDescription">Description *</label>
+                        <textarea id="fvDescription" rows="3" placeholder="Brief description of the functional specification"></textarea>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fvWrittenBy">Written By *</label>
+                            <input type="text" id="fvWrittenBy" placeholder="e.g., John Doe" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fvDate">Date *</label>
+                            <input type="date" id="fvDate" />
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fvUpdatedBy">Updated By (Footer)</label>
+                            <input type="text" id="fvUpdatedBy" placeholder="e.g., Jane Smith" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fvVersion">Version (Footer)</label>
+                            <input type="text" id="fvVersion" placeholder="e.g., 1.0" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 2: Revision History ========== -->
+                <div class="fv-form-step" id="fv-step-2">
+                    <h3>Revision History</h3>
+                    <p>Track the revision history for this specification.</p>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fvRevHistoryTable">
+                            <thead>
+                                <tr><th>Version</th><th>Effective Date</th><th>Description</th><th>Reference</th><th>Affected Sections</th><th>Prepared By</th><th>Reviewed By</th><th>Approved By</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" placeholder="1.0" /></td>
+                                    <td><input type="date" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Initial draft" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fvRevHistoryTable" data-cols="8">+ Add Row</button>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 3: Purpose ========== -->
+                <div class="fv-form-step" id="fv-step-3">
+                    <h3>1. Purpose</h3>
+                    <p>Describe the purpose of this functional specification and its classification.</p>
+                    <div class="form-group">
+                        <label for="fvPurpose">Purpose *</label>
+                        <textarea id="fvPurpose" rows="4" placeholder="The purpose of this functional specification is to…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvType">Type</label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-item"><input type="checkbox" name="fvType" value="User-Exit" /><span>User-Exit</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvType" value="Core Code Change" /><span>Core Code Change</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvType" value="Forms" /><span>Forms</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvType" value="Custom Program/Transaction" /><span>Custom Program/Transaction</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvType" value="Other" /><span>Other</span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvLatency">Latency</label>
+                        <div class="radio-group">
+                            <label class="radio-item"><input type="radio" name="fvLatency" value="Real-Time" /><span>Real-Time</span></label>
+                            <label class="radio-item"><input type="radio" name="fvLatency" value="Batch" /><span>Batch</span></label>
+                            <label class="radio-item"><input type="radio" name="fvLatency" value="Others" /><span>Others</span></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvFrequency">Frequency</label>
+                        <div class="checkbox-grid">
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Annually" /><span>Annually</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Quarterly" /><span>Quarterly</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Monthly" /><span>Monthly</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Weekly" /><span>Weekly</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Daily" /><span>Daily</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="On Demand" /><span>On Demand</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvFrequency" value="Other" /><span>Other</span></label>
+                        </div>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fvSystem">System</label>
+                            <div class="radio-group">
+                                <label class="radio-item"><input type="radio" name="fvSystem" value="SAP R/3" /><span>SAP R/3</span></label>
+                                <label class="radio-item"><input type="radio" name="fvSystem" value="SAP S4" /><span>SAP S4</span></label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="fvImpactedSystem">Impacted System</label>
+                            <input type="text" id="fvImpactedSystem" placeholder="e.g., R2P / P4B / R0P / P0P" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 4: Detail Processing Logic ========== -->
+                <div class="fv-form-step" id="fv-step-4">
+                    <h3>2. Detail Processing Logic</h3>
+                    <p>Describe the detailed processing logic and prerequisites.</p>
+                    <div class="form-group">
+                        <label for="fvProcessingLogic">Processing Logic *</label>
+                        <textarea id="fvProcessingLogic" rows="6" placeholder="Describe the detailed processing logic…"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvPrerequisites">Prerequisites / Assumptions</label>
+                        <textarea id="fvPrerequisites" rows="4" placeholder="List prerequisites and assumptions…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 5: Program Inputs ========== -->
+                <div class="fv-form-step" id="fv-step-5">
+                    <h3>3. Program Inputs</h3>
+                    <p>Define the selection screen parameters.</p>
+
+                    <h4 class="subsection-title">3.1 Selection Screen</h4>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fvSelScreenTable">
+                            <thead>
+                                <tr><th>Screen Label</th><th>Referenced Field</th><th>Range of Value</th><th>Attributes / Defaults</th><th>Validations</th><th>Comments</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" placeholder="e.g., Material" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fvSelScreenTable" data-cols="6">+ Add Row</button>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 6: Report Configuration ========== -->
+                <div class="fv-form-step" id="fv-step-6">
+                    <h3>Report Configuration</h3>
+                    <p>Define report characteristics, delivery, and layout.</p>
+
+                    <h4 class="subsection-title">3.2 Report Characteristics</h4>
+                    <div class="report-char-grid">
+                        <div class="report-char-item">
+                            <label>Standard Report</label>
+                            <div class="form-row two-col">
+                                <div class="radio-group compact">
+                                    <label class="radio-item"><input type="radio" name="fvCharStandard" value="Yes" /><span>Yes</span></label>
+                                    <label class="radio-item"><input type="radio" name="fvCharStandard" value="No" /><span>No</span></label>
+                                </div>
+                                <input type="text" class="dt-input" id="fvCharStandardComment" placeholder="Comments" />
+                            </div>
+                        </div>
+                        <div class="report-char-item">
+                            <label>Interactive Report</label>
+                            <div class="form-row two-col">
+                                <div class="radio-group compact">
+                                    <label class="radio-item"><input type="radio" name="fvCharInteractive" value="Yes" /><span>Yes</span></label>
+                                    <label class="radio-item"><input type="radio" name="fvCharInteractive" value="No" /><span>No</span></label>
+                                </div>
+                                <input type="text" class="dt-input" id="fvCharInteractiveComment" placeholder="Comments" />
+                            </div>
+                        </div>
+                        <div class="report-char-item">
+                            <label>Drill-Down Report</label>
+                            <div class="form-row two-col">
+                                <div class="radio-group compact">
+                                    <label class="radio-item"><input type="radio" name="fvCharDrillDown" value="Yes" /><span>Yes</span></label>
+                                    <label class="radio-item"><input type="radio" name="fvCharDrillDown" value="No" /><span>No</span></label>
+                                </div>
+                                <input type="text" class="dt-input" id="fvCharDrillDownComment" placeholder="Comments" />
+                            </div>
+                        </div>
+                        <div class="report-char-item">
+                            <label>ALV Output</label>
+                            <div class="form-row two-col">
+                                <div class="radio-group compact">
+                                    <label class="radio-item"><input type="radio" name="fvCharAlv" value="Yes" /><span>Yes</span></label>
+                                    <label class="radio-item"><input type="radio" name="fvCharAlv" value="No" /><span>No</span></label>
+                                </div>
+                                <input type="text" class="dt-input" id="fvCharAlvComment" placeholder="Comments" />
+                            </div>
+                        </div>
+                        <div class="report-char-item">
+                            <label>Other</label>
+                            <div class="form-row two-col">
+                                <div class="radio-group compact">
+                                    <label class="radio-item"><input type="radio" name="fvCharOther" value="Yes" /><span>Yes</span></label>
+                                    <label class="radio-item"><input type="radio" name="fvCharOther" value="No" /><span>No</span></label>
+                                </div>
+                                <input type="text" class="dt-input" id="fvCharOtherComment" placeholder="Comments" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <h4 class="subsection-title" style="margin-top:2rem">3.3 Report Delivery</h4>
+                    <div class="form-group">
+                        <div class="checkbox-grid">
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Online" /><span>Online</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Spool" /><span>Spool</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Printed" /><span>Printed</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Send to Excel" /><span>Send to Excel</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Local Download" /><span>Local Download</span></label>
+                            <label class="checkbox-item"><input type="checkbox" name="fvDelivery" value="Other" /><span>Other</span></label>
+                        </div>
+                    </div>
+
+                    <h4 class="subsection-title" style="margin-top:2rem">3.4 Report/Form Layout</h4>
+                    <div class="form-group">
+                        <textarea id="fvReportLayout" rows="3" placeholder="Describe the report or form layout…"></textarea>
+                    </div>
+
+                    <h4 class="subsection-title" style="margin-top:2rem">3.5 Report Attributes</h4>
+                    <div class="form-group">
+                        <textarea id="fvReportAttributes" rows="3" placeholder="Sort sequences, totals/sub-totals, drill downs, personalization…"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 7: Additional Sections ========== -->
+                <div class="fv-form-step" id="fv-step-7">
+                    <h3>Additional Sections</h3>
+                    <p>Fill in the remaining specification sections.</p>
+
+                    <div class="form-group">
+                        <label for="fvCustomTransitions">3.6 Custom Transitions</label>
+                        <textarea id="fvCustomTransitions" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvPrinterReq">3.7 Printer Requirements</label>
+                        <textarea id="fvPrinterReq" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvExclusions">3.8 Exclusions</label>
+                        <textarea id="fvExclusions" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fvOutputFileLoc">Output File Location</label>
+                            <input type="text" id="fvOutputFileLoc" placeholder="Unix or PC path" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fvOutputFileRemarks">Output File Remarks</label>
+                            <input type="text" id="fvOutputFileRemarks" placeholder="NA" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvExceptionHandling">3.9 Exception Handling Rules</label>
+                        <textarea id="fvExceptionHandling" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvDependencies">3.10 Dependencies</label>
+                        <textarea id="fvDependencies" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvConstraints">3.11 Constraints</label>
+                        <textarea id="fvConstraints" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvScheduling">3.12 Scheduling Requirements</label>
+                        <textarea id="fvScheduling" rows="2" placeholder="NA"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="fvRoleAuth">3.13 Role/Authorization Requirements</label>
+                        <textarea id="fvRoleAuth" rows="2" placeholder="Will be provided in role matrix"></textarea>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 8: Testing & Change History ========== -->
+                <div class="fv-form-step" id="fv-step-8">
+                    <h3>Test Specification &amp; Change History</h3>
+                    <p>Define test scenarios and track document changes.</p>
+
+                    <h4 class="subsection-title">3.14 Test Scenarios</h4>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fvTestScenariosTable">
+                            <thead>
+                                <tr><th>ID</th><th>Test Scenario</th><th>Expected Results</th><th>Comments</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="text" class="dt-input" placeholder="1" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Scenario description" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Expected result" /></td>
+                                    <td><input type="text" class="dt-input" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fvTestScenariosTable" data-cols="4">+ Add Row</button>
+                    </div>
+
+                    <div class="form-group" style="margin-top:1.5rem">
+                        <label for="fvTestData">Test Data &amp; Other Needs</label>
+                        <textarea id="fvTestData" rows="2" placeholder="Test data provided in the inserted excel attachment."></textarea>
+                    </div>
+                    <div class="form-row two-col">
+                        <div class="form-group">
+                            <label for="fvTestSystem">Test System</label>
+                            <input type="text" id="fvTestSystem" placeholder="e.g., P4B_060" />
+                        </div>
+                        <div class="form-group">
+                            <label for="fvTestClient">Client</label>
+                            <input type="text" id="fvTestClient" placeholder="e.g., 100" />
+                        </div>
+                    </div>
+
+                    <h4 class="subsection-title" style="margin-top:2rem">4. Change History</h4>
+                    <div class="dynamic-table-wrapper">
+                        <table class="dynamic-table" id="fvChangeHistoryTable">
+                            <thead>
+                                <tr><th>Date</th><th>Author</th><th>Version</th><th>Change Brief</th><th></th></tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><input type="date" class="dt-input" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Author name" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="1.0" /></td>
+                                    <td><input type="text" class="dt-input" placeholder="Initial version" /></td>
+                                    <td><button type="button" class="btn-remove-row" title="Remove row">&times;</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-ghost btn-sm btn-add-row" data-table="fvChangeHistoryTable" data-cols="4">+ Add Row</button>
+                    </div>
+                </div>
+
+                <!-- ========== FV Step 9: Review & Export ========== -->
+                <div class="fv-form-step" id="fv-step-9">
+                    <h3>Review &amp; Export</h3>
+                    <p>Review your FS Template below, then export as a Word document.</p>
+
+                    <div class="review-panel" id="fvReviewPanel"></div>
+
+                    <div class="cta-panel">
+                        <p>When you're satisfied, click <strong>Export .docx</strong> to download your Functional Specification.</p>
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" id="fvEditFromReviewBtn">Edit Form</button>
+                            <button type="button" class="btn btn-ghost" id="fvDownloadJsonBtn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Save JSON
+                            </button>
+                            <button type="button" class="btn btn-primary" id="fvExportBtn">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/>
+                                    <line x1="12" y1="15" x2="12" y2="3"/>
+                                </svg>
+                                Export .docx
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FV Navigation -->
+            <div class="form-navigation">
+                <div class="nav-left">
+                    <button type="button" class="btn btn-ghost btn-reset-link" id="fvResetBtn">Reset Form</button>
+                </div>
+                <div class="nav-right">
+                    <button type="button" class="btn btn-secondary" id="fvPrevBtn">Previous</button>
+                    <button type="button" class="btn btn-primary" id="fvNextBtn">Next</button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -861,11 +1271,13 @@ This information has to be forwarded to the GDS responsible in order to decide /
             <h2>About Document Builder</h2>
         </div>
         <div class="modal-body">
-            <p>This tool supports two document types:</p>
+            <p>This tool supports three document types:</p>
             <h4>Functional Specification</h4>
             <p>Fill in each section step-by-step (User Story, Process, User, Problem, Solution, Design), review the summary, then export a ready-to-share Word document matching the official BSH template.</p>
             <h4>Business Requirement</h4>
             <p>Fill in General info, Responsibles, Description answers, and Benefits. Export a formatted BSH Business Requirement Word document with all fields populated.</p>
+            <h4>FS Template (Variant)</h4>
+            <p>A variant Functional Specification covering Purpose, Processing Logic, Program Inputs, Report Configuration, Test Specification, and Change History. Ideal for SAP-focused custom programs and reports.</p>
         </div>
     </div>
 </div>
