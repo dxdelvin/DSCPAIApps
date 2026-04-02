@@ -11,6 +11,21 @@ _LOG_SANITIZE_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
 _ALLOWED_LOG_LEVELS = {"debug", "info", "warn", "warning", "error"}
 MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
+# Magic-byte signatures for allowed upload types
+_FILE_MAGIC: dict[str, bytes] = {
+    "pdf":  b"%PDF-",
+    "png":  b"\x89PNG\r\n",
+    "jpg":  b"\xff\xd8\xff",
+    "jpeg": b"\xff\xd8\xff",
+}
+
+
+def _validate_magic(data: bytes, filename: str) -> bool:
+    """Return True when the file header matches the extension-declared type."""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+    sig = _FILE_MAGIC.get(ext)
+    return sig is None or data[: len(sig)] == sig
+
 # Import from organized service files
 from app.services.common_service import create_chat_history
 from app.services.signavio_service import (
@@ -200,11 +215,9 @@ async def bpmn_chat(data: BPMNChatRequest):
 @router.post("/bpmn/upload-analyze")
 async def bpmn_upload_analyze(file: UploadFile = File(...)):
     """Analyze an uploaded BPMN diagram or process image/PDF."""
-    allowed_types = [
-        "image/png", "image/jpeg", "image/jpg",
-        "application/pdf",
-    ]
-    if not file.content_type or file.content_type not in allowed_types:
+    _BPMN_EXTS = (".png", ".jpg", ".jpeg", ".pdf")
+    # Validate by extension — content_type header is client-controlled
+    if not (file.filename or "").lower().endswith(_BPMN_EXTS):
         return JSONResponse(
             status_code=400,
             content={
@@ -219,6 +232,11 @@ async def bpmn_upload_analyze(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=400,
             content={"status": "error", "message": "File too large", "detail": "Maximum file size is 10 MB."},
+        )
+    if not _validate_magic(contents, file.filename or ""):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid file", "detail": "File content does not match its declared type."},
         )
     await file.seek(0)
 
@@ -308,8 +326,8 @@ async def make_bpmn_analysis(data: dict):
 @router.post("/audit-doc-check")
 async def audit_doc_check(file: UploadFile = File(...)):
     """Send an uploaded audit PDF to the Audit Brain for analysis."""
-    # Validate file type
-    if not file.content_type or not file.content_type.startswith('application/pdf'):
+    # Validate by extension — content_type header is client-controlled
+    if not (file.filename or "").lower().endswith(".pdf"):
         return JSONResponse(
             status_code=400,
             content={
@@ -324,6 +342,11 @@ async def audit_doc_check(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=400,
             content={"status": "error", "message": "File too large", "detail": "Maximum file size is 10 MB."},
+        )
+    if not _validate_magic(contents, file.filename or ""):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid file", "detail": "File content is not a valid PDF."},
         )
     await file.seek(0)
 
@@ -615,6 +638,12 @@ async def ppt_extract(
                 },
             )
 
+        if not _validate_magic(content, f.filename or ""):
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Invalid file", "detail": f"'{f.filename}' content does not match its file type."},
+            )
+
         if fname_lower.endswith(".pdf"):
             pdf_files.append((f.filename, content))
         else:
@@ -691,6 +720,12 @@ async def diagram_analyze(
                     "message": "Total upload size too large",
                     "detail": f"Combined file size exceeds the 10 MB limit. Current total: {total_size / (1024*1024):.1f} MB.",
                 },
+            )
+
+        if not _validate_magic(content, f.filename or ""):
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Invalid file", "detail": f"'{f.filename}' content does not match its file type."},
             )
 
         if fname_lower.endswith(".pdf"):
@@ -837,6 +872,12 @@ async def diagram_copy_image(
                     "message": "Total upload size too large",
                     "detail": f"Combined file size exceeds the 10 MB limit.",
                 },
+            )
+
+        if not _validate_magic(content, f.filename or ""):
+            return JSONResponse(
+                status_code=400,
+                content={"status": "error", "message": "Invalid file", "detail": f"'{f.filename}' content does not match its file type."},
             )
 
         await f.seek(0)
@@ -1013,10 +1054,10 @@ class ConfluenceRefineRequest(BaseModel):
 
 
 class ConfluenceVerifyRequest(BaseModel):
-    confluenceUrl: str = ""
-    pat: str = ""
-    spaceKey: str = ""
-    parentPageId: str = ""
+    confluenceUrl: str = Field(default="", max_length=500)
+    pat: str = Field(default="", max_length=500)
+    spaceKey: str = Field(default="", max_length=200)
+    parentPageId: str = Field(default="", max_length=200)
 
 
 @router.post("/confluence-builder/verify-connection")
@@ -1041,7 +1082,7 @@ async def confluence_builder_verify(data: ConfluenceVerifyRequest):
         logger.exception("[verify-connection] Unexpected exception")
         return JSONResponse(
             status_code=500,
-            content={"status": "error", "detail": f"Server error: {exc}"},
+            content={"status": "error", "detail": "An internal error occurred"},
         )
 
     if result.get("error"):

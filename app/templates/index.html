@@ -117,29 +117,6 @@
             <div class="app-header">
                 <div class="app-icon" aria-hidden="true">
                     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="5" y="4" width="22" height="24" rx="3" fill="#0f172a" opacity="0.9"/>
-                        <path d="M10 10h12" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M10 15h12" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
-                        <path d="M10 20h7" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
-                        <rect x="20" y="18" width="6" height="6" rx="1.5" fill="#FF7100"/>
-                    </svg>
-                </div>
-                <div class="app-tags">
-                    <span class="tag tag-new">New</span>
-                    <span class="tag">Confluence</span>
-                </div>
-            </div>
-            <div class="app-body">
-                <h3>AI Confluence Builder</h3>
-                <p>Generate Confluence Content From Files, review, and publish it with attachments.</p>
-                <a class="btn btn-primary btn-open" href="/docupedia-publisher">Open App</a>
-            </div>
-        </article>
-
-        <article class="app-card active" data-category="day-to-day">
-            <div class="app-header">
-                <div class="app-icon" aria-hidden="true">
-                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <rect x="4" y="4" width="24" height="24" rx="3" fill="#0f172a" opacity="0.85"/>
                         <circle cx="12" cy="12" r="3" stroke="#FF7100" stroke-width="1.5" fill="none"/>
                         <circle cx="22" cy="10" r="2.5" stroke="#FF7100" stroke-width="1.5" fill="none"/>
@@ -149,7 +126,6 @@
                     </svg>
                 </div>
                 <div class="app-tags">
-                    <span class="tag tag-new">New</span>
                     <span class="tag">draw.io</span>
                 </div>
             </div>
@@ -157,6 +133,29 @@
                 <h3>AI Diagram Generator</h3>
                 <p>Upload PDF, PNG, JPG, or JPEG files and AI creates draw.io diagrams.</p>
                 <a class="btn btn-primary btn-open" href="/diagram-generator">Open App</a>
+            </div>
+        </article>
+
+        <article class="app-card active locked" data-category="day-to-day">
+            <div class="app-header">
+                <div class="app-icon" aria-hidden="true">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="4" width="22" height="24" rx="3" fill="#0f172a" opacity="0.9"/>
+                        <path d="M10 10h12" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M10 15h12" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M10 20h7" stroke="#FF7100" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="20" y="18" width="6" height="6" rx="1.5" fill="#FF7100"/>
+                    </svg>
+                </div>
+                <div class="app-tags">
+                    <span class="tag">Coming Soon</span>
+                    <span class="tag">Confluence</span>
+                </div>
+            </div>
+            <div class="app-body">
+                <h3>AI Confluence Builder</h3>
+                <p>Generate Confluence Content From Files, review, and publish it with attachments.</p>
+                <span class="btn btn-primary" aria-disabled="true">Locked</span>
             </div>
         </article>
 
@@ -259,6 +258,7 @@
 <script src="{{ url_for('static', path='js/homepage_bg.js') }}?v={{ css_version }}"></script>
 <script>
     document.querySelectorAll('.app-card.active').forEach(card => {
+        if (card.classList.contains('locked')) return;
         const link = card.querySelector('.btn-open');
         if (!link) return;
         const icon = card.querySelector('.app-icon');

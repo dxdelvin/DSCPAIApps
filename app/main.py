@@ -52,6 +52,25 @@ async def startup_event():
 
 
 # ============== Auth Middleware Class ==============
+class MaxBodySizeMiddleware(BaseHTTPMiddleware):
+    """Reject requests whose declared Content-Length exceeds 15 MB."""
+
+    _MAX_BYTES = 15 * 1024 * 1024  # 15 MB
+
+    async def dispatch(self, request: Request, call_next):
+        cl = request.headers.get("content-length")
+        if cl is not None:
+            try:
+                if int(cl) > self._MAX_BYTES:
+                    return JSONResponse(
+                        status_code=413,
+                        content={"detail": "Request body too large (max 15 MB)"},
+                    )
+            except ValueError:
+                pass
+        return await call_next(request)
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     """Check authentication for protected routes."""
     
@@ -91,10 +110,13 @@ if IS_PROD_ENV and not SESSION_SECRET:
 if not SESSION_SECRET:
     SESSION_SECRET = "fallback-dev-secret-change-in-prod"
 
+# Want: Request → MaxBodySize → Session → Auth → Route
+# Add: Auth first, Session second, MaxBodySize last
+
 # Add Auth middleware FIRST (will execute AFTER Session)
 app.add_middleware(AuthMiddleware)
 
-# Add Session middleware LAST (will execute FIRST)
+# Add Session middleware SECOND
 app.add_middleware(
     SessionMiddleware, 
     secret_key=SESSION_SECRET, 
@@ -102,6 +124,9 @@ app.add_middleware(
     https_only=IS_PROD_ENV,  # Secure cookies in prod (requires proxy headers!)
     same_site="lax"
 )
+
+# Add MaxBodySize LAST (will execute FIRST, outermost)
+app.add_middleware(MaxBodySizeMiddleware)
 
 
 # Static assets (no auth required)

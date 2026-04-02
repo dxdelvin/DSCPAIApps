@@ -166,7 +166,7 @@ async def exchange_code_for_token(code: str, request: Request) -> dict:
             return token_data
     except httpx.RequestError as e:
         print(f"Token exchange request error: {e}")
-        raise HTTPException(status_code=500, detail=f"Token exchange request failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Token exchange request failed")
 
 
 def validate_token(token: str) -> dict:

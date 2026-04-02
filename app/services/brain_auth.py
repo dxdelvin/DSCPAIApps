@@ -32,4 +32,4 @@ async def get_brain_access_token():
             return response.json().get("access_token")
         except httpx.HTTPStatusError as e:
             print(f"Auth Error: {e.response.text}")
-            raise HTTPException(status_code=e.response.status_code, detail=f"Auth Error: {e.response.text}")
+            raise HTTPException(status_code=e.response.status_code, detail="Brain authentication failed")

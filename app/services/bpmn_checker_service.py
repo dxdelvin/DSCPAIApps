@@ -67,6 +67,15 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
             "detail": "Please upload a PDF or image file (JPG, JPEG, PNG) containing your BPMN diagram."
         }
 
+    contents = await file.read()
+    if len(contents) > 10 * 1024 * 1024:
+        return {
+            "error": True,
+            "message": "File too large",
+            "detail": "Maximum file size is 10 MB."
+        }
+    await file.seek(0)
+
     # Create a chat history
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):

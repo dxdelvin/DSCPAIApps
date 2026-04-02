@@ -9,6 +9,7 @@ import logging
 import os
 import re
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import UploadFile
@@ -23,6 +24,28 @@ from app.services.common_service import (
 
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
 MAX_DISPLAY_IMAGES = 10
+
+# Allowlist — only HTTPS requests to these hostnames are permitted.
+_CONFLUENCE_ALLOWED_HOSTS = {
+    h.strip().lower()
+    for h in os.getenv("CONFLUENCE_ALLOWED_HOSTS", "inside-docupedia.bosch.com").split(",")
+    if h.strip()
+}
+
+
+def _validate_confluence_url(url: str) -> str:
+    """Return the sanitized URL or raise ValueError if it fails the allowlist check."""
+    raw = (url.strip() or DEFAULT_CONFLUENCE_URL).rstrip("/")
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        raise ValueError("Malformed Confluence URL.")
+    if parsed.scheme != "https":
+        raise ValueError("Confluence URL must use HTTPS.")
+    host = (parsed.hostname or "").lower()
+    if not any(host == allowed or host.endswith("." + allowed) for allowed in _CONFLUENCE_ALLOWED_HOSTS):
+        raise ValueError(f"Confluence URL host '{host}' is not in the allowed list.")
+    return raw
 
 logger = logging.getLogger(__name__)
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".gif", ".svg"}
@@ -740,7 +763,10 @@ async def verify_confluence_connection(
     space_key: str,
     parent_page_id: str,
 ) -> dict[str, Any]:
-    base = (confluence_url.rstrip("/") or DEFAULT_CONFLUENCE_URL).rstrip("/")
+    try:
+        base = _validate_confluence_url(confluence_url)
+    except ValueError as exc:
+        return {"error": True, "detail": str(exc)}
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -843,7 +869,7 @@ async def _create_confluence_page(
     title: str,
     storage_xml: str,
 ) -> dict[str, Any]:
-    api_url = f"{confluence_url.rstrip('/')}/rest/api/content"
+    api_url = f"{_validate_confluence_url(confluence_url)}/rest/api/content"
     headers = {
         "Accept": "application/json",
         "Content-Type": "application/json",
@@ -856,7 +882,7 @@ async def _create_confluence_page(
         "ancestors": [{"id": str(parent_page_id)}],
         "body": {"storage": {"value": storage_xml, "representation": "storage"}},
     }
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(api_url, headers=headers, json=payload, timeout=30.0)
@@ -895,13 +921,13 @@ async def _upload_confluence_attachment(
     file_bytes: bytes,
     content_type: str | None,
 ) -> dict[str, Any]:
-    api_url = f"{confluence_url.rstrip('/')}/rest/api/content/{page_id}/child/attachment"
+    api_url = f"{_validate_confluence_url(confluence_url)}/rest/api/content/{page_id}/child/attachment"
     headers = {
         "Accept": "application/json",
         "X-Atlassian-Token": "nocheck",
         "Authorization": f"Bearer {pat}",
     }
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         response = await client.post(
