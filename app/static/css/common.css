@@ -162,8 +162,8 @@ body.dark-mode .brand-logo {
     padding: 0.5rem;
     color: var(--navy-900);
     cursor: pointer;
-    transition: all 0.2s;
-    position: relative; /* For badge positioning */
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -174,12 +174,30 @@ body.dark-mode .brand-logo {
     background: var(--slate-100);
     border-color: var(--navy-900);
     color: var(--navy-900);
+    transform: scale(1.1);
+}
+
+.changelog-bell:active,
+.theme-toggle:active {
+    transform: scale(0.9);
+    transition-duration: 0.08s;
 }
 
 /* Dark mode specific hover fix */
 body.dark-mode .changelog-bell:hover,
 body.dark-mode .theme-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
+}
+
+/* Theme toggle icon spin */
+.theme-toggle .sun-icon,
+.theme-toggle .moon-icon {
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+}
+
+.theme-toggle.spinning .sun-icon,
+.theme-toggle.spinning .moon-icon {
+    transform: rotate(180deg);
 }
 
 /* Beta Banner - Subtle top indicator */
@@ -247,6 +265,29 @@ body.dark-mode .beta-banner {
     transition: all 0.2s ease;
     text-decoration: none;
     font-size: 13px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.25);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.4s ease, height 0.4s ease, opacity 0.4s ease;
+    opacity: 0;
+}
+
+.btn:active::before {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+    transition: 0s;
 }
 
 .btn-primary { 
@@ -255,8 +296,12 @@ body.dark-mode .beta-banner {
     box-shadow: 0 2px 8px rgba(255, 104, 64, 0.2);
 }
 .btn-primary:hover { 
-    transform: translateY(-1px); 
-    box-shadow: 0 4px 12px rgba(255, 104, 64, 0.25);
+    transform: translateY(-2px); 
+    box-shadow: 0 6px 16px rgba(255, 104, 64, 0.35);
+}
+.btn-primary:active {
+    transform: translateY(0) scale(0.97);
+    transition-duration: 0.08s;
 }
 .btn-secondary { background: var(--card); color: var(--text-primary); border-color: var(--border); }
 .btn-secondary:hover { border-color: var(--brand-orange); color: var(--brand-orange); }
@@ -777,19 +822,27 @@ body.dark-mode .app-card .match-highlight {
     background: var(--card, #fff);
     color: var(--text-secondary, #64748b);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-chip:hover {
     border-color: var(--brand-orange, #FF6840);
     color: var(--brand-orange, #FF6840);
     background: rgba(255, 104, 64, 0.06);
+    transform: translateY(-1px);
+}
+
+.filter-chip:active {
+    transform: scale(0.95);
+    transition-duration: 0.08s;
 }
 
 .filter-chip.active {
     background: var(--brand-orange, #FF6840);
     color: #fff;
     border-color: var(--brand-orange, #FF6840);
+    transform: scale(1.04);
+    box-shadow: 0 3px 10px rgba(255, 104, 64, 0.35);
 }
 
 body.dark-mode .filter-chip {
@@ -813,8 +866,6 @@ body.dark-mode .filter-chip.active {
 .app-card.filter-hidden {
     display: none !important;
 }
-
-/* Apps grid */
 .apps { 
     max-width: 1140px; 
     margin: 0 auto; 
@@ -921,8 +972,15 @@ body.dark-mode .filter-chip.active {
     display: flex;
     flex-direction: column;
     gap: 16px;
-    transition: all 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease, border-color 0.25s ease, opacity 0.35s ease;
     position: relative;
+    opacity: 0;
+    transform: translateY(24px);
+}
+
+.app-card.card-visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .app-card::after {
@@ -943,9 +1001,14 @@ body.dark-mode .filter-chip.active {
 }
 
 .app-card:hover { 
-    transform: translateY(-3px); 
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.1);
-    border-color: rgba(255, 104, 64, 0.15); 
+    transform: translateY(-5px) scale(1.01); 
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    border-color: rgba(255, 104, 64, 0.2); 
+}
+
+.app-card:active {
+    transform: translateY(-2px) scale(0.99);
+    transition-duration: 0.1s;
 }
 
 body.dark-mode .app-card {
@@ -954,8 +1017,8 @@ body.dark-mode .app-card {
 }
 
 body.dark-mode .app-card:hover {
-    box-shadow: 0 8px 32px rgba(255, 104, 64, 0.15);
-    border-color: rgba(255, 104, 64, 0.3);
+    box-shadow: 0 12px 40px rgba(255, 104, 64, 0.18);
+    border-color: rgba(255, 104, 64, 0.35);
 }
 
 .app-card.locked { 
@@ -978,12 +1041,14 @@ body.dark-mode .app-card:hover {
     display: grid; 
     place-items: center; 
     border: 1px solid rgba(255, 104, 64, 0.18);
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
+    flex-shrink: 0;
 }
 
 .app-icon svg {
     width: 34px;
     height: 34px;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 body.dark-mode .app-icon {
@@ -992,8 +1057,12 @@ body.dark-mode .app-icon {
 }
 
 .app-card:hover .app-icon {
-    transform: scale(1.06);
-    box-shadow: 0 4px 14px rgba(255, 104, 64, 0.15);
+    transform: scale(1.1) rotate(-4deg);
+    box-shadow: 0 6px 20px rgba(255, 104, 64, 0.22);
+}
+
+.app-card:hover .app-icon svg {
+    transform: scale(1.05);
 }
 
 .btn-open {
@@ -1007,6 +1076,20 @@ body.dark-mode .app-icon {
     color: var(--brand-orange);
     border: 1.5px solid #e1e1e1b5;
     transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-open::after {
+    content: '→';
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%) translateX(8px);
+    opacity: 0;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+    font-size: 16px;
+    line-height: 1;
 }
 
 .btn-open:hover,
@@ -1014,6 +1097,19 @@ body.dark-mode .app-icon {
     background: var(--brand-orange);
     color: #fff;
     border-color: var(--brand-orange);
+    padding-right: 36px;
+    box-shadow: 0 4px 12px rgba(255, 104, 64, 0.35);
+}
+
+.btn-open:hover::after,
+.app-card:hover .btn-open::after {
+    opacity: 1;
+    transform: translateY(-50%) translateX(0);
+}
+
+.btn-open:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
 }
 
 body.dark-mode .btn-open {
@@ -1087,6 +1183,12 @@ body.dark-mode .tag {
     background: var(--brand-orange);
     color: white;
     border-color: var(--brand-orange);
+    animation: tagNewPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes tagNewPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 104, 64, 0.5); }
+    50% { box-shadow: 0 0 0 5px rgba(255, 104, 64, 0); }
 }
 
 body.dark-mode .tag-new {
@@ -2015,6 +2117,127 @@ body.dark-mode .info-icon::after {
     to { transform: translateX(0); opacity: 1; }
 }
 
+/* ═══════════════════════════════════════════════
+   Micro-interaction Layer
+   Shared hover / entrance animations for all apps
+   ═══════════════════════════════════════════════ */
+
+/* Upload area — lift on hover, ring on drag */
+.upload-area:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255, 104, 64, 0.1);
+}
+
+.upload-area.drag-over,
+.upload-area.dragover {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(255, 104, 64, 0.15);
+}
+
+.upload-icon {
+    display: inline-block;
+    animation: uploadIconBob 2.8s ease-in-out infinite;
+}
+
+@keyframes uploadIconBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+}
+
+/* File item — slide-in entrance */
+.file-item {
+    animation: fileItemIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.file-item:hover .file-remove,
+.file-item:hover .btn-remove-file {
+    opacity: 1;
+}
+
+.file-remove,
+.btn-remove-file {
+    opacity: 0.5;
+    transition: color 0.2s ease, opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.file-remove:hover,
+.btn-remove-file:hover {
+    transform: scale(1.15);
+    opacity: 1;
+}
+
+@keyframes fileItemIn {
+    from { opacity: 0; transform: translateX(-12px) scale(0.97); }
+    to   { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+/* Chat message — pop in */
+.chat-msg,
+.audit-chat-message {
+    animation: chatMsgIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.chat-user,
+.audit-chat-message.user-message {
+    box-shadow: 0 2px 8px rgba(255, 104, 64, 0.25);
+}
+
+@keyframes chatMsgIn {
+    from { opacity: 0; transform: translateY(8px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Stat item — entrance stagger */
+.stat-item {
+    animation: statItemIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.stat-item:nth-child(1) { animation-delay: 0.05s; }
+.stat-item:nth-child(2) { animation-delay: 0.12s; }
+.stat-item:nth-child(3) { animation-delay: 0.19s; }
+.stat-item:nth-child(4) { animation-delay: 0.26s; }
+
+@keyframes statItemIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.stat-value {
+    transition: transform 0.15s ease;
+}
+
+/* Result panel — fade entrance */
+@keyframes resultPanelIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Guide step — stagger entrance */
+.guide-step {
+    animation: guideStepIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.guide-step:nth-child(1) { animation-delay: 0.06s; }
+.guide-step:nth-child(2) { animation-delay: 0.14s; }
+.guide-step:nth-child(3) { animation-delay: 0.22s; }
+.guide-step:nth-child(4) { animation-delay: 0.30s; }
+.guide-step:nth-child(5) { animation-delay: 0.38s; }
+
+@keyframes guideStepIn {
+    from { opacity: 0; transform: translateX(-10px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Warning notice — slide entrance */
+.warning-notice {
+    animation: warningIn 0.3s ease both;
+}
+
+@keyframes warningIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Site Footer */
 .site-footer {
     background: #111827;
@@ -2587,15 +2810,27 @@ body.spring-mode .app-card:hover::after {
     position: fixed;
     pointer-events: none;
     z-index: 10000;
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50% 0 50% 50%;
-    animation: petal-burst 1s ease-out forwards;
+    animation: petal-burst 0.75s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 /* ── Spring flower garden in footer ─── */
 body.spring-mode .site-footer {
+    background: #0f2518;
+    border-top-color: rgba(74,222,128,0.25);
     position: relative;
+}
+
+body.dark-mode.spring-mode .site-footer {
+    background: #061008;
+    border-top-color: rgba(74,222,128,0.2);
+}
+
+body.spring-mode .footer-badge {
+    background: rgba(74,222,128,0.15);
+    border-color: rgba(74,222,128,0.3);
 }
 
 body.spring-mode .site-footer::before {
@@ -2673,11 +2908,14 @@ body.spring-mode .spinner::after {
 @keyframes petal-burst {
     0% {
         opacity: 1;
-        transform: translate(0, 0) scale(1) rotate(0deg);
+        transform: translate(0, 0) scale(1.4) rotate(0deg);
+    }
+    60% {
+        opacity: 0.9;
     }
     100% {
         opacity: 0;
-        transform: translate(var(--confetti-x), var(--confetti-y)) scale(0) rotate(180deg);
+        transform: translate(var(--confetti-x), var(--confetti-y)) scale(0) rotate(270deg);
     }
 }
 

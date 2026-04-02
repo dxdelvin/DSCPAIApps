@@ -142,7 +142,7 @@ class DiagramGeneratorApp {
     setupTypePicker() {
         const picker = document.getElementById('type-picker');
         if (!picker) return;
-        const MAX_TYPES = 5;
+        const MAX_TYPES = 3;
 
         picker.querySelectorAll('.type-chip').forEach(chip => {
             chip.addEventListener('click', e => {

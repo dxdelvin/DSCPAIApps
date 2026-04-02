@@ -1340,3 +1340,40 @@ body.dark-mode .chat-divider::after {
         font-size: 13px;
     }
 }
+
+/* Micro-interactions */
+.result-item {
+    animation: auditResultIn 0.3s ease both;
+}
+.result-item:nth-child(1) { animation-delay: 0.04s; }
+.result-item:nth-child(2) { animation-delay: 0.08s; }
+.result-item:nth-child(3) { animation-delay: 0.12s; }
+.result-item:nth-child(4) { animation-delay: 0.16s; }
+.result-item:nth-child(5) { animation-delay: 0.20s; }
+
+@keyframes auditResultIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+    transition: background 0.2s ease;
+}
+.section-header:hover {
+    background: var(--surface-hover, rgba(255, 104, 64, 0.03));
+}
+
+#pdf-preview-container {
+    animation: pdfSlideIn 0.35s ease both;
+}
+@keyframes pdfSlideIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.status-badge {
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.status-badge:hover {
+    transform: scale(1.05);
+}

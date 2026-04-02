@@ -5,7 +5,8 @@
     "isNew": true,
     "changes": [
       "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages.",
-      "Fix: Resolved connectivity issues for some AI services."
+      "Fix: Resolved connectivity issues for some AI services.",
+      "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, findings, suggestion cards, review sections, and more."
     ]
   },
   {

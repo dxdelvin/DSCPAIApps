@@ -370,6 +370,22 @@ class PptCreatorApp {
         html += '</div>';
 
         resultInfo.innerHTML = html;
+
+        // Stagger slide rows in
+        requestAnimationFrame(() => {
+            resultInfo.querySelectorAll('.result-slide-row').forEach((row, i) => {
+                setTimeout(() => row.classList.add('row-visible'), 60 + i * 40);
+            });
+            // Count-up stat values (entrance handled by CSS animation)
+            resultInfo.querySelectorAll('.stat-item').forEach((item, i) => {
+                const valEl = item.querySelector('.stat-value');
+                if (!valEl) return;
+                const target = parseInt(valEl.textContent, 10);
+                if (!isNaN(target) && target > 0) {
+                    setTimeout(() => this.countUp(valEl, target, 600), 100 + i * 80);
+                }
+            });
+        });
     }
 
     getLayoutIcon(layout) {
@@ -395,6 +411,11 @@ class PptCreatorApp {
     async downloadPptx() {
         if (!this.currentContent) return;
 
+        const btn = document.getElementById('download-btn');
+        const originalHTML = btn.innerHTML;
+        btn.classList.add('downloading');
+        btn.innerHTML = '<span class="btn-icon">⏳</span> Preparing…';
+
         const userName = document.getElementById('user-name').value.trim() || 'Unknown User';
 
         try {
@@ -412,6 +433,8 @@ class PptCreatorApp {
                 const err = await res.json();
                 AppLogger.error('PPT download failed:', err.message || err.detail);
                 showToast('Download failed. Please try again.', 'error');
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('downloading');
                 return;
             }
 
@@ -424,10 +447,18 @@ class PptCreatorApp {
             a.click();
             a.remove();
             URL.revokeObjectURL(url);
+
+            btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.classList.remove('downloading');
+            }, 2000);
             showToast('Download started!', 'success');
         } catch (err) {
             AppLogger.error('PPT download error:', err);
             showToast('Download failed. Please try again.', 'error');
+            btn.innerHTML = originalHTML;
+            btn.classList.remove('downloading');
         }
     }
 
@@ -489,6 +520,17 @@ class PptCreatorApp {
         const el = document.createElement('span');
         el.textContent = str;
         return el.innerHTML;
+    }
+
+    countUp(el, target, duration) {
+        const start = performance.now();
+        const step = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            el.textContent = Math.round(eased * target);
+            if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
     }
 
     formatSize(bytes) {

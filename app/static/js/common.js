@@ -19,6 +19,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (themeToggle) {
         themeToggle.addEventListener('click', () => {
+            themeToggle.classList.add('spinning');
+            setTimeout(() => themeToggle.classList.remove('spinning'), 400);
+
             document.body.classList.toggle('dark-mode');
             const isDark = document.body.classList.contains('dark-mode');
 
@@ -30,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     initSpringMode();
+    initCardEntrance();
 
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
@@ -727,17 +731,17 @@ function initSpringMode() {
             document.body.appendChild(leafContainer);
         }
 
-        leafInterval = setInterval(spawnFloatingLeaf, 2500);
-        for (let i = 0; i < 3; i++) setTimeout(spawnFloatingLeaf, i * 400);
+        // One-time drift: big burst on activation, gentle on page reload
+        if (withFanfare) {
+            for (let i = 0; i < 10; i++) setTimeout(() => spawnFloatingLeaf(true), i * 120);
+        } else {
+            for (let i = 0; i < 4; i++) setTimeout(() => spawnFloatingLeaf(false), i * 350);
+        }
 
         document.addEventListener('mousemove', handleCursorTrail);
-
         document.addEventListener('click', handlePetalBurst);
 
-        if (withFanfare) {
-            for (let i = 0; i < 8; i++) setTimeout(spawnFloatingLeaf, i * 150);
-            showToast('🌸 Hello Spring!', 'info', 3000);
-        }
+        if (withFanfare) showToast('🌸 Hello Spring!', 'info', 3000);
     }
 
     function deactivateSpring() {
@@ -751,14 +755,14 @@ function initSpringMode() {
         document.removeEventListener('click', handlePetalBurst);
     }
 
-    function spawnFloatingLeaf() {
+    function spawnFloatingLeaf(big = false) {
         if (!leafContainer) return;
         const leaf = document.createElement('span');
         leaf.className = 'spring-leaf-float';
         leaf.textContent = LEAVES[Math.floor(Math.random() * LEAVES.length)];
         leaf.style.left = Math.random() * 95 + '%';
-        leaf.style.fontSize = (18 + Math.random() * 16) + 'px';
-        leaf.style.animationDuration = (7 + Math.random() * 8) + 's';
+        leaf.style.fontSize = big ? (32 + Math.random() * 20) + 'px' : (10 + Math.random() * 8) + 'px';
+        leaf.style.animationDuration = (big ? 5 : 8) + (Math.random() * 4) + 's';
         leafContainer.appendChild(leaf);
         leaf.addEventListener('animationend', () => leaf.remove());
     }
@@ -780,25 +784,60 @@ function initSpringMode() {
 
     function handlePetalBurst(e) {
         if (!document.body.classList.contains('spring-mode')) return;
-        const target = e.target.closest('.btn, .app-card, .spring-toggle');
-        if (!target) return;
 
-        const rect = target.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+        const cx = e.clientX;
+        const cy = e.clientY;
+        const count = 14;
 
-        for (let i = 0; i < 12; i++) {
+        for (let i = 0; i < count; i++) {
             const petal = document.createElement('span');
             petal.className = 'spring-petal';
             petal.style.left = cx + 'px';
             petal.style.top = cy + 'px';
             petal.style.background = PETAL_COLORS[Math.floor(Math.random() * PETAL_COLORS.length)];
-            const angle = (Math.PI * 2 * i) / 12;
-            const dist = 40 + Math.random() * 60;
+            const angle = (Math.PI * 2 * i) / count;
+            const dist = 35 + Math.random() * 70;
             petal.style.setProperty('--confetti-x', Math.cos(angle) * dist + 'px');
             petal.style.setProperty('--confetti-y', Math.sin(angle) * dist + 'px');
+            // Vary shape: circles and small rectangles
+            petal.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            petal.style.width = (5 + Math.random() * 5) + 'px';
+            petal.style.height = (5 + Math.random() * 5) + 'px';
             document.body.appendChild(petal);
             petal.addEventListener('animationend', () => petal.remove());
         }
     }
+}
+
+function initCardEntrance() {
+    const cards = document.querySelectorAll('.app-grid .app-card');
+    if (!cards.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const card = entry.target;
+                const idx = parseInt(card.dataset.entranceIdx || '0', 10);
+                setTimeout(() => card.classList.add('card-visible'), idx * 60);
+                observer.unobserve(card);
+            }
+        });
+    }, { threshold: 0.05 });
+
+    cards.forEach((card, i) => {
+        card.dataset.entranceIdx = i;
+        observer.observe(card);
+    });
+}
+
+function countUp(el, target, duration = 600) {
+    const start = performance.now();
+    el.textContent = '0';
+    function tick(now) {
+        const t = Math.min((now - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(ease * target);
+        if (t < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
 }

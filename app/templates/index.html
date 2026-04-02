@@ -284,9 +284,16 @@
                 chip.classList.add('active');
                 const filter = chip.dataset.filter;
 
+                let visibleIdx = 0;
                 cards.forEach(card => {
                     if (filter === 'all' || card.dataset.category === filter) {
                         card.classList.remove('filter-hidden');
+                        card.classList.remove('card-visible');
+                        const delay = visibleIdx * 60;
+                        visibleIdx++;
+                        requestAnimationFrame(() => {
+                            setTimeout(() => card.classList.add('card-visible'), delay);
+                        });
                     } else {
                         card.classList.add('filter-hidden');
                     }

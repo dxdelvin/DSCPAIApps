@@ -125,12 +125,6 @@
     pointer-events: none;
 }
 
-.theme-tag {
-    order: 2;
-    cursor: pointer;
-    user-select: none;
-}
-
 .tag-body {
     display: inline-flex;
     align-items: center;
@@ -156,10 +150,26 @@
     margin-left: 0.1rem;
 }
 
+.theme-tag {
+    order: 2;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.theme-tag:active {
+    transform: scale(0.94);
+}
+
+.theme-toggle-input:checked + .theme-tag {
+    transform: scale(1.05);
+}
+
 .theme-toggle-input:checked + .theme-tag .tag-body {
     color: var(--brand-orange, #FF6840);
     border-color: var(--brand-orange, #FF6840);
     background: rgba(255, 104, 64, 0.08);
+    box-shadow: 0 2px 8px rgba(255, 104, 64, 0.2);
 }
 
 .theme-toggle-input:checked + .theme-tag .tag-badge {
@@ -223,14 +233,22 @@ body.dark-mode .theme-toggle-input:checked + .theme-tag .tag-badge {
     padding: 2rem;
     text-align: center;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
     background: var(--bg, #f8fafc);
 }
 
-.upload-area:hover,
-.upload-area.drag-over {
+.upload-area:hover {
     border-color: var(--brand-orange, #FF6840);
     background: rgba(255, 104, 64, 0.04);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(255, 104, 64, 0.1);
+}
+
+.upload-area.drag-over {
+    border-color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.07);
+    transform: scale(1.02);
+    box-shadow: 0 0 0 4px rgba(255, 104, 64, 0.15);
 }
 
 .upload-icon {
@@ -265,6 +283,11 @@ body.dark-mode .theme-toggle-input:checked + .theme-tag .tag-badge {
     border-radius: 8px;
     margin-bottom: 0.4rem;
     background: var(--bg, #f8fafc);
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.file-item:hover .file-remove {
+    color: #dc2626 !important;
 }
 
 .file-icon { font-size: 1.1rem; }
@@ -414,6 +437,7 @@ body.dark-mode .theme-toggle-input:checked + .theme-tag .tag-badge {
     flex: 1;
     display: flex;
     flex-direction: column;
+    animation: resultPanelIn 0.35s ease both;
 }
 
 .result-info {
@@ -496,11 +520,19 @@ body.dark-mode .theme-toggle-input:checked + .theme-tag .tag-badge {
     gap: 0.65rem;
     padding: 0.45rem 0.65rem;
     border-radius: 6px;
-    transition: background 0.15s;
+    transition: background 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    opacity: 0;
+    transform: translateX(-8px);
+}
+
+.result-slide-row.row-visible {
+    opacity: 1;
+    transform: translateX(0);
 }
 
 .result-slide-row:hover {
     background: var(--bg, #f8fafc);
+    transform: translateX(3px);
 }
 
 .result-slide-row:not(:last-child) {
@@ -547,6 +579,48 @@ body.dark-mode .theme-toggle-input:checked + .theme-tag .tag-badge {
 .result-actions {
     margin-top: 1.5rem;
     justify-content: center;
+}
+
+#download-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+#download-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    transition: width 0.5s ease, height 0.5s ease, opacity 0.5s ease;
+    opacity: 0;
+}
+
+#download-btn:active::after {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+    transition: 0s;
+}
+
+#download-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(255, 104, 64, 0.4);
+}
+
+#download-btn:active {
+    transform: scale(0.97);
+    transition-duration: 0.08s;
+}
+
+#download-btn.downloading {
+    pointer-events: none;
+    opacity: 0.8;
 }
 
 /* Error state */
@@ -720,4 +794,9 @@ body.dark-mode .upload-area.drag-over {
     .result-title {
         font-size: 1.15rem;
     }
+}
+
+/* Guide step margin override */
+.guide-steps {
+    margin-bottom: 1.25rem;
 }
