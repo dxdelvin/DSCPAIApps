@@ -10,6 +10,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
     call_brain_workflow_chat,
+    sanitize_filename_for_prompt,
 )
 
 
@@ -211,7 +212,7 @@ async def analyze_uploaded_bpmn(file: UploadFile) -> dict:
         }
 
     prompt = (
-        f"Analyze this uploaded file: {file.filename}. "
+        f"Analyze this uploaded file: {sanitize_filename_for_prompt(file.filename)}. "
         "Extract and analyze any process-relevant information from this document. "
         "Remember: your first line MUST be [DOCUMENT_VALID] or [DOCUMENT_INVALID]. "
         "Then provide your analysis."

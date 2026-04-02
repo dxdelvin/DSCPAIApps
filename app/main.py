@@ -18,9 +18,11 @@ from fastapi.responses import RedirectResponse, JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
+import secrets
 import sys
+from urllib.parse import quote
 
-from app.core.config import APP_TITLE, STATIC_DIR
+from app.core.config import APP_TITLE, STATIC_DIR, TEMPLATES_DIR
 from app.routers import pages, api
 from app.services.auth_service import (
     get_login_url,
@@ -54,29 +56,24 @@ class AuthMiddleware(BaseHTTPMiddleware):
     """Check authentication for protected routes."""
     
     async def dispatch(self, request: Request, call_next):
-        # Public paths that don't require auth
         public_paths = [
             "/login", "/auth/callback", "/logout", 
             "/static", "/docs", "/openapi.json",
-            "/health", "/debug/auth-status"
+            "/health",
         ]
         
-        # Check if path is public
         for path in public_paths:
             if request.url.path.startswith(path):
                 return await call_next(request)
         
-        # Check if running locally (bypass auth)
-        if not os.getenv("VCAP_SERVICES"):
+        # Bypass auth only when explicitly opted in AND not on Cloud Foundry
+        if not os.getenv("VCAP_SERVICES") and os.getenv("AUTH_BYPASS_LOCAL", "").lower() == "true":
             return await call_next(request)
         
-        # Check for valid session (user_info OR access_token)
         if not request.session.get("user_info") and not request.session.get("access_token"):
-            # Not authenticated - redirect to login
             print(f"Auth middleware: No session for path {request.url.path}, redirecting to login")
             return RedirectResponse(url="/login", status_code=302)
         
-        # Proceed with request
         return await call_next(request)
 
 
@@ -86,9 +83,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
 # We want: Request → Session → Auth → Route
 # So we add: Auth first, then Session
 
-SESSION_SECRET = os.getenv("SESSION_SECRET", "fallback-dev-secret-change-in-prod")
-# Detect production environment for strict cookie security
+SESSION_SECRET = os.getenv("SESSION_SECRET", "")
 IS_PROD_ENV = bool(os.getenv("VCAP_SERVICES")) or os.getenv("ENVIRONMENT") == "prod"
+
+if IS_PROD_ENV and not SESSION_SECRET:
+    raise RuntimeError("SESSION_SECRET must be set in production")
+if not SESSION_SECRET:
+    SESSION_SECRET = "fallback-dev-secret-change-in-prod"
 
 # Add Auth middleware FIRST (will execute AFTER Session)
 app.add_middleware(AuthMiddleware)
@@ -121,15 +122,21 @@ async def login(request: Request):
 
 
 @app.get("/auth/callback")
-async def auth_callback(request: Request, code: str = None, error: str = None):
+async def auth_callback(request: Request, code: str = None, error: str = None, state: str = None):
     """Handle OAuth2 callback from XSUAA."""
     if error:
         print(f"Auth callback error: {error}")
-        return RedirectResponse(url=f"/login?error={error}", status_code=302)
+        return RedirectResponse(url=f"/login?error={quote(error)}", status_code=302)
     
     if not code:
         print("Auth callback: No code received")
         return RedirectResponse(url="/login", status_code=302)
+    
+    # Validate OAuth state to prevent CSRF
+    expected_state = request.session.pop("oauth_state", None)
+    if not expected_state or not state or not secrets.compare_digest(expected_state, state):
+        print("Auth callback: Invalid OAuth state")
+        return RedirectResponse(url="/login?error=invalid_state", status_code=302)
     
     try:
         # Exchange code for token
@@ -188,24 +195,25 @@ async def health_check():
     })
 
 
-@app.get("/debug/auth-status")
-async def debug_auth_status(request: Request):
-    """Debug endpoint to check auth configuration (no sensitive data)."""
-    config = get_xsuaa_config()
-    return JSONResponse({
-        "vcap_services_present": bool(os.getenv("VCAP_SERVICES")),
-        "vcap_application_present": bool(os.getenv("VCAP_APPLICATION")),
-        "xsuaa_config_loaded": config is not None,
-        "xsuaa_client_id_present": bool(config.get("client_id")) if config else False,
-        "xsuaa_auth_url": config.get("auth_url") if config else None,
-        "session_has_token": bool(request.session.get("access_token")),
-        "request_scheme": request.url.scheme,
-        "x_forwarded_proto": request.headers.get("x-forwarded-proto", "not set"),
-    })
-
-
 # Routers
 app.include_router(pages.router)
 app.include_router(api.router, prefix="/api")
+
+
+# 404 handler
+from starlette.exceptions import HTTPException as StarletteHTTPException
+from fastapi.templating import Jinja2Templates
+
+_templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
+    if exc.status_code == 404:
+        return _templates.TemplateResponse(
+            "404.html",
+            {"request": request},
+            status_code=404,
+        )
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 

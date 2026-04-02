@@ -1,6 +1,7 @@
 import httpx
 import os
 from fastapi import HTTPException
+from app.core.config import get_ssl_context
 
 
 async def get_brain_access_token():
@@ -20,7 +21,7 @@ async def get_brain_access_token():
     
 
     request_kwargs = {
-        "verify": False,
+        "verify": get_ssl_context(),
         "trust_env": True
     }
     

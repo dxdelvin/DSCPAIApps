@@ -1,10 +1,15 @@
 import json
 import logging
 import os
+import re
 from typing import Any, Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+
+_LOG_SANITIZE_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
+_ALLOWED_LOG_LEVELS = {"debug", "info", "warn", "warning", "error"}
+MAX_UPLOAD_SIZE = 10 * 1024 * 1024  # 10 MB
 
 # Import from organized service files
 from app.services.common_service import create_chat_history
@@ -86,11 +91,15 @@ class ClientLogRequest(BaseModel):
 async def client_log(payload: ClientLogRequest, request: Request):
     """Collect frontend logs for production diagnostics."""
     level = (payload.level or "error").upper()
-    path = payload.path or request.url.path
+    if level.lower() not in _ALLOWED_LOG_LEVELS:
+        level = "ERROR"
+    message = _LOG_SANITIZE_RE.sub('', payload.message or '')[:2000]
+    path = _LOG_SANITIZE_RE.sub('', payload.path or request.url.path)[:500]
+    metadata = _LOG_SANITIZE_RE.sub('', payload.metadata or '')[:2000] if payload.metadata else None
     ip = request.client.host if request.client else "unknown"
-    print(f"[CLIENT][{level}] {path} {payload.message} | ip={ip}")
-    if payload.metadata:
-        print(f"[CLIENT][META] {payload.metadata}")
+    print(f"[CLIENT][{level}] {path} {message} | ip={ip}")
+    if metadata:
+        print(f"[CLIENT][META] {metadata}")
     return {"status": "ok"}
 
 
@@ -205,6 +214,14 @@ async def bpmn_upload_analyze(file: UploadFile = File(...)):
             },
         )
 
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "File too large", "detail": "Maximum file size is 10 MB."},
+        )
+    await file.seek(0)
+
     result = await analyze_uploaded_bpmn(file)
 
     if result.get("error"):
@@ -301,6 +318,14 @@ async def audit_doc_check(file: UploadFile = File(...)):
                 "detail": "Please upload a PDF file.",
             },
         )
+
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "File too large", "detail": "Maximum file size is 10 MB."},
+        )
+    await file.seek(0)
 
     # Use the audit service
     result = await check_audit_document(file)
@@ -432,7 +457,7 @@ async def export_functional_spec(data: FSExportRequest):
             content={
                 "status": "error",
                 "message": "Document generation failed",
-                "detail": str(e),
+                "detail": "An internal error occurred while generating the document.",
             },
         )
 
@@ -479,7 +504,7 @@ async def export_business_requirement(data: BRExportRequest):
             content={
                 "status": "error",
                 "message": "Business Requirement document generation failed",
-                "detail": str(e),
+                "detail": "An internal error occurred while generating the document.",
             },
         )
 
@@ -544,7 +569,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
             content={
                 "status": "error",
                 "message": "FS Template document generation failed",
-                "detail": str(e),
+                "detail": "An internal error occurred while generating the document.",
             },
         )
 
@@ -967,7 +992,7 @@ async def ppt_download(data: PptDownloadRequest):
             content={
                 "status": "error",
                 "message": "PowerPoint generation failed",
-                "detail": str(e),
+                "detail": "An internal error occurred while generating the presentation.",
             },
         )
 

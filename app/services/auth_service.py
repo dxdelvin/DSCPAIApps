@@ -4,9 +4,11 @@ Handles OAuth2 login flow directly in FastAPI (no App Router needed)
 """
 import os
 import json
+import secrets
 from urllib.parse import urlencode
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
+from app.core.config import get_ssl_context
 
 # Lazy loading for SAP libraries to handle import errors gracefully
 xssec = None
@@ -112,10 +114,14 @@ def get_login_url(request: Request) -> str:
     # Build callback URL with HTTPS fix
     callback_url = _get_callback_url(request)
     
+    state = secrets.token_urlsafe(32)
+    request.session["oauth_state"] = state
+
     params = {
         "response_type": "code",
         "client_id": config["client_id"],
         "redirect_uri": callback_url,
+        "state": state,
     }
     
     login_url = f"{config['auth_url']}?{urlencode(params)}"
@@ -143,7 +149,7 @@ async def exchange_code_for_token(code: str, request: Request) -> dict:
     }
     
     try:
-        async with httpx.AsyncClient(verify=False, timeout=30.0) as client:
+        async with httpx.AsyncClient(verify=get_ssl_context(), timeout=30.0) as client:
             print(f"Token exchange request to: {config['token_url']}")
             response = await client.post(config["token_url"], data=data)
             

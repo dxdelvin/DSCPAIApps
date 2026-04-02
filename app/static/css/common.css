@@ -365,69 +365,29 @@ body.dark-mode select:focus {
 
 .sc-element {
     position: absolute;
-    opacity: 0.08;
+    opacity: 0.07;
     color: var(--brand-orange);
-    animation: float 20s ease-in-out infinite;
+    animation: sc-breathe 8s ease-in-out infinite;
 }
 
 .sc-element svg {
-    filter: drop-shadow(0 2px 8px rgba(255, 104, 64, 0.15));
+    filter: drop-shadow(0 2px 8px rgba(255, 104, 64, 0.12));
 }
 
 body.dark-mode .sc-element {
-    opacity: 0.12;
+    opacity: 0.11;
 }
 
-.sc-truck {
-    animation: float 15s ease-in-out infinite, slide 25s linear infinite;
-}
+.sc-truck    { animation-delay: 0s;   animation-duration: 9s;  }
+.sc-package  { animation-delay: 1.8s; animation-duration: 11s; }
+.sc-warehouse{ animation-delay: 3.3s; animation-duration: 10s; }
+.sc-chart    { animation-delay: 0.9s; animation-duration: 8s;  }
+.sc-globe    { animation-delay: 2.5s; animation-duration: 12s; }
 
-.sc-package {
-    animation: float 18s ease-in-out infinite 2s, rotate 30s linear infinite;
+@keyframes sc-breathe {
+    0%, 100% { opacity: 0.05; }
+    50%       { opacity: 0.13; }
 }
-
-.sc-warehouse {
-    animation: float 22s ease-in-out infinite 1s, pulse 8s ease-in-out infinite;
-}
-
-.sc-chart {
-    animation: float 16s ease-in-out infinite 3s, bounce 5s ease-in-out infinite;
-}
-
-.sc-globe {
-    animation: float 20s ease-in-out infinite 1.5s, spin 40s linear infinite;
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-15px); }
-}
-
-@keyframes slide {
-    0% { transform: translateX(0px); }
-    50% { transform: translateX(20px); }
-    100% { transform: translateX(0px); }
-}
-
-@keyframes rotate {
-    0%, 100% { transform: rotate(0deg); }
-    50% { transform: rotate(10deg); }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); opacity: 0.08; }
-    50% { transform: scale(1.1); opacity: 0.12; }
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0px); }
-    25% { transform: translateY(-8px); }
-    75% { transform: translateY(-5px); }
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
 }
 
 /* Base spinner – reusable across all pages */

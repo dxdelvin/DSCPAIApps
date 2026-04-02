@@ -13,6 +13,7 @@ from typing import Any
 import httpx
 from fastapi import UploadFile
 
+from app.core.config import get_ssl_context
 from app.services.common_service import (
     call_brain_pure_llm_chat,
     create_chat_history,
@@ -751,7 +752,7 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    async with httpx.AsyncClient(verify=False, timeout=20.0, follow_redirects=False, trust_env=True) as client:
+    async with httpx.AsyncClient(verify=get_ssl_context(), timeout=20.0, follow_redirects=False, trust_env=True) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:

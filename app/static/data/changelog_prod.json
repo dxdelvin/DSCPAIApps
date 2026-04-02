@@ -6,7 +6,9 @@
     "changes": [
       "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages.",
       "Fix: Resolved connectivity issues for some AI services.",
-      "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, findings, suggestion cards, review sections, and more."
+      "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, findings, suggestion cards, review sections, and more.",
+      "Fix: Security Upgraded with latest dependencies and vulnerability patches.",
+      "New: Added a 404 Error Page for invalid routes."
     ]
   },
   {

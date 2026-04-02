@@ -9,6 +9,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
     call_brain_workflow_chat,
+    sanitize_filename_for_prompt,
 )
 
 
@@ -61,7 +62,7 @@ async def check_audit_document(file: UploadFile) -> dict:
         }
 
     # Simple prompt - Brain agent handles the audit workflow
-    prompt = f"Please check and analyze this audit document: {file.filename}"
+    prompt = f"Please check and analyze this audit document: {sanitize_filename_for_prompt(file.filename)}"
 
     response = await call_brain_workflow_chat(
         brain_id,

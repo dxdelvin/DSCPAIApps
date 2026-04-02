@@ -9,6 +9,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
     call_brain_workflow_chat,
+    sanitize_filename_for_prompt,
 )
 
 
@@ -29,9 +30,8 @@ BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
 def build_checker_prompt(filename: str, context: Optional[str] = None) -> str:
     """Build a minimal analysis prompt; workflow behavior defines output shape."""
     base = "Analyze this BPMN diagram for me."
-    details = f" File: {filename}." if filename else ""
+    details = f" File: {sanitize_filename_for_prompt(filename)}." if filename else ""
     extra = f" Context: {context}" if context else ""
-    # Keep it short and let the workflow's Custom Behavior govern format
     return base + details + extra
 
 

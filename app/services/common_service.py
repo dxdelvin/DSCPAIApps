@@ -4,10 +4,21 @@ Contains chat history, file uploads, and API calling functions.
 """
 import httpx
 import os
+import re
 from typing import Optional, List, Tuple, Dict
 from fastapi import HTTPException, UploadFile
 from app.services.brain_auth import get_brain_access_token
-from app.core.config import BRAIN_API_BASE_URL
+from app.core.config import BRAIN_API_BASE_URL, get_ssl_context
+
+_SAFE_FILENAME_RE = re.compile(r'[^a-zA-Z0-9._\- ]')
+
+
+def sanitize_filename_for_prompt(filename: str) -> str:
+    """Strip dangerous characters from a filename before embedding it in a prompt."""
+    if not filename:
+        return "uploaded_file"
+    name = _SAFE_FILENAME_RE.sub('', filename)
+    return name[:200] or "uploaded_file"
 
 
 def _require_env(value: str, name: str) -> str:
@@ -41,7 +52,7 @@ async def create_chat_history(brain_id: str) -> dict:
     
     url = f"{base_url}/chat-histories/{brain_id}"
     
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -83,7 +94,7 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
         files_data.append(("files", (file.filename, content, file.content_type)))
         await file.seek(0)
     
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
     
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -149,7 +160,7 @@ async def call_brain_workflow_chat(
     if workflow_id:
         payload["workflowId"] = workflow_id
 
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -206,7 +217,7 @@ async def call_brain_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:
@@ -265,7 +276,7 @@ async def call_brain_pure_llm_chat(
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
 
-    client_kwargs = {"verify": False, "trust_env": True}
+    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
     async with httpx.AsyncClient(**client_kwargs) as client:
         try:

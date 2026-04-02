@@ -6,6 +6,7 @@
 
 {% block content %}
 <div class="page-header">
+
     <div class="sc-decorations">
         <div class="sc-element sc-truck" style="top: 15%; left: 5%;">
             <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -37,7 +38,7 @@
             </svg>
         </div>
     </div>
-    
+
     <p class="welcome-message">Welcome, <strong>{{ username }}</strong></p>
     <h1>DSCP APPs</h1>
     <p class="header-subtitle">Choose an app below to get started</p>
@@ -255,6 +256,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{{ url_for('static', path='js/homepage_bg.js') }}?v={{ css_version }}"></script>
 <script>
     document.querySelectorAll('.app-card.active').forEach(card => {
         const link = card.querySelector('.btn-open');
