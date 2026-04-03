@@ -388,7 +388,6 @@ body.dark-mode .sc-element {
     0%, 100% { opacity: 0.05; }
     50%       { opacity: 0.13; }
 }
-}
 
 /* Base spinner – reusable across all pages */
 .spinner {
