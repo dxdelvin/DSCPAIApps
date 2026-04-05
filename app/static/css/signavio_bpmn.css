@@ -37,6 +37,229 @@ body.dark-mode .builder-actions .mode-tabs {
     grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
 }
 
+/* Step Progress Bar */
+.step-progress-bar {
+    height: 4px;
+    background: var(--slate-100);
+    border-radius: 4px;
+    margin: -8px 0 16px;
+    overflow: hidden;
+}
+
+body.dark-mode .step-progress-bar {
+    background: var(--navy-800);
+}
+
+.step-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-orange), #ff8c42);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+}
+
+/* Step Transitions */
+.form-step {
+    display: none;
+    animation: stepFadeSlide 0.3s ease both;
+}
+
+.form-step.active {
+    display: block;
+}
+
+@keyframes stepFadeSlide {
+    from { opacity: 0; transform: translateX(16px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.form-step.slide-out-left {
+    animation: stepSlideOutLeft 0.2s ease both;
+}
+
+.form-step.slide-out-right {
+    animation: stepSlideOutRight 0.2s ease both;
+}
+
+@keyframes stepSlideOutLeft {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(-16px); }
+}
+
+@keyframes stepSlideOutRight {
+    from { opacity: 1; transform: translateX(0); }
+    to   { opacity: 0; transform: translateX(16px); }
+}
+
+/* Character Counter */
+.char-counter-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.char-counter-wrap textarea {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.char-counter {
+    position: absolute;
+    bottom: 8px;
+    right: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--slate-400);
+    pointer-events: none;
+    transition: color 0.2s ease;
+}
+
+.char-counter.near-limit {
+    color: #f59e0b;
+}
+
+.char-counter.at-limit {
+    color: #dc2626;
+}
+
+body.dark-mode .char-counter {
+    color: var(--slate-500);
+}
+
+body.dark-mode .char-counter.near-limit {
+    color: #fbbf24;
+}
+
+body.dark-mode .char-counter.at-limit {
+    color: #f87171;
+}
+
+/* Upload Thumbnail Preview */
+.upload-thumbnail-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.upload-thumbnail-img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+.upload-thumbnail-pdf {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    color: var(--slate-500);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.upload-thumbnail-pdf svg {
+    color: var(--brand-orange);
+}
+
+body.dark-mode .upload-thumbnail-container {
+    background: var(--navy-800);
+    border-color: var(--border);
+}
+
+body.dark-mode .upload-thumbnail-pdf {
+    color: var(--text-secondary);
+}
+
+/* Loading Panel centering fix */
+.analysis-content .lp-panel {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 180px;
+}
+
+.analysis-content {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Analysis formatted tables */
+.analysis-formatted table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+}
+
+.analysis-formatted table th,
+.analysis-formatted table td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.analysis-formatted table th {
+    background: var(--slate-100);
+    color: var(--navy-900);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.analysis-formatted table td {
+    color: var(--slate-700);
+}
+
+.analysis-formatted table tr:last-child td {
+    border-bottom: none;
+}
+
+.analysis-formatted table tr:hover td {
+    background: rgba(255, 104, 64, 0.03);
+}
+
+body.dark-mode .analysis-formatted table {
+    border-color: #334155;
+}
+
+body.dark-mode .analysis-formatted table th {
+    background: #1e293b;
+    color: #e2e8f0;
+}
+
+body.dark-mode .analysis-formatted table td {
+    color: #cbd5e1;
+    border-bottom-color: #334155;
+}
+
+body.dark-mode .analysis-formatted table tr:hover td {
+    background: rgba(255, 104, 64, 0.06);
+}
+
+/* Horizontal rules in analysis */
+.analysis-formatted hr {
+    border: none;
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+}
+
+body.dark-mode .analysis-formatted hr {
+    background: #334155;
+}
+
+
 .form-container { background: var(--bg); border: 1px dashed var(--border); border-radius: 14px; padding: 16px; }
 
 .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); column-gap: 12px; row-gap: 18px; }

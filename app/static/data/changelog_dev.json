@@ -4,10 +4,14 @@
     "version": "v3.2.0",
     "isNew": true,
     "changes": [
-      "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages.",
+      "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages. [Locked for Testing]",
+      "New: BPMN Diagrams Can be Viewed After Generation Before Downloading.",
+      "New: Added a 404 Error Page for invalid routes.",
+      "Improved: thumbnail previews, character limits, improved formatting in AI BPMN Builder.",
+      "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, progress bars, findings, suggestion cards, review sections, and more.",
       "Fix: Resolved connectivity issues for some AI services.",
-      "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, findings, suggestion cards, review sections, and more."
-   ]
+      "Fix: Security Upgraded with latest dependencies and vulnerability patches."
+    ]
   },
   {
     "date": "Mar 30th, 2026",

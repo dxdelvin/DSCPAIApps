@@ -63,43 +63,43 @@ router = APIRouter()
 
 # Request models for better type safety
 class BPMNSessionRequest(BaseModel):
-    processName: str = ""
-    poolName: str = ""
-    participants: str = ""
-    subLanes: str = ""
-    startTriggers: str = ""
-    processActivities: str = ""
-    processEnding: str = ""
-    intermediateEvents: str = ""
-    reviewOverride: str = ""
+    processName: str = Field(default="", max_length=200)
+    poolName: str = Field(default="", max_length=200)
+    participants: str = Field(default="", max_length=500)
+    subLanes: str = Field(default="", max_length=500)
+    startTriggers: str = Field(default="", max_length=2000)
+    processActivities: str = Field(default="", max_length=5000)
+    processEnding: str = Field(default="", max_length=2000)
+    intermediateEvents: str = Field(default="", max_length=2000)
+    reviewOverride: str = Field(default="", max_length=3000)
 
 
 class BPMNChatRequest(BaseModel):
-    chatHistoryId: str
-    message: str
+    chatHistoryId: str = Field(max_length=200)
+    message: str = Field(max_length=5000)
     formData: Optional[dict] = None
 
 
 class BPMNGenerateRequest(BaseModel):
-    chatHistoryId: Optional[str] = None
-    processName: str = ""
-    poolName: str = ""
-    participants: str = ""
-    subLanes: str = ""
-    startTriggers: str = ""
-    processActivities: str = ""
-    processEnding: str = ""
-    intermediateEvents: str = ""
-    reviewOverride: str = ""
+    chatHistoryId: Optional[str] = Field(default=None, max_length=200)
+    processName: str = Field(default="", max_length=200)
+    poolName: str = Field(default="", max_length=200)
+    participants: str = Field(default="", max_length=500)
+    subLanes: str = Field(default="", max_length=500)
+    startTriggers: str = Field(default="", max_length=2000)
+    processActivities: str = Field(default="", max_length=5000)
+    processEnding: str = Field(default="", max_length=2000)
+    intermediateEvents: str = Field(default="", max_length=2000)
+    reviewOverride: str = Field(default="", max_length=3000)
 
 
 class ClientLogRequest(BaseModel):
-    level: str = "error"
-    message: str = ""
-    metadata: Optional[str] = None
-    path: Optional[str] = None
-    userAgent: Optional[str] = None
-    ts: Optional[str] = None
+    level: str = Field(default="error", max_length=20)
+    message: str = Field(default="", max_length=5000)
+    metadata: Optional[str] = Field(default=None, max_length=10000)
+    path: Optional[str] = Field(default=None, max_length=500)
+    userAgent: Optional[str] = Field(default=None, max_length=500)
+    ts: Optional[str] = Field(default=None, max_length=50)
 
 
 @router.post("/client-log")

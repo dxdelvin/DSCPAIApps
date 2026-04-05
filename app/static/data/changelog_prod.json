@@ -4,7 +4,7 @@
     "version": "v3.2.0",
     "isNew": true,
     "changes": [
-      "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages.",
+      "New: Docupedia Publisher - publish AI-generated content directly to Confluence pages. [Locked for Testing]",
       "Fix: Resolved connectivity issues for some AI services.",
       "Improved: Micro-interactions added across all 7 apps — animated entrances for upload areas, file items, chat messages, stat counters, findings, suggestion cards, review sections, and more.",
       "Fix: Security Upgraded with latest dependencies and vulnerability patches.",

@@ -23,7 +23,10 @@ window.addEventListener('DOMContentLoaded', () => {
     initializeFormHandlers();
     initializeUploadHandlers();
     initializeModeSwitch();
+    initializeCharCounters();
+    initializeMobileSwipe();
     updateFormNavigation();
+    updateProgressBar();
 });
 
 function initializeFormHandlers() {
@@ -226,6 +229,9 @@ function handleUploadFile(file) {
     // Enable analyze button
     const btn = document.getElementById('uploadAnalyzeBtn');
     if (btn) btn.disabled = false;
+
+    // Show thumbnail preview
+    showUploadThumbnail(file);
 }
 
 function clearUploadFile() {
@@ -241,6 +247,7 @@ function clearUploadFile() {
     const panel = document.getElementById('upload-analysis-panel');
     const ctaPanel = document.getElementById('upload-cta-panel');
     const overrideContainer = document.getElementById('uploadOverrideContainer');
+    const thumbContainer = document.getElementById('upload-thumbnail-container');
     if (infoEl) infoEl.style.display = 'none';
     if (areaEl) areaEl.style.display = '';
     if (fileInput) fileInput.value = '';
@@ -250,6 +257,36 @@ function clearUploadFile() {
     if (panel) panel.style.display = 'none';
     if (ctaPanel) ctaPanel.style.display = 'none';
     if (overrideContainer) overrideContainer.style.display = 'none';
+    if (thumbContainer) thumbContainer.style.display = 'none';
+}
+
+function showUploadThumbnail(file) {
+    const container = document.getElementById('upload-thumbnail-container');
+    const imgEl = document.getElementById('upload-thumbnail-img');
+    const pdfEl = document.getElementById('upload-thumbnail-pdf');
+    if (!container) return;
+
+    if (file.type === 'application/pdf') {
+        if (imgEl) imgEl.style.display = 'none';
+        if (pdfEl) pdfEl.style.display = 'flex';
+        container.style.display = 'flex';
+    } else if (file.type.startsWith('image/')) {
+        if (pdfEl) pdfEl.style.display = 'none';
+        if (imgEl) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imgEl.src = e.target.result;
+                imgEl.style.display = 'block';
+                container.style.display = 'flex';
+            };
+            reader.onerror = () => {
+                container.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+    } else {
+        container.style.display = 'none';
+    }
 }
 
 function formatFileSize(bytes) {
@@ -785,6 +822,64 @@ function initLaneDragDrop() {
     lanesContainer.addEventListener('pointerdown', onPointerDown);
 }
 
+// ============== Progress Bar ==============
+function updateProgressBar() {
+    const fill = document.getElementById('stepProgressFill');
+    if (!fill) return;
+    const pct = ((currentStep - 1) / (totalSteps - 1)) * 100;
+    fill.style.width = pct + '%';
+}
+
+// ============== Character Counters ==============
+function initializeCharCounters() {
+    const fields = [
+        { id: 'startTriggers', max: 2000 },
+        { id: 'processActivities', max: 5000 },
+        { id: 'processEnding', max: 2000 },
+        { id: 'intermediateEvents', max: 2000 },
+    ];
+    fields.forEach(({ id, max }) => {
+        const textarea = document.getElementById(id);
+        if (!textarea) return;
+        textarea.setAttribute('maxlength', max);
+        const wrap = document.createElement('div');
+        wrap.className = 'char-counter-wrap';
+        textarea.parentNode.insertBefore(wrap, textarea);
+        wrap.appendChild(textarea);
+        const counter = document.createElement('span');
+        counter.className = 'char-counter';
+        counter.textContent = `0 / ${max}`;
+        wrap.appendChild(counter);
+        textarea.addEventListener('input', () => {
+            const len = textarea.value.length;
+            counter.textContent = `${len} / ${max}`;
+            counter.classList.toggle('near-limit', len > max * 0.85 && len < max);
+            counter.classList.toggle('at-limit', len >= max);
+        });
+    });
+}
+
+// ============== Mobile Swipe ==============
+function initializeMobileSwipe() {
+    const container = document.querySelector('.form-container');
+    if (!container) return;
+    let startX = 0;
+    let startY = 0;
+    container.addEventListener('touchstart', (e) => {
+        if (e.target.closest('textarea, input, select, .lane-drag-handle, .sublane-drag-handle')) return;
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+    }, { passive: true });
+    container.addEventListener('touchend', (e) => {
+        if (e.target.closest('textarea, input, select, .lane-drag-handle, .sublane-drag-handle')) return;
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+        if (Math.abs(dx) < 60 || Math.abs(dy) > Math.abs(dx)) return;
+        if (dx < 0 && currentStep < totalSteps) handleNext();
+        else if (dx > 0 && currentStep > 1) previousStep();
+    }, { passive: true });
+}
+
 function handleNext() {
     if (!validateCurrentStep()) {
         markStepInvalid(currentStep);
@@ -922,15 +1017,28 @@ function goToStep(stepNum) {
         saveCurrentStepData();
     }
 
-    document.querySelectorAll('.form-step').forEach((step) => step.classList.remove('active'));
-    const target = document.getElementById(`step-${stepNum}`);
-    if (target) {
-        target.classList.add('active');
-        loadCurrentStepData();
+    // Animated transition
+    const currentEl = document.getElementById(`step-${currentStep}`);
+    const targetEl = document.getElementById(`step-${stepNum}`);
+    if (currentEl && targetEl && currentEl !== targetEl) {
+        const direction = stepNum > currentStep;
+        currentEl.classList.remove('active');
+        currentEl.style.display = 'none';
+        targetEl.style.display = 'block';
+        targetEl.classList.add('active');
+        targetEl.style.animation = 'none';
+        targetEl.offsetHeight; // reflow
+        targetEl.style.animation = direction ? 'stepFadeSlide 0.3s ease both' : 'stepSlideOutRight 0.2s ease reverse both';
+    } else {
+        document.querySelectorAll('.form-step').forEach((step) => step.classList.remove('active'));
+        if (targetEl) targetEl.classList.add('active');
     }
+
     currentStep = stepNum;
+    loadCurrentStepData();
     updateStepIndicator();
     updateFormNavigation();
+    updateProgressBar();
     if (currentStep === 6) {
         updateGenerateButtonState();
     }
@@ -1037,32 +1145,42 @@ function formatAnalysisResponse(text) {
     let html = '<div class="analysis-formatted">';
     
     sections.forEach(section => {
+        // Check if section is a markdown table
+        const lines = section.split('\n').map(l => l.trim());
+        if (isMarkdownTable(lines)) {
+            html += formatMarkdownTable(lines);
+            return;
+        }
+
+        // Check for horizontal rules
+        if (/^---+$/.test(section) || /^\*\*\*+$/.test(section)) {
+            html += '<hr>';
+            return;
+        }
+
         // Check if section starts with markdown headers
         const h2Match = section.match(/^## (.+)$/m);
         const h3Match = section.match(/^### (.+)$/m);
         
         if (h2Match) {
-            // Main heading
             const heading = h2Match[1];
             const content = section.replace(/^## .+\n?/, '').trim();
             html += `<div class="analysis-section">`;
-            html += `<h2 class="analysis-main-heading">➤ ${heading}</h2>`;
+            html += `<h2 class="analysis-main-heading">${escapeBoldAndItalics(heading)}</h2>`;
             if (content) {
                 html += formatContent(content);
             }
             html += `</div>`;
         } else if (h3Match) {
-            // Subheading
             const heading = h3Match[1];
             const content = section.replace(/^### .+\n?/, '').trim();
             html += `<div class="analysis-subsection">`;
-            html += `<h3 class="analysis-subheading">⬥ ${heading}</h3>`;
+            html += `<h3 class="analysis-subheading">${escapeBoldAndItalics(heading)}</h3>`;
             if (content) {
                 html += formatContent(content);
             }
             html += `</div>`;
         } else {
-            // Regular content paragraph
             html += formatContent(section);
         }
     });
@@ -1071,27 +1189,78 @@ function formatAnalysisResponse(text) {
     return html;
 }
 
+function isMarkdownTable(lines) {
+    if (lines.length < 2) return false;
+    const headerPipe = lines[0].includes('|');
+    const separatorMatch = /^[\s|:-]+$/.test(lines[1]);
+    return headerPipe && separatorMatch;
+}
+
+function formatMarkdownTable(lines) {
+    const parseRow = (line) => line.split('|').map(c => c.trim()).filter(c => c.length > 0);
+    const headers = parseRow(lines[0]);
+    const rows = lines.slice(2).filter(l => l.includes('|')).map(parseRow);
+
+    let html = '<table>';
+    html += '<thead><tr>';
+    headers.forEach(h => { html += `<th>${escapeBoldAndItalics(h)}</th>`; });
+    html += '</tr></thead>';
+    html += '<tbody>';
+    rows.forEach(row => {
+        html += '<tr>';
+        row.forEach(cell => { html += `<td>${escapeBoldAndItalics(cell)}</td>`; });
+        html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
+}
+
 function formatContent(content) {
     if (!content) return '';
     
-    // Check if content has list items
     const lines = content.split('\n').map(l => l.trim());
+
+    // Check if content contains a markdown table embedded within text
+    const tableStartIdx = lines.findIndex((l, i) => 
+        l.includes('|') && i + 1 < lines.length && /^[\s|:-]+$/.test(lines[i + 1])
+    );
+    if (tableStartIdx >= 0) {
+        let html = '';
+        // Content before table
+        const before = lines.slice(0, tableStartIdx).filter(l => l.length > 0);
+        if (before.length) html += `<p class="analysis-paragraph">${escapeBoldAndItalics(before.join(' '))}</p>`;
+        // Table
+        const tableLines = [];
+        for (let i = tableStartIdx; i < lines.length; i++) {
+            if (lines[i].includes('|') || /^[\s|:-]+$/.test(lines[i])) tableLines.push(lines[i]);
+            else break;
+        }
+        html += formatMarkdownTable(tableLines);
+        // Content after table
+        const after = lines.slice(tableStartIdx + tableLines.length).filter(l => l.length > 0);
+        if (after.length) html += formatContent(after.join('\n'));
+        return html;
+    }
+
     const hasLists = lines.some(l => /^[-*•]\s/.test(l) || /^\d+\.\s/.test(l));
     
     if (hasLists) {
-        // Process as list
         let html = '';
         let currentList = null;
-        let listType = null;
         
         lines.forEach(line => {
+            // Handle horizontal rules
+            if (/^---+$/.test(line)) {
+                if (currentList) { html += currentList === 'ul' ? '</ul>' : '</ol>'; currentList = null; }
+                html += '<hr>';
+                return;
+            }
             if (/^[-*•]\s/.test(line)) {
                 const item = line.replace(/^[-*•]\s/, '').trim();
                 if (currentList !== 'ul') {
                     if (currentList) html += '</ul>';
                     html += '<ul class="analysis-list">';
                     currentList = 'ul';
-                    listType = 'ul';
                 }
                 html += `<li>${escapeBoldAndItalics(item)}</li>`;
             } else if (/^\d+\.\s/.test(line)) {
@@ -1100,7 +1269,6 @@ function formatContent(content) {
                     if (currentList) html += currentList === 'ul' ? '</ul>' : '</ol>';
                     html += '<ol class="analysis-list">';
                     currentList = 'ol';
-                    listType = 'ol';
                 }
                 html += `<li>${escapeBoldAndItalics(item)}</li>`;
             } else if (line.length > 0) {
@@ -1118,8 +1286,7 @@ function formatContent(content) {
         
         return html;
     } else {
-        // Simple paragraph with formatting
-        return `<p class="analysis-paragraph">${escapeBoldAndItalics(content)}</p>`;
+        return `<p class="analysis-paragraph">${escapeBoldAndItalics(content.replace(/\n/g, '<br>'))}</p>`;
     }
 }
 
