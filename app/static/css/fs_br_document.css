@@ -31,6 +31,23 @@
 /* ── Form Container ─────────────────────────── */
 .form-container { background: var(--bg); border: 1px dashed var(--border); border-radius: 14px; padding: 16px; }
 
+/* ── Step Progress Bar ──────────────────────── */
+.step-progress-bar {
+    height: 4px;
+    background: var(--slate-100);
+    border-radius: 4px;
+    margin: -8px 0 16px;
+    overflow: hidden;
+}
+body.dark-mode .step-progress-bar { background: var(--navy-800, #1e293b); }
+.step-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--brand-orange), #ff8c42);
+    border-radius: 4px;
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%;
+}
+
 /* ── Checkbox Grid ──────────────────────────── */
 .checkbox-grid { display: grid; gap: 16px; margin-bottom: 14px; }
 .checkbox-grid.three-col { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }

@@ -257,6 +257,8 @@ function updateFsNav() {
     });
 
     updateMobileStepProgress('fs-step-indicator', fsCurrentStep, fsTotalSteps);
+    const fsFill = document.getElementById('fsProgressFill');
+    if (fsFill) fsFill.style.width = ((fsCurrentStep - 1) / (fsTotalSteps - 1) * 100) + '%';
 }
 
 function fsResetForm() {
@@ -564,7 +566,8 @@ function downloadFsJson() {
     const a = document.createElement('a');
     a.href = url;
     const safeName = (data.title || 'Functional_Spec').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
-    a.download = `${safeName}_FS.json`;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `${safeName}_FS_${today}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -891,6 +894,8 @@ function updateBrNav() {
     });
 
     updateMobileStepProgress('br-step-indicator', brCurrentStep, brTotalSteps);
+    const brFill = document.getElementById('brProgressFill');
+    if (brFill) brFill.style.width = ((brCurrentStep - 1) / (brTotalSteps - 1) * 100) + '%';
 }
 
 function updateMobileStepProgress(indicatorId, currentStep, totalSteps) {
@@ -1315,7 +1320,8 @@ function downloadBrJson() {
     a.href = url;
     const title = data.title || 'Business_Requirement';
     const safeName = title.replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
-    a.download = `${safeName}_BR_Data.json`;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `${safeName}_BR_Data_${today}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -1537,6 +1543,8 @@ function updateFvNav() {
     });
 
     updateMobileStepProgress('fv-step-indicator', fvCurrentStep, fvTotalSteps);
+    const fvFill = document.getElementById('fvProgressFill');
+    if (fvFill) fvFill.style.width = ((fvCurrentStep - 1) / (fvTotalSteps - 1) * 100) + '%';
 }
 
 function fvResetForm() {
@@ -1868,7 +1876,8 @@ function downloadFvJson() {
     const a = document.createElement('a');
     a.href = url;
     const safeName = (data.description || 'FS_Template').replace(/[^a-zA-Z0-9_\- ]/g, '').replace(/\s+/g, '_');
-    a.download = `${safeName}_FSVariant.json`;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `${safeName}_FSVariant_${today}.json`;
     document.body.appendChild(a);
     a.click();
     a.remove();

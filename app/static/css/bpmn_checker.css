@@ -139,6 +139,38 @@ body.dark-mode {
     margin-top: 0.5rem;
 }
 
+/* BPMN Image Preview */
+.bpmn-img-preview {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.bpmn-img-preview img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    display: block;
+}
+
+/* BPMN Image Preview */
+.bpmn-img-preview {
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.bpmn-img-preview img {
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    display: block;
+}
+
 /* Selected File Section */
 .selected-file-section {
     margin-bottom: 1.5rem;

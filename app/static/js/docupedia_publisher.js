@@ -803,6 +803,7 @@ class DocupediaPublisherApp {
             : [];
 
         target.innerHTML = `
+            ${!isWarning ? '<div class="dp-publish-success-icon">✓</div>' : ''}
             <p class="dp-publish-result-title">${isWarning ? 'Page created with upload warnings' : 'Page published successfully!'}</p>
             <p><strong>${this.escapeHtml(this.publishResult.title || 'Confluence Page')}</strong></p>
             <p><a href="${this.escapeHtml(this.publishResult.pageLink || '#')}" target="_blank" rel="noopener noreferrer">Open published page</a></p>

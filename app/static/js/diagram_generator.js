@@ -445,6 +445,8 @@ class DiagramGeneratorApp {
                 card.classList.toggle('selected');
             });
         });
+
+        this.syncTypesFromAnalysis();
     }
 
     toggleSelectAll() {
@@ -764,6 +766,23 @@ class DiagramGeneratorApp {
         // Mark initial active card
         const activeCard = cardsEl.querySelector(`.dg-card[data-index="${this.activeTabIndex}"]`);
         if (activeCard) activeCard.classList.add('dg-card-active');
+    }
+
+    syncTypesFromAnalysis() {
+        if (!this.analysis || !this.analysis.diagrams) return;
+        const picker = document.getElementById('type-picker');
+        if (!picker) return;
+        const manuallySelected = picker.querySelectorAll('.type-chip.active:not([data-type="auto"])').length > 0;
+        if (manuallySelected) return;
+        const detectedTypes = new Set(this.analysis.diagrams.map(d => d.type));
+        picker.querySelectorAll('.type-chip').forEach(chip => chip.classList.remove('active', 'type-chip-detected'));
+        detectedTypes.forEach(type => {
+            const chip = picker.querySelector(`[data-type="${type}"]`);
+            if (chip) chip.classList.add('active', 'type-chip-detected');
+        });
+        if (!detectedTypes.size) {
+            picker.querySelector('[data-type="auto"]')?.classList.add('active');
+        }
     }
 
     openRefineForIndex(index) {

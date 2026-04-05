@@ -104,7 +104,7 @@ class AuditCheckApp {
                     <div class="file-details">
                         <p class="file-name">${this.escText(file.name)}</p>
                         <p class="file-size">${this.formatFileSize(file.size)}</p>
-                        <textarea class="description-input" placeholder="Add image description (optional)" data-index="${idx}">${this.escText(file.description)}</textarea>
+                        <textarea class="description-input" placeholder="Add image description (optional)" data-index="${idx}" maxlength="2000">${this.escText(file.description)}</textarea>
                     </div>
                 </div>
                 <button type="button" class="btn-remove-file" title="Remove">✕</button>

@@ -111,6 +111,8 @@ class BPMNCheckerApp {
         const fileName = document.getElementById('file-name');
         const fileSize = document.getElementById('file-size');
         const checkBtn = document.getElementById('check-btn');
+        const previewContainer = document.getElementById('bpmn-preview-container');
+        const previewImg = document.getElementById('bpmn-file-preview');
 
         if (this.selectedFile) {
             uploadArea.style.display = 'none';
@@ -118,10 +120,20 @@ class BPMNCheckerApp {
             fileName.textContent = this.selectedFile.name;
             fileSize.textContent = this.formatFileSize(this.selectedFile.size);
             checkBtn.disabled = false;
+            if (previewImg && previewContainer) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    previewImg.src = e.target.result;
+                    previewContainer.style.display = 'block';
+                };
+                reader.readAsDataURL(this.selectedFile);
+            }
         } else {
             uploadArea.style.display = 'block';
             selectedSection.style.display = 'none';
             checkBtn.disabled = true;
+            if (previewImg) previewImg.src = '';
+            if (previewContainer) previewContainer.style.display = 'none';
         }
     }
 
