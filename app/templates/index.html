@@ -258,7 +258,7 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/homepage_bg.js') }}?v={{ css_version }}"></script>
+<script src="/static/js/homepage_bg.js?v={{ css_version }}"></script>
 <script>
     document.querySelectorAll('.app-card.active').forEach(card => {
         if (card.classList.contains('locked')) return;

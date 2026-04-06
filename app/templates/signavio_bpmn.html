@@ -5,7 +5,7 @@
 {% block page_name %}BPMN Builder{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/signavio_bpmn.css') }}?v={{ css_version }}">
+<link rel="stylesheet" href="/static/css/signavio_bpmn.css?v={{ css_version }}">
 <link rel="stylesheet" href="https://unpkg.com/bpmn-js@18.6.3/dist/assets/bpmn-js.css">
 {% endblock %}
 
@@ -61,11 +61,11 @@
                 <div class="form-grid">
                     <div class="form-group">
                         <label for="processName">Process Name *</label>
-                        <input type="text" id="processName" name="processName" placeholder="e.g., Order to Cash" required>
+                        <input type="text" id="processName" name="processName" placeholder="e.g., Order to Cash" maxlength="200" required>
                     </div>
                     <div class="form-group">
                         <label for="poolName">Pool / Department Name *</label>
-                        <input type="text" id="poolName" name="poolName" placeholder="e.g., Sales Department" required>
+                        <input type="text" id="poolName" name="poolName" placeholder="e.g., Sales Department" maxlength="200" required>
                     </div>
                 </div>
             </div>
@@ -87,7 +87,7 @@
                                         <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
                                     </svg>
                                 </span>
-                                <input type="text" class="lane-input" placeholder="e.g., Sales Rep" required>
+                                <input type="text" class="lane-input" placeholder="e.g., Sales Rep" maxlength="100" required>
                                 <button type="button" class="btn-icon btn-remove-lane" title="Remove lane">
                                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -343,5 +343,5 @@
 
 {% block extra_js %}
 <script src="https://unpkg.com/bpmn-js@18.6.3/dist/bpmn-viewer.production.min.js"></script>
-<script src="{{ url_for('static', path='js/signavio_bpmn.js') }}"></script>
+<script src="/static/js/signavio_bpmn.js?v={{ css_version }}"></script>
 {% endblock %}

@@ -5,7 +5,7 @@
 {% block page_name %}FS & BR Document Builder{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/fs_br_document.css') }}?v={{ css_version }}">
+<link rel="stylesheet" href="/static/css/fs_br_document.css?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
@@ -1290,5 +1290,5 @@ This information has to be forwarded to the GDS responsible in order to decide /
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/fs_br_document.js') }}"></script>
+<script src="/static/js/fs_br_document.js?v={{ css_version }}"></script>
 {% endblock %}

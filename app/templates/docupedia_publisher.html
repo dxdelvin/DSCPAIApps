@@ -5,7 +5,7 @@
 {% block page_name %}Docupedia Publisher{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/docupedia_publisher.css') }}?v={{ css_version }}">
+<link rel="stylesheet" href="/static/css/docupedia_publisher.css?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
@@ -365,5 +365,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/docupedia_publisher.js') }}?v={{ css_version }}"></script>
+<script src="/static/js/docupedia_publisher.js?v={{ css_version }}"></script>
 {% endblock %}

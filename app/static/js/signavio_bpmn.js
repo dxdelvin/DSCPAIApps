@@ -587,7 +587,7 @@ function createLaneHTML() {
                         <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
                     </svg>
                 </span>
-                <input type="text" class="lane-input" placeholder="e.g., Warehouse Manager" required>
+                <input type="text" class="lane-input" placeholder="e.g., Warehouse Manager" maxlength="100" required>
                 <button type="button" class="btn-icon btn-remove-lane" title="Remove lane">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -617,7 +617,7 @@ function createSublaneHTML() {
                     <circle cx="9" cy="15" r="1.5"/><circle cx="15" cy="15" r="1.5"/>
                 </svg>
             </span>
-            <input type="text" class="sublane-input" placeholder="e.g., Regional Sales" required>
+            <input type="text" class="sublane-input" placeholder="e.g., Regional Sales" maxlength="100" required>
             <button type="button" class="btn-icon btn-remove-sublane" title="Remove sub-lane">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -837,6 +837,8 @@ function initializeCharCounters() {
         { id: 'processActivities', max: 5000 },
         { id: 'processEnding', max: 2000 },
         { id: 'intermediateEvents', max: 2000 },
+        { id: 'reviewOverride', max: 3000 },
+        { id: 'uploadOverride', max: 3000 },
     ];
     fields.forEach(({ id, max }) => {
         const textarea = document.getElementById(id);

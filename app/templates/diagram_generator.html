@@ -5,7 +5,7 @@
 {% block page_name %}Diagram Generator{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', path='css/diagram_generator.css') }}?v={{ css_version }}">
+<link rel="stylesheet" href="/static/css/diagram_generator.css?v={{ css_version }}">
 {% endblock %}
 
 {% block content %}
@@ -758,5 +758,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', path='js/diagram_generator.js') }}?v={{ css_version }}"></script>
+<script src="/static/js/diagram_generator.js?v={{ css_version }}"></script>
 {% endblock %}

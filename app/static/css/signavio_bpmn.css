@@ -793,6 +793,19 @@ body.dark-mode .override-textarea {
     margin-top: 10px;
 }
 
+/* Counter inside override box: render below textarea, not as an overlay */
+.inline-override .char-counter-wrap {
+    display: flex;
+    flex-direction: column;
+}
+
+.inline-override .char-counter {
+    position: static;
+    text-align: right;
+    margin-top: 4px;
+    font-size: 11px;
+}
+
 .override-hint {
     margin-top: 8px;
     font-size: 12px;
@@ -960,7 +973,7 @@ body.dark-mode .analysis-placeholder p {
     color: var(--slate-700);
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 4px;
 }
 
 body.dark-mode .analysis-formatted {
@@ -1076,7 +1089,7 @@ body.dark-mode .analysis-list code {
 }
 
 .analysis-paragraph {
-    margin: 10px 0;
+    margin: 2px 0;
     color: var(--slate-700);
     line-height: 1.6;
 }
@@ -1150,6 +1163,10 @@ body.dark-mode .analysis-content::-webkit-scrollbar-track {
 }
 
 /* Mode Panel - page-specific active state */
+.mode-panel {
+    display: none;
+}
+
 .mode-panel.active {
     display: block;
     animation: fadeSlideUp 0.2s ease;

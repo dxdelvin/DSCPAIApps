@@ -389,6 +389,10 @@ body.dark-mode .sc-element {
     50%       { opacity: 0.13; }
 }
 
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Base spinner – reusable across all pages */
 .spinner {
     display: inline-block;

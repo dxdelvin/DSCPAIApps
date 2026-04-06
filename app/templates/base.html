@@ -7,15 +7,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', path='css/common.css') }}?v={{ css_version }}">
-    <link rel="icon" type="image/svg" href="{{ url_for('static', path='img/icon.svg') }}"/>
+    <link rel="stylesheet" href="/static/css/common.css?v={{ css_version }}">
+    <link rel="icon" type="image/svg" href="/static/img/icon.svg"/>
     {% block extra_css %}{% endblock %}
 </head>
 <body{% if request.url_path == '/' %} class="home-page"{% endif %}>
     <header class="navbar">
         <div class="navbar-shell">
             <a class="brand" href="/" aria-label="BSH DSCP home">
-                <img class="brand-logo" src="{{ url_for('static', path='img/BSH_black_text.png') }}" alt="BSH Logo">
+                <img class="brand-logo" src="/static/img/BSH_black_text.png" alt="BSH Logo">
                 <span class="brand-text">
                     <span class="brand-name">{% block page_name %}BSH DSCP{% endblock %}</span>
                     <span class="brand-sub">Digital Supply Chain Planning</span>
@@ -90,7 +90,7 @@
             clientLogLevel: "{{ client_log_level | default('error') }}"
         };
     </script>
-    <script src="{{ url_for('static', path='js/common.js') }}"></script>
+    <script src="/static/js/common.js?v={{ css_version }}"></script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>
