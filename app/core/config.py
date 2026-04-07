@@ -19,11 +19,6 @@ CLIENT_LOG_LEVEL = os.getenv("CLIENT_LOG_LEVEL", "error" if IS_PRODUCTION else "
 # Brain API Configuration
 BRAIN_API_BASE_URL = os.getenv("BRAIN_API_BASE_URL", "https://ews-emea.api.bosch.com:443/it/application/dia-brain/v1/api")
 
-# Confluence proxy — set to route Confluence API calls through the Bosch corporate proxy on BTP.
-# Example: http://rb-proxy-de.bosch.com:8080
-# Leave empty locally; set via cf set-env in production.
-CONFLUENCE_PROXY = os.getenv("CONFLUENCE_PROXY", "").strip()
-
 
 def get_ssl_context():
     """Build an SSL context for outgoing HTTPS requests.
