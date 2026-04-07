@@ -40,7 +40,7 @@ def _get_confluence_client_kwargs() -> dict:
     """
     kwargs: dict = {"verify": get_ssl_context(), "trust_env": False}
     if CONFLUENCE_PROXY:
-        kwargs["proxies"] = {"http://": CONFLUENCE_PROXY, "https://": CONFLUENCE_PROXY}
+        kwargs["proxy"] = CONFLUENCE_PROXY
     return kwargs
 
 
