@@ -14,7 +14,7 @@ from urllib.parse import urlparse
 import httpx
 from fastapi import UploadFile
 
-from app.core.config import get_ssl_context
+from app.core.config import CONFLUENCE_PROXY, get_ssl_context
 from app.services.common_service import (
     call_brain_pure_llm_chat,
     create_chat_history,
@@ -31,6 +31,17 @@ _CONFLUENCE_ALLOWED_HOSTS = {
     for h in os.getenv("CONFLUENCE_ALLOWED_HOSTS", "inside-docupedia.bosch.com").split(",")
     if h.strip()
 }
+
+
+def _get_confluence_client_kwargs() -> dict:
+    """Base httpx.AsyncClient kwargs for all Confluence API calls.
+    If CONFLUENCE_PROXY is set, routes traffic through it (needed on SAP BTP
+    where direct access to inside-docupedia.bosch.com is blocked by SSO).
+    """
+    kwargs: dict = {"verify": get_ssl_context(), "trust_env": False}
+    if CONFLUENCE_PROXY:
+        kwargs["proxies"] = {"http://": CONFLUENCE_PROXY, "https://": CONFLUENCE_PROXY}
+    return kwargs
 
 
 def _validate_confluence_url(url: str) -> str:
@@ -778,7 +789,7 @@ async def verify_confluence_connection(
     # Do NOT follow redirects automatically — a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
-    async with httpx.AsyncClient(verify=get_ssl_context(), timeout=20.0, follow_redirects=False, trust_env=True) as client:
+    async with httpx.AsyncClient(**_get_confluence_client_kwargs(), timeout=20.0, follow_redirects=False) as client:
         # 1. Verify PAT by fetching current user
         user_url = f"{base}/rest/api/user/current"
         try:
@@ -882,9 +893,8 @@ async def _create_confluence_page(
         "ancestors": [{"id": str(parent_page_id)}],
         "body": {"storage": {"value": storage_xml, "representation": "storage"}},
     }
-    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
+    async with httpx.AsyncClient(**_get_confluence_client_kwargs()) as client:
         response = await client.post(api_url, headers=headers, json=payload, timeout=30.0)
         if response.is_error:
             detail = extract_confluence_error_message(response.text, response.status_code)
@@ -927,9 +937,8 @@ async def _upload_confluence_attachment(
         "X-Atlassian-Token": "nocheck",
         "Authorization": f"Bearer {pat}",
     }
-    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
+    async with httpx.AsyncClient(**_get_confluence_client_kwargs()) as client:
         response = await client.post(
             api_url,
             headers=headers,
