@@ -14,6 +14,7 @@ from app.services.common_service import (
     create_chat_history,
     call_brain_pure_llm_chat,
     upload_attachments,
+    extract_pdf_text,
 )
 
 
@@ -193,50 +194,6 @@ COPY_IMAGE_BEHAVIOUR = (
 )
 
 
-# ─── PDF text extraction ─────────────────────────────────
-
-def _extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
-    """Extract text from a PDF file using PyPDF2.
-    
-    Returns (text, error). On success error is None; on failure text is None.
-    """
-    try:
-        from PyPDF2 import PdfReader
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        pages: list[str] = []
-        has_content = False
-        for i, page in enumerate(reader.pages, 1):
-            text = page.extract_text() or ""
-            text = text.strip()
-            if text:
-                pages.append(f"--- Page {i} ---\n{text}")
-                has_content = True
-            else:
-                pages.append(f"--- Page {i} ---\n(No extractable text)")
-        if not has_content:
-            return None, "No readable text found in the PDF. The file may be image-based or scanned."
-        full_text = "\n\n".join(pages)
-        full_text = re.sub(r'(--|#|\/\*|\*\/)', ' ', full_text)
-        full_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', full_text)
-        # Limit to first 90K characters
-        if len(full_text) > 90000:
-            full_text = full_text[:90000] + "\n\n[Content truncated at 90K characters. Only first portion processed.]"
-        # Check if meaningful content was extracted
-        clean = re.sub(r'---\s*Page\s*\d+\s*---', '', full_text)
-        clean = re.sub(r'\(No extractable text\)', '', clean).strip()
-        if len(clean) < 80:
-            return None, (
-                "The PDF appears to be image-based or scanned. "
-                "Only minimal text could be extracted (less than 80 characters). "
-                "Please use a text-based PDF for best results."
-            )
-        return full_text, None
-    except ImportError:
-        return None, "PDF processing library (PyPDF2) is not installed on the server."
-    except Exception as e:
-        return None, f"PDF text extraction failed: {str(e)}"
-
-
 # ─── JSON parsing ────────────────────────────────────────
 
 def _parse_json_response(text: str) -> dict:
@@ -308,7 +265,7 @@ async def analyze_pdf_content(
     all_text_parts: list[str] = []
     errors: list[str] = []
     for fname, fbytes in pdf_bytes_list:
-        text, err = _extract_pdf_text(fbytes)
+        text, err = extract_pdf_text(fbytes)
         if err:
             errors.append(f"{fname}: {err}")
         elif text:

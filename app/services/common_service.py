@@ -12,6 +12,59 @@ from app.core.config import BRAIN_API_BASE_URL, get_ssl_context
 
 _SAFE_FILENAME_RE = re.compile(r'[^a-zA-Z0-9._\- ]')
 
+_MAX_PDF_CHARS = 90000
+_MIN_MEANINGFUL_CHARS = 80
+
+
+def extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
+    """Extract text from a PDF using pymupdf4llm.
+
+    Returns (text, error). On success error is None; on failure text is None.
+    """
+    try:
+        import pymupdf
+        import pymupdf4llm
+
+        doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")
+        chunks = pymupdf4llm.to_markdown(
+            doc, page_chunks=True, ignore_images=True,
+        )
+        pages: list[str] = []
+        has_content = False
+        for chunk in chunks:
+            page_num = chunk["metadata"]["page_number"]
+            text = chunk["text"].strip()
+            if text:
+                pages.append(f"--- Page {page_num} ---\n{text}")
+                has_content = True
+            else:
+                pages.append(f"--- Page {page_num} ---\n(No extractable text)")
+        doc.close()
+
+        if not has_content:
+            return None, "No readable text found in the PDF. The file may be image-based or scanned."
+
+        full_text = "\n\n".join(pages)
+        full_text = re.sub(r'(--|#|\/\*|\*\/)', ' ', full_text)
+        full_text = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', full_text)
+
+        if len(full_text) > _MAX_PDF_CHARS:
+            full_text = full_text[:_MAX_PDF_CHARS] + "\n\n[Content truncated at 90K characters. Only first portion processed.]"
+
+        clean = re.sub(r'---\s*Page\s*\d+\s*---', '', full_text)
+        clean = re.sub(r'\(No extractable text\)', '', clean).strip()
+        if len(clean) < _MIN_MEANINGFUL_CHARS:
+            return None, (
+                "The PDF appears to be image-based or scanned. "
+                "Only minimal text could be extracted (less than 80 characters). "
+                "Please use a text-based PDF for best results."
+            )
+        return full_text, None
+    except ImportError:
+        return None, "PDF processing library (pymupdf4llm) is not installed on the server."
+    except Exception as e:
+        return None, f"PDF text extraction failed: {str(e)}"
+
 
 def sanitize_filename_for_prompt(filename: str) -> str:
     """Strip dangerous characters from a filename before embedding it in a prompt."""

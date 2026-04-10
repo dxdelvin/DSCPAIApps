@@ -19,6 +19,7 @@ from app.services.common_service import (
     call_brain_pure_llm_chat,
     create_chat_history,
     upload_attachments,
+    extract_pdf_text,
 )
 
 
@@ -359,36 +360,6 @@ def draft_file_plan_from_draft(draft: dict[str, Any]) -> list[dict[str, Any]]:
     return file_plan
 
 
-def _extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
-    try:
-        from PyPDF2 import PdfReader
-
-        reader = PdfReader(io.BytesIO(pdf_bytes))
-        pages: list[str] = []
-        meaningful_pages = 0
-
-        for index, page in enumerate(reader.pages, start=1):
-            page_text = (page.extract_text() or "").strip()
-            if page_text:
-                meaningful_pages += 1
-                pages.append(f"--- Page {index} ---\n{page_text}")
-            else:
-                pages.append(f"--- Page {index} ---\n(No extractable text)")
-
-        if not meaningful_pages:
-            return None, "No readable text found in the PDF. It may be scanned or image-based."
-
-        full_text = "\n\n".join(pages)
-        full_text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", full_text)
-        if len(full_text) > 90000:
-            full_text = full_text[:90000] + "\n\n[Content truncated at 90K characters.]"
-        return full_text, None
-    except ImportError:
-        return None, "PyPDF2 is not installed on the server."
-    except Exception as exc:
-        return None, f"PDF text extraction failed: {exc}"
-
-
 def _parse_ai_json(text: str) -> dict[str, Any]:
     cleaned = re.sub(r"```(?:json)?", "", text or "").strip().rstrip("`").strip()
     if not cleaned:
@@ -586,7 +557,7 @@ async def generate_confluence_builder_draft(
             continue
         if item["isPdf"]:
             file_bytes = await file.read()
-            text, error = _extract_pdf_text(file_bytes)
+            text, error = extract_pdf_text(file_bytes)
             await file.seek(0)
             if error:
                 extraction_errors.append(f"{item['originalName']}: {error}")
