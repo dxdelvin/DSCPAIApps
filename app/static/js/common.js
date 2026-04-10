@@ -5,6 +5,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     initAppSearch();
     initCharacterCounters();
+    initAiDisclaimer();
 
     const themeToggle = document.getElementById('themeToggle');
     const sunIcon = document.querySelector('.sun-icon');
@@ -840,4 +841,22 @@ function countUp(el, target, duration = 600) {
         if (t < 1) requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
+}
+
+function initAiDisclaimer() {
+    const modal = document.getElementById('aiDisclaimerModal');
+    const acceptBtn = document.getElementById('aiDisclaimerAccept');
+    if (!modal || !acceptBtn) return;
+
+    const STORAGE_KEY = 'dscp_ai_disclaimer_accepted';
+    if (localStorage.getItem(STORAGE_KEY)) return;
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+
+    acceptBtn.addEventListener('click', () => {
+        localStorage.setItem(STORAGE_KEY, 'true');
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    });
 }
