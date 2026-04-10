@@ -9,7 +9,7 @@ itsdangerous
 python-pptx
 python-docx
 Pillow
-pymupdf4llm
+PyMuPDF
 
 # SAP BTP XSUAA
 cfenv
