@@ -82,7 +82,7 @@ class DiagramGeneratorApp {
                 const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
                 if (currentTotal + f.size > this.MAX_FILE_SIZE) {
                     showToast(
-                        `Cannot add "${f.name}" — adding this file (${this.formatSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        `Cannot add "${f.name}" — adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -106,16 +106,16 @@ class DiagramGeneratorApp {
         section.style.display = 'block';
 
         const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
-        const totalSizeStr = this.formatSize(totalSize);
-        const limitStr = this.formatSize(this.MAX_FILE_SIZE);
+        const totalSizeStr = formatFileSize(totalSize);
+        const limitStr = formatFileSize(this.MAX_FILE_SIZE);
 
         list.innerHTML = this.files.map((f, i) => {
             const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
             return `
             <div class="file-item">
                 <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
-                <span class="file-name">${this.esc(f.name)}</span>
-                <span class="file-size">${this.formatSize(f.size)}</span>
+                <span class="file-name">${escapeHtml(f.name)}</span>
+                <span class="file-size">${formatFileSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
             </div>
         `;
@@ -428,13 +428,13 @@ class DiagramGeneratorApp {
             <div class="suggestion-card selected" data-index="${i}">
                 <div class="card-check">✓</div>
                 <div class="card-header">
-                    <span class="card-type-badge">${this.getTypeIcon(d.type)} ${this.esc(this.formatTypeLabel(d.type))}</span>
-                    <span class="card-title">${this.esc(this.formatDiagramName(d, i))}</span>
+                    <span class="card-type-badge">${this.getTypeIcon(d.type)} ${escapeHtml(this.formatTypeLabel(d.type))}</span>
+                    <span class="card-title">${escapeHtml(this.formatDiagramName(d, i))}</span>
                 </div>
-                <div class="card-reason">${this.esc(d.reason || d.description || '')}</div>
+                <div class="card-reason">${escapeHtml(d.reason || d.description || '')}</div>
                 ${d.key_elements && d.key_elements.length ? `
                     <div class="card-elements">
-                        ${d.key_elements.map(el => `<span class="element-tag">${this.esc(el)}</span>`).join('')}
+                        ${d.key_elements.map(el => `<span class="element-tag">${escapeHtml(el)}</span>`).join('')}
                     </div>
                 ` : ''}
             </div>
@@ -519,7 +519,7 @@ class DiagramGeneratorApp {
 
         chatContainer.style.display = 'block';
         select.innerHTML = this.diagrams.map((d, i) =>
-            `<option value="${i}">${this.esc(this.formatDiagramName(d, i))}</option>`
+            `<option value="${i}">${escapeHtml(this.formatDiagramName(d, i))}</option>`
         ).join('');
         select.value = this.activeTabIndex;
     }
@@ -599,9 +599,9 @@ class DiagramGeneratorApp {
 
         let html = '<div class="no-content-state">';
         html += '<span class="no-content-icon">💭</span>';
-        if (docTitle) html += `<p class="no-content-doc">${this.esc(docTitle)}</p>`;
-        html += `<h4 class="no-content-title">${this.esc(title)}</h4>`;
-        html += `<p class="no-content-detail">${this.esc(detail)}</p>`;
+        if (docTitle) html += `<p class="no-content-doc">${escapeHtml(docTitle)}</p>`;
+        html += `<h4 class="no-content-title">${escapeHtml(title)}</h4>`;
+        html += `<p class="no-content-detail">${escapeHtml(detail)}</p>`;
         html += '<div class="no-content-tips">';
         html += '<p class="no-content-tips-heading">Tips to get better results:</p>';
         html += '<ul>';
@@ -629,7 +629,7 @@ class DiagramGeneratorApp {
         let html = '<div class="no-content-state">';
         html += '<span class="no-content-icon">🖼️</span>';
         html += '<h4 class="no-content-title">Not a Diagram to Copy</h4>';
-        html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${this.esc(contentType || 'non-diagram content')}</strong> — not a structured diagram that can be reproduced in draw.io.</p>`;
+        html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${escapeHtml(contentType || 'non-diagram content')}</strong> — not a structured diagram that can be reproduced in draw.io.</p>`;
         html += '<div class="no-content-tips">';
         html += '<p class="no-content-tips-heading">💡 What you can do instead:</p>';
         html += '<ul>';
@@ -655,8 +655,8 @@ class DiagramGeneratorApp {
 
         let html = '<div class="result-error">';
         html += '<span class="error-icon">⚠️</span>';
-        html += `<h4 class="error-title">${this.esc(title)}</h4>`;
-        html += `<p class="error-detail">${this.esc(detail)}</p>`;
+        html += `<h4 class="error-title">${escapeHtml(title)}</h4>`;
+        html += `<p class="error-detail">${escapeHtml(detail)}</p>`;
         html += '<p class="error-hint">Try a clearer image, crop the diagram more tightly, or retry when the AI service is less busy.</p>';
         html += '</div>';
 
@@ -683,7 +683,7 @@ class DiagramGeneratorApp {
         const isCopyMode = this.diagrams.every(d => d.type === 'copy');
 
         let html = '<div class="result-header">';
-        html += `<h4 class="result-title">${this.esc(isCopyMode ? 'Copied Diagram' : (this.analysis?.title || 'Generated Diagrams'))}</h4>`;
+        html += `<h4 class="result-title">${escapeHtml(isCopyMode ? 'Copied Diagram' : (this.analysis?.title || 'Generated Diagrams'))}</h4>`;
         html += `<p class="result-subtitle">${successCount} of ${this.diagrams.length} diagrams ready to download</p>`;
         html += '</div>';
 
@@ -698,9 +698,9 @@ class DiagramGeneratorApp {
         // Diagram cards
         cardsEl.innerHTML = this.diagrams.map((d, i) => {
             const isError = d.error || !d.xml;
-            const name = this.esc(this.formatDiagramName(d, i));
+            const name = escapeHtml(this.formatDiagramName(d, i));
             const icon = this.getTypeIcon(d.type);
-            const typeLabel = this.esc(this.formatTypeLabel(d.type));
+            const typeLabel = escapeHtml(this.formatTypeLabel(d.type));
 
             if (isError) {
                 return `<div class="dg-card dg-card-error">
@@ -984,16 +984,6 @@ class DiagramGeneratorApp {
         }
     }
 
-    esc(str) {
-        const el = document.createElement('span');
-        el.textContent = str;
-        return el.innerHTML;
-    }
 
-    formatSize(bytes) {
-        if (bytes < 1024)        return bytes + ' B';
-        if (bytes < 1048576)     return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / 1048576).toFixed(1) + ' MB';
-    }
 }
 

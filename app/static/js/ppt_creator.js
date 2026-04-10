@@ -83,7 +83,7 @@ class PptCreatorApp {
                 
                 if (newTotal > this.MAX_FILE_SIZE) {
                     showToast(
-                        `Cannot add "${f.name}" — adding this file (${this.formatSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        `Cannot add "${f.name}" — adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -109,16 +109,16 @@ class PptCreatorApp {
         
         // Calculate total size
         const totalSize = this.files.reduce((sum, file) => sum + file.size, 0);
-        const totalSizeStr = this.formatSize(totalSize);
-        const limitStr = this.formatSize(this.MAX_FILE_SIZE);
+        const totalSizeStr = formatFileSize(totalSize);
+        const limitStr = formatFileSize(this.MAX_FILE_SIZE);
         
         list.innerHTML = this.files.map((f, i) => {
             const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
             return `
             <div class="file-item">
                 <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
-                <span class="file-name">${this.esc(f.name)}</span>
-                <span class="file-size">${this.formatSize(f.size)}</span>
+                <span class="file-name">${escapeHtml(f.name)}</span>
+                <span class="file-size">${formatFileSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
             </div>
         `;
@@ -297,8 +297,8 @@ class PptCreatorApp {
 
         let html = '<div class="result-error">';
         html += '<span class="error-icon">⚠️</span>';
-        html += `<h4 class="error-title">${this.esc(title)}</h4>`;
-        html += `<p class="error-detail">${this.esc(detail)}</p>`;
+        html += `<h4 class="error-title">${escapeHtml(title)}</h4>`;
+        html += `<p class="error-detail">${escapeHtml(detail)}</p>`;
         html += '<p class="error-hint">You can try uploading a different PDF or add more specific instructions.</p>';
         html += '</div>';
 
@@ -334,9 +334,9 @@ class PptCreatorApp {
 
         /* Title & Subtitle */
         html += '<div class="result-header">';
-        html += `<h4 class="result-title">${this.esc(content.title || 'Untitled Presentation')}</h4>`;
+        html += `<h4 class="result-title">${escapeHtml(content.title || 'Untitled Presentation')}</h4>`;
         if (content.subtitle) {
-            html += `<p class="result-subtitle">${this.esc(content.subtitle)}</p>`;
+            html += `<p class="result-subtitle">${escapeHtml(content.subtitle)}</p>`;
         }
         html += '</div>';
 
@@ -363,7 +363,7 @@ class PptCreatorApp {
             const icon   = this.getLayoutIcon(s.layout);
             html += '<div class="result-slide-row">';
             html += `<span class="slide-num">${i + 1}</span>`;
-            html += `<span class="slide-info">${this.esc(s.title || '(No title)')}</span>`;
+            html += `<span class="slide-info">${escapeHtml(s.title || '(No title)')}</span>`;
             html += `<span class="slide-layout-tag">${icon} ${layout}</span>`;
             html += '</div>';
         });
@@ -516,12 +516,6 @@ class PptCreatorApp {
         document.getElementById('loading-state').style.display      = 'none';
     }
 
-    esc(str) {
-        const el = document.createElement('span');
-        el.textContent = str;
-        return el.innerHTML;
-    }
-
     countUp(el, target, duration) {
         const start = performance.now();
         const step = (now) => {
@@ -533,10 +527,6 @@ class PptCreatorApp {
         requestAnimationFrame(step);
     }
 
-    formatSize(bytes) {
-        if (bytes < 1024)        return bytes + ' B';
-        if (bytes < 1048576)     return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / 1048576).toFixed(1) + ' MB';
-    }
+
 }
 

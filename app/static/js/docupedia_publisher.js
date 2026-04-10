@@ -455,8 +455,8 @@ class DocupediaPublisherApp {
             const aiDisabled = !record.isAiEligible || (!record.useForAi && aiCount >= this.MAX_AI_SOURCES);
 
             const thumbHtml = record.thumbUrl
-                ? `<img class="dp-file-thumb" src="${this.escapeHtml(record.thumbUrl)}" alt="${this.escapeHtml(record.file.name)}">`
-                : `<div class="dp-file-icon-box">${this.escapeHtml(record.extension.replace('.', ''))}</div>`;
+                ? `<img class="dp-file-thumb" src="${escapeHtml(record.thumbUrl)}" alt="${escapeHtml(record.file.name)}">`
+                : `<div class="dp-file-icon-box">${escapeHtml(record.extension.replace('.', ''))}</div>`;
 
             const orderHtml = record.displayInPage
                 ? `<div class="dp-file-order">
@@ -469,8 +469,8 @@ class DocupediaPublisherApp {
                 <div class="dp-file-card ${record.displayInPage ? 'is-display' : ''}" data-file-id="${record.id}">
                     ${thumbHtml}
                     <div class="dp-file-info">
-                        <p class="dp-file-name">${this.escapeHtml(record.file.name)}</p>
-                        <p class="dp-file-meta">${this.formatFileSize(record.file.size)}${record.displayInPage ? ` ┬╖ Slot ${record.displayOrder}` : ''}</p>
+                        <p class="dp-file-name">${escapeHtml(record.file.name)}</p>
+                        <p class="dp-file-meta">${formatFileSize(record.file.size)}${record.displayInPage ? ` ┬╖ Slot ${record.displayOrder}` : ''}</p>
                     </div>
                     <div class="dp-file-roles">
                         <span class="dp-role-tag ${record.useForAi ? 'is-active' : ''} ${aiDisabled ? 'is-disabled' : ''}" data-action="toggle-ai">AI</span>
@@ -760,7 +760,7 @@ class DocupediaPublisherApp {
 
         if (this.currentDraft.warnings.length) {
             this.el.warningsSection.hidden = false;
-            this.el.warningList.innerHTML = this.currentDraft.warnings.map((w) => `<li>${this.escapeHtml(w)}</li>`).join('');
+            this.el.warningList.innerHTML = this.currentDraft.warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('');
         } else {
             this.el.warningsSection.hidden = true;
             this.el.warningList.innerHTML = '';
@@ -776,11 +776,11 @@ class DocupediaPublisherApp {
 
     renderRefList(items, emptyMsg) {
         if (!items || !items.length) {
-            return `<div class="dp-ref-empty">${this.escapeHtml(emptyMsg)}</div>`;
+            return `<div class="dp-ref-empty">${escapeHtml(emptyMsg)}</div>`;
         }
         return items.map((item) => `
             <div class="dp-ref-item">
-                <span class="dp-ref-name" title="${this.escapeHtml(item.originalName)}">${this.escapeHtml(item.canonicalName)}</span>
+                <span class="dp-ref-name" title="${escapeHtml(item.originalName)}">${escapeHtml(item.canonicalName)}</span>
                 <span class="dp-ref-status ${item.usedInXml ? 'is-used' : 'is-unused'}">${item.usedInXml ? 'Used' : 'Pending'}</span>
             </div>
         `).join('');
@@ -805,10 +805,10 @@ class DocupediaPublisherApp {
         target.innerHTML = `
             ${!isWarning ? '<div class="dp-publish-success-icon">✓</div>' : ''}
             <p class="dp-publish-result-title">${isWarning ? 'Page created with upload warnings' : 'Page published successfully!'}</p>
-            <p><strong>${this.escapeHtml(this.publishResult.title || 'Confluence Page')}</strong></p>
-            <p><a href="${this.escapeHtml(this.publishResult.pageLink || '#')}" target="_blank" rel="noopener noreferrer">Open published page</a></p>
+            <p><strong>${escapeHtml(this.publishResult.title || 'Confluence Page')}</strong></p>
+            <p><a href="${escapeHtml(this.publishResult.pageLink || '#')}" target="_blank" rel="noopener noreferrer">Open published page</a></p>
             <p>${this.publishResult.uploadedCount || 0} attachment(s) uploaded${failed.length ? `, ${failed.length} failed` : ''}.</p>
-            ${failed.length ? `<ul>${failed.map((r) => `<li>${this.escapeHtml(r.uploadedAs || r.originalName)}: ${this.escapeHtml(r.detail || 'Upload failed')}</li>`).join('')}</ul>` : ''}
+            ${failed.length ? `<ul>${failed.map((r) => `<li>${escapeHtml(r.uploadedAs || r.originalName)}: ${escapeHtml(r.detail || 'Upload failed')}</li>`).join('')}</ul>` : ''}
         `;
     }
 
@@ -825,7 +825,7 @@ class DocupediaPublisherApp {
         const warnings = this.currentDraft ? this.currentDraft.warnings : [];
         if (warnings.length) {
             this.el.pubWarnings.hidden = false;
-            this.el.pubWarningsList.innerHTML = warnings.map((w) => `<li>${this.escapeHtml(w)}</li>`).join('');
+            this.el.pubWarningsList.innerHTML = warnings.map((w) => `<li>${escapeHtml(w)}</li>`).join('');
         } else {
             this.el.pubWarnings.hidden = true;
         }
@@ -903,7 +903,7 @@ class DocupediaPublisherApp {
         // Convert <ac:link> with <ri:attachment> into link chip
         html = html.replace(
             /<ac:link[^>]*>\s*<ri:attachment\s+ri:filename="([^"]+)"\s*\/>\s*(?:<ac:plain-text-link-body>\s*<!\[CDATA\[([^\]]+)\]\]>\s*<\/ac:plain-text-link-body>)?\s*<\/ac:link>/gi,
-            (_, filename, label) => `<span class="dp-preview-attachment">${this.escapeHtml(label || filename)}</span>`
+            (_, filename, label) => `<span class="dp-preview-attachment">${escapeHtml(label || filename)}</span>`
         );
 
         // Strip remaining ac:* and ri:* tags
@@ -1031,17 +1031,5 @@ class DocupediaPublisherApp {
     createId() {
         if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
         return `file-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-    }
-
-    formatFileSize(bytes) {
-        if (bytes < 1024) return `${bytes} B`;
-        if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-        return `${(bytes / 1048576).toFixed(1)} MB`;
-    }
-
-    escapeHtml(value) {
-        const div = document.createElement('div');
-        div.textContent = value || '';
-        return div.innerHTML;
     }
 }

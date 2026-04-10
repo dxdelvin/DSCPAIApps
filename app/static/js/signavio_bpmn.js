@@ -289,12 +289,6 @@ function showUploadThumbnail(file) {
     }
 }
 
-function formatFileSize(bytes) {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
 async function analyzeUploadedFile() {
     if (!uploadedFile) {
         showToast('Please select a file first.', 'warning');
@@ -476,13 +470,6 @@ async function generateUploadBPMN() {
     } finally {
         LoadingOverlay.hide();
     }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
 }
 
 // ============== BPMN Viewer Functions ==============

@@ -102,9 +102,9 @@ class AuditCheckApp {
                 <div class="file-item-content">
                     ${preview}
                     <div class="file-details">
-                        <p class="file-name">${this.escText(file.name)}</p>
-                        <p class="file-size">${this.formatFileSize(file.size)}</p>
-                        <textarea class="description-input" placeholder="Add image description (optional)" data-index="${idx}" maxlength="2000">${this.escText(file.description)}</textarea>
+                        <p class="file-name">${escapeHtml(file.name)}</p>
+                        <p class="file-size">${formatFileSize(file.size)}</p>
+                        <textarea class="description-input" placeholder="Add image description (optional)" data-index="${idx}" maxlength="2000">${escapeHtml(file.description)}</textarea>
                     </div>
                 </div>
                 <button type="button" class="btn-remove-file" title="Remove">✕</button>
@@ -152,12 +152,7 @@ class AuditCheckApp {
         });
     }
 
-    escText(text) {
-        if (!text) return '';
-        const d = document.createElement('div');
-        d.textContent = text;
-        return d.innerHTML;
-    }
+
 
     setupEventListeners() {
         // Mode switching
@@ -632,7 +627,7 @@ class AuditCheckApp {
 
         container.style.display = 'block';
         nameEl.textContent = this.selectedPdf.name;
-        sizeEl.textContent = this.formatFileSize(this.selectedPdf.size);
+        sizeEl.textContent = formatFileSize(this.selectedPdf.size);
     }
 
     removePdf() {
@@ -746,13 +741,7 @@ class AuditCheckApp {
         return mimeType.startsWith('image/');
     }
 
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
-    }
+
 
     calculateTotalSize() {
         return this.creatorData.files.reduce((total, file) => total + file.size, 0);

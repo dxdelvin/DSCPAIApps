@@ -796,17 +796,10 @@ function section(title, rows) {
 }
 
 function row(label, value) {
-    const display = value || '<span class="review-empty">Not provided</span>';
-    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value">${escapeHtml(display)}</span></div>`;
+    const display = value ? escapeHtml(value) : '<span class="review-empty">Not provided</span>';
+    return `<div class="review-row"><span class="review-label">${label}</span><span class="review-value">${display}</span></div>`;
 }
 
-function escapeHtml(text) {
-    if (!text) return '';
-    if (text.includes('<')) return text;
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
 
 
 /* ═══════════════════════════════════════════════════

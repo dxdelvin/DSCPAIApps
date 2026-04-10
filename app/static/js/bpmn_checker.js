@@ -118,7 +118,7 @@ class BPMNCheckerApp {
             uploadArea.style.display = 'none';
             selectedSection.style.display = 'block';
             fileName.textContent = this.selectedFile.name;
-            fileSize.textContent = this.formatFileSize(this.selectedFile.size);
+            fileSize.textContent = formatFileSize(this.selectedFile.size);
             checkBtn.disabled = false;
             if (previewImg && previewContainer) {
                 const reader = new FileReader();
@@ -137,13 +137,7 @@ class BPMNCheckerApp {
         }
     }
 
-    formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+
 
     removeFile() {
         this.selectedFile = null;
@@ -256,7 +250,7 @@ class BPMNCheckerApp {
                     <line x1="12" y1="16" x2="12.01" y2="16"></line>
                 </svg>
                 <h3 style="color: var(--danger); margin: 0 0 0.5rem;">Not a BPMN Diagram</h3>
-                <p style="color: var(--text-secondary); margin: 0;">${this.escapeHtml(message)}</p>
+                <p style="color: var(--text-secondary); margin: 0;">${escapeHtml(message)}</p>
                 <p style="color: var(--text-secondary); margin: 1rem 0 0; font-size: 0.9rem;">Please upload a valid BPMN 2.0 process diagram (PDF or image).</p>
             </div>
         `;
@@ -387,8 +381,8 @@ class BPMNCheckerApp {
                     </svg>
                 </div>
                 <div class="priority-content">
-                    <h5>${this.escapeHtml(fix.title || 'Critical Fix')}</h5>
-                    <p>${this.escapeHtml(fix.recommendation || fix.description || 'Address this issue to improve validity.')}</p>
+                    <h5>${escapeHtml(fix.title || 'Critical Fix')}</h5>
+                    <p>${escapeHtml(fix.recommendation || fix.description || 'Address this issue to improve validity.')}</p>
                 </div>
             `;
             priorityList.appendChild(card);
@@ -434,11 +428,11 @@ class BPMNCheckerApp {
             item.innerHTML = `
                 <div class="finding-header">
                     <span class="finding-badge ${severityClass}">${severityLabel}</span>
-                    <h5 class="finding-title">${this.escapeHtml(issue.title)}</h5>
+                    <h5 class="finding-title">${escapeHtml(issue.title)}</h5>
                 </div>
-                <p class="finding-desc">${this.escapeHtml(issue.description)}</p>
+                <p class="finding-desc">${escapeHtml(issue.description)}</p>
                 <div class="finding-fix">
-                    <strong>Solution:</strong> ${this.escapeHtml(issue.recommendation)}
+                    <strong>Solution:</strong> ${escapeHtml(issue.recommendation)}
                 </div>
             `;
             issuesList.appendChild(item);
@@ -457,13 +451,13 @@ class BPMNCheckerApp {
         const analysisContent = document.getElementById('analysis-content');
         let overviewHtml = '';
         if (data.diagramOverview) {
-            overviewHtml += `<h3>Overview</h3><p>${this.escapeHtml(data.diagramOverview)}</p>`;
+            overviewHtml += `<h3>Overview</h3><p>${escapeHtml(data.diagramOverview)}</p>`;
         }
         if (Array.isArray(data.strengths) && data.strengths.length) {
-            overviewHtml += `<h3>Top Strengths</h3><ul>${data.strengths.map(s => `<li>${this.escapeHtml(s)}</li>`).join('')}</ul>`;
+            overviewHtml += `<h3>Top Strengths</h3><ul>${data.strengths.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>`;
         }
         if (data.summary && !data.diagramOverview) {
-             overviewHtml += `<p>${this.escapeHtml(data.summary)}</p>`;
+             overviewHtml += `<p>${escapeHtml(data.summary)}</p>`;
         }
         analysisContent.innerHTML = overviewHtml || '<p>No additional summary.</p>';
     }
@@ -550,14 +544,7 @@ class BPMNCheckerApp {
         analysisContent.innerHTML = html;
     }
 
-    escapeHtml(str) {
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
+
 
     reset() {
         // Reset file

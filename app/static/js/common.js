@@ -153,6 +153,18 @@ function showToast(message, type = 'info', duration) {
     return Toast.show(message, type, duration);
 }
 
+function escapeHtml(str) {
+    const el = document.createElement('div');
+    el.textContent = str ?? '';
+    return el.innerHTML;
+}
+
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+}
+
 const Utils = {
     isEmpty(value) {
         if (value === null || value === undefined) return true;
@@ -510,12 +522,6 @@ function initAppSearch() {
     function highlightMatch(text, term) {
         const regex = new RegExp(`(${escapeRegex(term)})`, 'gi');
         return escapeHtml(text).replace(regex, '<span class="match-highlight">$1</span>');
-    }
-    
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
     }
     
     function escapeRegex(string) {
