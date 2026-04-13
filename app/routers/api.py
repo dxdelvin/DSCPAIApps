@@ -58,7 +58,10 @@ from app.services.confluence_builder_service import (
     publish_confluence_builder_page,
     verify_confluence_connection,
 )
-
+from app.services.one_pager_creator_service import (
+    extract_one_pager_content,
+    refine_one_pager_content,
+)
 router = APIRouter()
 
 # Request models for better type safety
@@ -1216,3 +1219,182 @@ async def confluence_builder_publish(
         )
 
     return result
+
+
+# ── One Pager Creator ──
+
+
+@router.post("/one-pager/extract")
+async def one_pager_extract(
+    files: List[UploadFile] = File(default=[]),
+    topic: str = Form(default=""),
+    keyPoints: str = Form(default=""),
+    audience: str = Form(default=""),
+    purpose: str = Form(default=""),
+    templateStyle: str = Form(default="executive_summary"),
+):
+    """Extract content from uploaded docs and/or user context to build a one-pager."""
+    _ALLOWED_EXTS = (".pdf", ".png", ".jpg", ".jpeg")
+    MAX_TOTAL_SIZE = MAX_UPLOAD_SIZE
+
+    pdf_bytes_list = []
+    image_files = []
+    total_size = 0
+
+    for f in files:
+        fname_lower = (f.filename or "").lower()
+        if not any(fname_lower.endswith(ext) for ext in _ALLOWED_EXTS):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Unsupported file type",
+                    "detail": f"'{f.filename}' is not supported. Only PDF and image files (.pdf, .png, .jpg, .jpeg) are accepted.",
+                },
+            )
+
+        content = await f.read()
+        total_size += len(content)
+
+        if total_size > MAX_TOTAL_SIZE:
+            return JSONResponse(
+                status_code=413,
+                content={
+                    "status": "error",
+                    "message": "Total upload size too large",
+                    "detail": "Combined file size exceeds the 10 MB limit.",
+                },
+            )
+
+        if not _validate_magic(content, f.filename or ""):
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "status": "error",
+                    "message": "Invalid file",
+                    "detail": f"'{f.filename}' content does not match its file type.",
+                },
+            )
+
+        if fname_lower.endswith(".pdf"):
+            pdf_bytes_list.append((f.filename, content))
+        else:
+            await f.seek(0)
+            image_files.append(f)
+
+    has_context = bool(topic or keyPoints or audience or purpose)
+    if not pdf_bytes_list and not image_files and not has_context:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "No content provided",
+                "detail": "Upload at least one file or fill in topic details.",
+            },
+        )
+
+    result = await extract_one_pager_content(
+        pdf_bytes_list=pdf_bytes_list,
+        topic=topic,
+        key_points=keyPoints,
+        audience=audience,
+        purpose=purpose,
+        template_style=templateStyle,
+        image_files=image_files or None,
+    )
+
+    if result.get("error"):
+        status_code = 500
+        msg = result.get("message", "")
+        if msg in {"Request Timed Out", "Gateway Timeout"}:
+            status_code = 504
+        elif msg in {"AI Service Unavailable"}:
+            status_code = 503
+        elif msg in {"Upstream Service Error"}:
+            status_code = 502
+        elif msg == "No Content":
+            status_code = 400
+        return JSONResponse(
+            status_code=status_code,
+            content={
+                "status": "error",
+                "message": result.get("message", "Extraction failed"),
+                "detail": result.get("detail", ""),
+            },
+        )
+
+    return {
+        "status": "success",
+        "html": result.get("html"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
+
+
+class OnePagerRefineRequest(BaseModel):
+    chatHistoryId: str = Field(max_length=200)
+    message: str = Field(max_length=5000)
+    currentHtml: str = Field(default="", max_length=200000)
+    templateStyle: str = Field(default="executive_summary", max_length=50)
+
+
+@router.post("/one-pager/refine")
+async def one_pager_refine(data: OnePagerRefineRequest):
+    """Continue conversation to refine the one-pager HTML document."""
+    result = await refine_one_pager_content(
+        data.chatHistoryId,
+        data.message,
+        current_html=data.currentHtml,
+        template_style=data.templateStyle,
+    )
+
+    if result.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": result.get("message", "API Not Active"),
+                "detail": result.get("detail", "Brain request failed."),
+            },
+        )
+
+    return {
+        "status": "success",
+        "html": result.get("html"),
+        "chatHistoryId": result.get("chatHistoryId"),
+    }
+
+
+class OnePagerDownloadRequest(BaseModel):
+    html: str = Field(max_length=200000)
+    title: str = Field(default="One-Pager", max_length=200)
+
+
+@router.post("/one-pager/download")
+async def one_pager_download(data: OnePagerDownloadRequest):
+    """Return the one-pager HTML document for browser-based print-to-PDF."""
+    from fastapi.responses import Response
+
+    if not data.html or "<html" not in data.html.lower():
+        return JSONResponse(
+            status_code=400,
+            content={
+                "status": "error",
+                "message": "Missing content",
+                "detail": "No one-pager HTML provided.",
+            },
+        )
+
+    safe_title = "".join(c if c.isalnum() or c in " _-" else "" for c in data.title).strip() or "One-Pager"
+    filename = safe_title.replace(" ", "_") + ".html"
+
+    # Inject auto-print script so the browser triggers the print dialog immediately
+    print_script = "<script>window.onload=function(){setTimeout(function(){window.print();},400);};</script>"
+    html_with_print = data.html.replace("</body>", print_script + "</body>")
+    if "</body>" not in data.html:
+        html_with_print = data.html + print_script
+
+    return Response(
+        content=html_with_print.encode("utf-8"),
+        media_type="text/html; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )

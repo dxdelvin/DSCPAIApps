@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initAppSearch();
     initCharacterCounters();
     initAiDisclaimer();
+    initAiWarningTimer();
 
     const themeToggle = document.getElementById('themeToggle');
     const sunIcon = document.querySelector('.sun-icon');
@@ -91,6 +92,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+function initAiWarningTimer() {
+    const aiWarning = document.querySelector('.ai-warning-global');
+    if (!aiWarning) return;
+
+    window.setTimeout(() => {
+        aiWarning.classList.add('is-dismissing');
+
+        window.setTimeout(() => {
+            aiWarning.remove();
+        }, 320);
+    }, 5000);
+}
 
 /**
  * Common JavaScript utilities

@@ -1,15 +1,23 @@
 [
   
   {
+    "date": "Apr 14th, 2026",
+    "version": "v3.3.0",
+    "isNew": true,
+    "changes": [
+      "New App: One Pager Creator - generate polished single-page PDFs (cheatsheets, flyers, executive summaries, infographics) from uploaded files or topic descriptions.",
+      "Fix: PDF Parsing issue resolved."
+    ]
+  },
+  {
     "date": "Apr 7th, 2026",
     "version": "v3.2.0",
-    "isNew": true,
     "changes": [
       "New: BPMN Diagrams Can be Viewed After Generation Before Downloading.",
       "New: Added a 404 Error Page for invalid routes.",
       "New: New Functional Spec Template added in FR & BR Document Builder.",
       "Improved: thumbnail previews, character limits, improved formatting in AI BPMN Builder.",
-      "Improved: Micro-interactions added across all 6 apps — animated entrances for upload areas, file items, chat messages, stat counters, progress bars, findings, suggestion cards, review sections, and more.",
+      "Improved: Micro-interactions added across all apps — animated entrances for upload areas, file items, chat messages, stat counters, progress bars, findings, suggestion cards, review sections, and more.",
       "Fix: Resolved connectivity issues for some AI services.",
       "Fix: Security Upgraded with latest dependencies and vulnerability patches."
     ]

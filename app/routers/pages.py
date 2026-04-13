@@ -76,6 +76,10 @@ async def diagram_generator(request: Request):
 async def docupedia_publisher(request: Request):
     return _render_template(request, "docupedia_publisher.html")
 
+@router.get("/one-pager-creator")
+async def one_pager_creator(request: Request):
+    return _render_template(request, "one_pager_creator.html")
+
 @router.get("/health")
 async def health_check():
     """Service health check."""

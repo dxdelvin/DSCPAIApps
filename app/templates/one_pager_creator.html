@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}One Pager Creator - BSH DSCP AI{% endblock %}
+
+{% block page_name %}One Pager Creator{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="/static/css/one_pager_creator.css?v={{ css_version }}">
+{% endblock %}
+
+{% block content %}
+<section class="builder-hero">
+    <div>
+        <p class="eyebrow">Document Tools | One Pager Creator</p>
+        <h1>AI One Pager Creator</h1>
+        <p class="lede">Upload files or describe your topic, pick a style, and generate a polished single-page PDF.</p>
+    </div>
+</section>
+
+<div class="container op-container">
+    <div class="op-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">One Pager Tools</p>
+                <h2 class="builder-title">Create a Single-Page PDF</h2>
+            </div>
+        </div>
+
+        <div class="op-content">
+            <div class="builder-left">
+                <div class="form-container">
+                    <h3>Upload Files</h3>
+
+                    <div class="upload-section">
+                        <div class="upload-area" id="upload-area">
+                            <div class="upload-placeholder">
+                                <span class="upload-icon">📄</span>
+                                <p>Drag &amp; drop files here or click to select</p>
+                                <p class="upload-hint">Supports .pdf, .png, .jpg, .jpeg (max 10 MB total)</p>
+                            </div>
+                            <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg" hidden>
+                        </div>
+                    </div>
+
+                    <div class="files-list-section" id="files-list-section" style="display:none">
+                        <h4>Uploaded Files</h4>
+                        <div class="files-list" id="files-list"></div>
+                        <div class="form-group">
+                            <button class="btn btn-secondary btn-sm" id="add-more-btn">
+                                <span>➕</span> Add More Files
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="topic-input">Topic / Subject</label>
+                        <input type="text" id="topic-input" placeholder="e.g. Q3 2026 Sales Highlights" maxlength="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="keypoints-input">Key Points <span class="optional-tag">(optional)</span></label>
+                        <textarea id="keypoints-input" rows="3" placeholder="Key facts, stats, or topics to highlight..." maxlength="3000"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Template Style</label>
+                        <div class="template-grid" id="template-grid">
+                            <button class="template-card template-card--cheatsheet" type="button" data-style="cheatsheet">
+                                <div class="tc-icon-wrap tc-icon--cheatsheet">
+                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.6"/><line x1="5" y1="6.5" x2="15" y2="6.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="5" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><line x1="5" y1="13.5" x2="11" y2="13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                                </div>
+                                <span class="template-label">Cheatsheet</span>
+                                <span class="template-desc">Dense layout, quick reference</span>
+                            </button>
+                            <button class="template-card template-card--flyer" type="button" data-style="flyer">
+                                <div class="tc-icon-wrap tc-icon--flyer">
+                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 10.5L10 3l7 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="7" y="12" width="6" height="5" rx="1.2" stroke="currentColor" stroke-width="1.4"/><line x1="10" y1="3" x2="10" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                                </div>
+                                <span class="template-label">Flyer</span>
+                                <span class="template-desc">Bold hero, clear CTA</span>
+                            </button>
+                            <button class="template-card template-card--executive active" type="button" data-style="executive_summary">
+                                <div class="tc-icon-wrap tc-icon--executive">
+                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="11" width="3" height="7" rx="1" fill="currentColor"/><rect x="7" y="7" width="3" height="11" rx="1" fill="currentColor"/><rect x="12" y="4" width="3" height="14" rx="1" fill="currentColor"/><line x1="2" y1="2" x2="18" y2="2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+                                </div>
+                                <span class="template-label">Executive Summary</span>
+                                <span class="template-desc">KPIs, two-column brief</span>
+                            </button>
+                            <button class="template-card template-card--infographic" type="button" data-style="infographic">
+                                <div class="tc-icon-wrap tc-icon--infographic">
+                                    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="10" cy="10" r="1.2" fill="currentColor"/></svg>
+                                </div>
+                                <span class="template-label">Infographic</span>
+                                <span class="template-desc">Visual-first, numbered steps</span>
+                            </button>
+                        </div>
+                    </div>
+
+
+
+                    <div class="warning-notice">
+                        <span class="warning-icon">⚠️</span>
+                        <div class="warning-content">
+                            <strong>PDFs:</strong> Only text is extracted. Embedded images and charts are skipped.<br>
+                            <strong>Images:</strong> PNG and JPG files are read directly by the AI using vision.
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn btn-primary" id="generate-btn" disabled>
+                            Generate One Pager
+                        </button>
+                        <button class="btn btn-ghost-text" id="reset-btn">Reset</button>
+                    </div>
+                </div>
+
+                <div class="chat-container" id="chat-container" style="display:none">
+                    <h3>Refine Content</h3>
+                    <p>Ask AI to change the structure, wording, or emphasis of the one-pager.</p>
+                    <div class="chat-messages" id="chat-messages"></div>
+                    <div class="chat-input-row">
+                        <textarea id="chat-input" rows="2" placeholder="E.g. Make the title catchier, add ROI stats..."></textarea>
+                        <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
+                    </div>
+                </div>
+            </div>
+            <div class="builder-right">
+                <div class="results-container">
+                    <h3>Preview</h3>
+
+                    <div class="result-panel" id="result-panel" style="display:none">
+                        <div class="form-actions result-actions">
+                            <button class="btn btn-secondary btn-sm" id="refresh-preview-btn">Refresh Preview</button>
+                            <button class="btn btn-primary" id="download-btn">Download PDF</button>
+                        </div>
+                        <div class="preview-frame-wrapper">
+                            <iframe id="preview-frame" class="preview-frame" sandbox="allow-same-origin"></iframe>
+                        </div>
+                    </div>
+
+                    <div class="empty-state" id="empty-state">
+                        <div class="guide-panel">
+                            <div class="guide-header">
+                                <span class="guide-header-icon">📋</span>
+                                <div>
+                                    <p class="eyebrow">Quick Start</p>
+                                    <h4>How to Use</h4>
+                                </div>
+                            </div>
+
+                            <ol class="guide-steps">
+                                <li class="guide-step">
+                                    <span class="step-badge">1</span>
+                                    <div class="step-body">
+                                        <strong>Upload your files</strong>
+                                        <span>Add PDF, PNG, JPG, or JPEG files, or skip straight to the topic field.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">2</span>
+                                    <div class="step-body">
+                                        <strong>Enter the topic</strong>
+                                        <span>Describe the subject and add optional key points you want emphasized.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">3</span>
+                                    <div class="step-body">
+                                        <strong>Choose the visual style</strong>
+                                        <span>Pick one of the four layout templates and set the accent color.</span>
+                                    </div>
+                                </li>
+                                <li class="guide-step">
+                                    <span class="step-badge">4</span>
+                                    <div class="step-body">
+                                        <strong>Generate and refine</strong>
+                                        <span>Create the preview, then use chat to improve the result before downloading.</span>
+                                    </div>
+                                </li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div class="loading-state" id="loading-state" style="display:none"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="/static/js/one_pager_creator.js?v={{ css_version }}"></script>
+{% endblock %}
