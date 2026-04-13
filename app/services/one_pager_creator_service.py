@@ -41,15 +41,22 @@ TEMPLATE_STYLES = {
 
 _COMMON_PRINT_RULES = """
 Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>. No markdown, no explanation.
-All CSS in a single <style> tag. No external URLs or CDN links.
+All CSS in a single <style> tag.
 Include in body: -webkit-print-color-adjust: exact; print-color-adjust: exact;
 Everything must fit on one A4 page in print.
-LIGHT MODE ONLY: use light backgrounds (white or very light tint) with dark readable text.
+LIGHT MODE ONLY: white or very light background with dark readable text. Never use dark/black backgrounds.
 Do not generate dark mode, neon themes, or low-contrast color combinations.
 Use CSS variables in :root for colors, spacing, and radius tokens.
 Avoid generic template look: create clear visual hierarchy, intentional spacing rhythm, and section-specific styling.
 Prefer practical typography pairings available on most systems (for example: Segoe UI, Georgia, Trebuchet MS, Verdana).
 Keep the design polished, modern, and business-credible while still visually distinct.
+
+IMAGE RULES (CRITICAL - NO EXCEPTIONS):
+- NEVER include <img> tags with external URLs (http://, https://, imgur, unsplash, cdnjs, etc.).
+- NEVER embed stock photos, placeholder images, or icons from the internet.
+- If the user provided images as attachments and they add direct value to the layout, you may reference them with a placeholder like <img src="user-image-1" alt="..."> — but only if truly useful.
+- If no user images were provided, use pure CSS shapes, colored divs, or text-based layouts instead.
+- Decorate layouts with CSS gradients, borders, and color blocks — never external images.
 
 CONTENT RULES (CRITICAL):
 - Use ONLY the information provided in the source material, topic, key points, and user context.
@@ -76,6 +83,8 @@ Layout: A4 portrait with a strong hero band, one focal message, supporting proof
 Style: expressive headline typography, controlled accent usage, large readable sections, and visual momentum from top to bottom.
 Quality bar: avoid generic gradients and random blobs; every visual block should support the message.
 Content behavior: concise persuasive copy with concrete benefits and outcomes.
+Hero area: use a CSS gradient or solid color block for the hero background — NEVER an external image URL.
+Background: use a light base (white or very light tint) for the overall page; reserve bold color only for hero bands or accent strips.
 
 """ + _COMMON_PRINT_RULES,
 
@@ -110,7 +119,18 @@ RULES:
 - Apply the user's changes precisely: content edits, color changes, section additions/removals, tone adjustments
 - Maintain the single-page A4 constraint - if content grows, make text more concise rather than overflowing
 - Keep output in light mode unless the user explicitly asks for dark mode
-- Improve weak/generic sections when refining; do not return flat boilerplate design"""
+- Improve weak/generic sections when refining; do not return flat boilerplate design
+- NEVER add <img> tags with external URLs (http://, https://, imgur, unsplash, etc.) — use CSS shapes and color blocks instead"""
+
+
+def _strip_external_images(html: str) -> str:
+    """Remove any <img> tags whose src points to an external URL."""
+    return re.sub(
+        r'<img\b[^>]*\bsrc=["\'][^"\'>]*(?:http|//)[^"\'>]*["\'][^>]*/?>', 
+        '', 
+        html, 
+        flags=re.IGNORECASE
+    )
 
 
 def _extract_html_response(text: str) -> str:
@@ -125,7 +145,7 @@ def _extract_html_response(text: str) -> str:
         if idx > 0:
             text = text[idx:]
             break
-    return text
+    return _strip_external_images(text)
 
 
 async def extract_one_pager_content(
