@@ -1,8 +1,8 @@
 ﻿"""
 One Pager Creator Service.
 AI generates a complete, self-contained HTML/CSS document for a single-page
-one-pager. The HTML is previewed in an iframe and downloaded via the browser's
-native print-to-PDF — no server-side PDF library required.
+one-pager. The HTML is previewed in an iframe and converted to PDF
+server-side using Playwright (headless Chromium) for accurate rendering.
 """
 import os
 import re
