@@ -1371,7 +1371,7 @@ class OnePagerDownloadRequest(BaseModel):
 
 @router.post("/one-pager/download")
 async def one_pager_download(data: OnePagerDownloadRequest):
-    """Return the one-pager HTML document for browser-based print-to-PDF."""
+    """Return the one-pager HTML document as a downloadable file (fallback for client-side PDF)."""
     from fastapi.responses import Response
 
     if not data.html or "<html" not in data.html.lower():
@@ -1387,30 +1387,8 @@ async def one_pager_download(data: OnePagerDownloadRequest):
     safe_title = "".join(c if c.isalnum() or c in " _-" else "" for c in data.title).strip() or "One-Pager"
     filename = safe_title.replace(" ", "_") + ".html"
 
-    # Inject CSS to prevent height/overflow restrictions from cropping print output
-    overflow_fix_css = (
-        "<style>"
-        "html,body{height:auto!important;min-height:auto!important;overflow:visible!important;}"
-        "@media print{html,body{height:auto!important;overflow:visible!important;}}"
-        "</style>"
-    )
-
-    # Inject auto-print script so the browser triggers the print dialog immediately
-    print_script = "<script>window.onload=function(){setTimeout(function(){window.print();},400);};</script>"
-
-    html_out = data.html
-    if "</head>" in html_out:
-        html_out = html_out.replace("</head>", overflow_fix_css + "</head>", 1)
-    else:
-        html_out = overflow_fix_css + html_out
-
-    if "</body>" in html_out:
-        html_out = html_out.replace("</body>", print_script + "</body>", 1)
-    else:
-        html_out = html_out + print_script
-
     return Response(
-        content=html_out.encode("utf-8"),
+        content=data.html.encode("utf-8"),
         media_type="text/html; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
