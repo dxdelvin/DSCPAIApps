@@ -423,11 +423,16 @@ class OnePagerApp {
         btn.classList.add('downloading');
         btn.innerHTML = '<span class="btn-icon">⏳</span> Generating PDF…';
 
+        // Declared outside try so the catch block can clean it up if needed
+        let printFrame = null;
+
         try {
-            // Use a dedicated hidden iframe (without sandbox) so the full HTML
-            // renders with all :root CSS variables, fonts, and computed styles
-            // intact. html2pdf.js then captures it from the iframe body.
-            const printFrame = document.createElement('iframe');
+            // Use a dedicated hidden iframe with sandbox="allow-same-origin":
+            // - Prevents any AI-generated scripts from running (no allow-scripts)
+            // - Parent JS can still access contentDocument via same-origin access
+            // - Fully isolated from the main app's CSS and DOM
+            printFrame = document.createElement('iframe');
+            printFrame.setAttribute('sandbox', 'allow-same-origin');
             printFrame.style.position = 'fixed';
             printFrame.style.left = '-10000px';
             printFrame.style.top = '0';
@@ -461,6 +466,7 @@ class OnePagerApp {
             if (!printBody) {
                 showToast('Could not render document for PDF. Please try again.', 'warning');
                 document.body.removeChild(printFrame);
+                printFrame = null;
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
                 return;
@@ -500,6 +506,7 @@ class OnePagerApp {
 
             // Clean up
             document.body.removeChild(printFrame);
+            printFrame = null;
 
             btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
             setTimeout(() => {
@@ -509,6 +516,9 @@ class OnePagerApp {
             showToast('PDF downloaded successfully!', 'success');
         } catch (err) {
             AppLogger.error('One-pager PDF generation error:', err);
+            if (printFrame && document.body.contains(printFrame)) {
+                document.body.removeChild(printFrame);
+            }
             showToast('PDF generation failed. Please try again.', 'error');
             btn.innerHTML = originalHTML;
             btn.classList.remove('downloading');
