@@ -453,7 +453,7 @@ class OnePagerApp {
             container.style.width = A4_W + 'px';
             document.body.appendChild(container);
 
-            // Let the browser lay out the content and measure actual height
+            // Brief pause so the browser can reflow and calculate actual content dimensions
             await new Promise(r => setTimeout(r, 100));
             const contentHeight = Math.max(container.scrollHeight, container.offsetHeight);
             const contentWidth  = A4_W;
