@@ -548,6 +548,58 @@
     color: var(--text-primary, #0f172a);
 }
 
+/* ── Error state ──────────────────────────────────────── */
+
+.error-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 340px;
+    padding: 2rem 1rem;
+}
+
+.error-state-card {
+    text-align: center;
+    max-width: 420px;
+    padding: 2.5rem 2rem;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 16px;
+}
+
+.error-state-icon {
+    font-size: 2.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.error-state-title {
+    color: #dc2626;
+    font-size: 1.15rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem;
+}
+
+.error-state-detail {
+    color: #6b7280;
+    font-size: 0.88rem;
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-line;
+}
+
+body.dark-mode .error-state-card {
+    background: rgba(220, 38, 38, 0.08);
+    border-color: rgba(220, 38, 38, 0.25);
+}
+
+body.dark-mode .error-state-title {
+    color: #f87171;
+}
+
+body.dark-mode .error-state-detail {
+    color: var(--text-secondary, #94a3b8);
+}
+
 /* ── Loading state ────────────────────────────────────── */
 
 .loading-state {

@@ -198,16 +198,8 @@ async def extract_one_pager_content(
                 ),
             }
 
-    if not has_text and has_images and not has_user_context:
-        return {
-            "error": True,
-            "message": "Not Enough Context",
-            "detail": (
-                "Images alone may not provide enough information for a quality one-pager. "
-                "Please also fill in the Topic, Key Points, or Purpose fields so the AI "
-                "knows what to focus on."
-            ),
-        }
+    # Images are sent to the AI via vision — let it analyse them directly
+    # instead of rejecting the request up-front.
 
     if pdf_bytes_list and not has_text and not has_images:
         file_errors = "\n".join(errors) if errors else "Could not extract text from the uploaded files."
@@ -249,7 +241,9 @@ async def extract_one_pager_content(
         )
     elif has_images:
         prompt_parts.append(
-            "Analyze the uploaded image(s) and extract key information to populate the one-pager. Use ONLY what you see in the images."
+            "The user uploaded image(s) as the primary source material. "
+            "Carefully analyze every detail visible in the images — text, charts, data, diagrams, logos, and visual elements. "
+            "Extract all key information and use it to populate the one-pager. Use ONLY what you see in the images."
         )
 
     prompt_parts.append("Generate the complete, beautiful, print-ready one-pager HTML document now.")

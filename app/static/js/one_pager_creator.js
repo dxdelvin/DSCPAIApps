@@ -323,7 +323,9 @@ class OnePagerApp {
 
         const resultPanel = document.getElementById('result-panel');
         const emptyState  = document.getElementById('empty-state');
+        const errEl       = document.getElementById('error-state');
 
+        if (errEl)       errEl.remove();
         if (emptyState)  emptyState.style.display = 'none';
         if (resultPanel) resultPanel.style.display = 'flex';
 
@@ -387,19 +389,27 @@ class OnePagerApp {
         const resultPanel = document.getElementById('result-panel');
         const emptyState  = document.getElementById('empty-state');
 
+        // Hide result panel (iframe) and empty guide – show error in the
+        // results container as a full-size state so it is clearly visible.
+        if (resultPanel) resultPanel.style.display = 'none';
         if (emptyState)  emptyState.style.display = 'none';
-        if (resultPanel) resultPanel.style.display = 'flex';
-        const dlRow = document.getElementById('download-btn')?.closest('.result-actions');
-        if (dlRow) dlRow.style.display = 'none';
 
-        const iframe = document.getElementById('preview-frame');
-        iframe.srcdoc = `<html><body style="font-family:system-ui;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#fef2f2">
-            <div style="text-align:center;padding:24px;max-width:400px">
-                <div style="font-size:32px;margin-bottom:12px">&#9888;</div>
-                <h3 style="color:#dc2626;margin:0 0 8px">${escapeHtml(title)}</h3>
-                <p style="color:#6b7280;font-size:14px;margin:0">${escapeHtml(detail)}</p>
-            </div>
-        </body></html>`;
+        // Remove any previous error state
+        const container = document.querySelector('.results-container');
+        let errEl = document.getElementById('error-state');
+        if (errEl) errEl.remove();
+
+        errEl = document.createElement('div');
+        errEl.id = 'error-state';
+        errEl.className = 'error-state';
+        errEl.innerHTML = `
+            <div class="error-state-card">
+                <div class="error-state-icon">⚠️</div>
+                <h3 class="error-state-title">${escapeHtml(title)}</h3>
+                <p class="error-state-detail">${escapeHtml(detail)}</p>
+            </div>`;
+        container.appendChild(errEl);
+
         showToast(title, 'error');
     }
 
@@ -413,50 +423,61 @@ class OnePagerApp {
         btn.classList.add('downloading');
         btn.innerHTML = '<span class="btn-icon">⏳</span> Generating PDF…';
 
-        try {
-            const iframe = document.getElementById('preview-frame');
-            const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+        // Declared outside try so the catch block can clean it up if needed
+        let printFrame = null;
 
-            if (!iframeDoc || !iframeDoc.body) {
-                showToast('Preview not ready. Please wait and try again.', 'warning');
+        try {
+            // Use a dedicated hidden iframe with sandbox="allow-same-origin":
+            // - Prevents any AI-generated scripts from running (no allow-scripts)
+            // - Parent JS can still access contentDocument via same-origin access
+            // - Fully isolated from the main app's CSS and DOM
+            printFrame = document.createElement('iframe');
+            printFrame.setAttribute('sandbox', 'allow-same-origin');
+            printFrame.style.position = 'fixed';
+            printFrame.style.left = '-10000px';
+            printFrame.style.top = '0';
+            printFrame.style.border = 'none';
+
+            const isLandscape = this.templateStyle === 'cheatsheet';
+            const A4_W = isLandscape ? 1122 : 794;
+            const A4_H = isLandscape ? 794  : 1123;
+
+            printFrame.style.width = A4_W + 'px';
+            printFrame.style.height = A4_H + 'px';
+
+            document.body.appendChild(printFrame);
+
+            // Write the full HTML into the hidden iframe
+            const printDoc = printFrame.contentDocument || printFrame.contentWindow.document;
+            printDoc.open();
+            printDoc.write(this.currentHtml);
+            printDoc.close();
+
+            // Wait for the iframe to fully render
+            await new Promise(resolve => {
+                if (printDoc.readyState === 'complete') {
+                    setTimeout(resolve, 300);
+                } else {
+                    printFrame.addEventListener('load', () => setTimeout(resolve, 300), { once: true });
+                }
+            });
+
+            const printBody = printDoc.body;
+            if (!printBody) {
+                showToast('Could not render document for PDF. Please try again.', 'warning');
+                document.body.removeChild(printFrame);
+                printFrame = null;
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
                 return;
             }
 
-            // Clone the iframe body into a temporary off-screen container so
-            // html2pdf.js can measure and render it without cross-frame issues.
-            const container = document.createElement('div');
-
-            // Copy all stylesheets from the iframe into the container
-            const iframeStyles = iframeDoc.querySelectorAll('style, link[rel="stylesheet"]');
-            iframeStyles.forEach(s => container.appendChild(s.cloneNode(true)));
-
-            // Copy the body content
-            const bodyClone = iframeDoc.body.cloneNode(true);
-            // Preserve inline styles from <body>
-            container.style.cssText = iframeDoc.body.style.cssText;
-            // Copy body class and computed background
-            const bodyCS = iframeDoc.defaultView.getComputedStyle(iframeDoc.body);
-            container.style.background = bodyCS.background;
-            container.style.color = bodyCS.color;
-            container.style.fontFamily = bodyCS.fontFamily;
-
-            while (bodyClone.firstChild) container.appendChild(bodyClone.firstChild);
-
-            // Position off-screen at the same A4 dimensions used for preview
-            const isLandscape = this.templateStyle === 'cheatsheet';
-            const A4_W = isLandscape ? 1122 : 794;
-            container.style.position = 'absolute';
-            container.style.left = '-9999px';
-            container.style.top = '0';
-            container.style.width = A4_W + 'px';
-            document.body.appendChild(container);
-
-            // Brief pause so the browser can reflow and calculate actual content dimensions
-            await new Promise(r => setTimeout(r, 100));
-            const contentHeight = Math.max(container.scrollHeight, container.offsetHeight);
-            const contentWidth  = A4_W;
+            const contentHeight = Math.max(
+                A4_H,
+                printDoc.documentElement.scrollHeight,
+                printBody.scrollHeight
+            );
+            const contentWidth = A4_W;
 
             const filename = (this._extractTitle() || 'One-Pager') + '.pdf';
 
@@ -481,10 +502,11 @@ class OnePagerApp {
                 },
             };
 
-            await html2pdf().set(opt).from(container).save();
+            await html2pdf().set(opt).from(printBody).save();
 
             // Clean up
-            document.body.removeChild(container);
+            document.body.removeChild(printFrame);
+            printFrame = null;
 
             btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
             setTimeout(() => {
@@ -494,6 +516,9 @@ class OnePagerApp {
             showToast('PDF downloaded successfully!', 'success');
         } catch (err) {
             AppLogger.error('One-pager PDF generation error:', err);
+            if (printFrame && document.body.contains(printFrame)) {
+                document.body.removeChild(printFrame);
+            }
             showToast('PDF generation failed. Please try again.', 'error');
             btn.innerHTML = originalHTML;
             btn.classList.remove('downloading');
@@ -512,6 +537,8 @@ class OnePagerApp {
         document.getElementById('empty-state').style.display = 'none';
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';
+        const errEl = document.getElementById('error-state');
+        if (errEl) errEl.remove();
         const messages = text
             ? [text, 'Analyzing your content', 'Structuring the layout', 'Generating one-pager']
             : ['Processing…'];
@@ -566,6 +593,8 @@ class OnePagerApp {
 
         document.getElementById('chat-container').style.display = 'none';
         document.getElementById('chat-messages').innerHTML = '';
+        const errEl = document.getElementById('error-state');
+        if (errEl) errEl.remove();
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';
         document.getElementById('empty-state').style.display = 'flex';
