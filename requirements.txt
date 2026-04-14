@@ -10,7 +10,6 @@ python-pptx
 python-docx
 Pillow
 PyMuPDF
-weasyprint
 
 # SAP BTP XSUAA
 cfenv

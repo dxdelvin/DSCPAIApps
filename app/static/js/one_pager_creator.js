@@ -1,7 +1,7 @@
 /**
  * One Pager Creator – frontend controller.
  * AI generates a complete HTML/CSS document. Preview renders it in an iframe.
- * PDF download opens the HTML in a new tab with auto-print triggered.
+ * PDF download uses html2pdf.js (html2canvas + jsPDF) for client-side conversion.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new OnePagerApp();
@@ -411,50 +411,90 @@ class OnePagerApp {
         const btn = document.getElementById('download-btn');
         const originalHTML = btn.innerHTML;
         btn.classList.add('downloading');
-        btn.innerHTML = '<span class="btn-icon">⏳</span> Preparing…';
+        btn.innerHTML = '<span class="btn-icon">⏳</span> Generating PDF…';
 
         try {
-            const res = await fetch('/api/one-pager/download', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    html:  this.currentHtml,
-                    title: this._extractTitle(),
-                }),
-            });
+            const iframe = document.getElementById('preview-frame');
+            const iframeDoc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
 
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                AppLogger.error('One-pager download failed:', err.detail || err.message);
-                showToast('Download failed. Please try again.', 'error');
+            if (!iframeDoc || !iframeDoc.body) {
+                showToast('Preview not ready. Please wait and try again.', 'warning');
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
                 return;
             }
 
-            const blob  = await res.blob();
-            const url   = URL.createObjectURL(blob);
-            const newWin = window.open(url, '_blank');
-            if (!newWin) {
-                // Fallback: direct download of the HTML file
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = (this._extractTitle() || 'One-Pager') + '.html';
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-            }
-            setTimeout(() => URL.revokeObjectURL(url), 90000);
+            // Clone the iframe body into a temporary off-screen container so
+            // html2pdf.js can measure and render it without cross-frame issues.
+            const container = document.createElement('div');
 
-            btn.innerHTML = '<span class="btn-icon">✅</span> Opening…';
+            // Copy all stylesheets from the iframe into the container
+            const iframeStyles = iframeDoc.querySelectorAll('style, link[rel="stylesheet"]');
+            iframeStyles.forEach(s => container.appendChild(s.cloneNode(true)));
+
+            // Copy the body content
+            const bodyClone = iframeDoc.body.cloneNode(true);
+            // Preserve inline styles from <body>
+            container.style.cssText = iframeDoc.body.style.cssText;
+            // Copy body class and computed background
+            const bodyCS = iframeDoc.defaultView.getComputedStyle(iframeDoc.body);
+            container.style.background = bodyCS.background;
+            container.style.color = bodyCS.color;
+            container.style.fontFamily = bodyCS.fontFamily;
+
+            while (bodyClone.firstChild) container.appendChild(bodyClone.firstChild);
+
+            // Position off-screen at the same A4 dimensions used for preview
+            const isLandscape = this.templateStyle === 'cheatsheet';
+            const A4_W = isLandscape ? 1122 : 794;
+            container.style.position = 'absolute';
+            container.style.left = '-9999px';
+            container.style.top = '0';
+            container.style.width = A4_W + 'px';
+            document.body.appendChild(container);
+
+            // Brief pause so the browser can reflow and calculate actual content dimensions
+            await new Promise(r => setTimeout(r, 100));
+            const contentHeight = Math.max(container.scrollHeight, container.offsetHeight);
+            const contentWidth  = A4_W;
+
+            const filename = (this._extractTitle() || 'One-Pager') + '.pdf';
+
+            const opt = {
+                margin:      0,
+                filename:    filename,
+                image:       { type: 'jpeg', quality: 0.98 },
+                html2canvas: {
+                    scale:          2,
+                    useCORS:        true,
+                    width:          contentWidth,
+                    height:         contentHeight,
+                    windowWidth:    contentWidth,
+                    windowHeight:   contentHeight,
+                    backgroundColor: null,
+                },
+                jsPDF: {
+                    unit:        'px',
+                    format:      [contentWidth, contentHeight],
+                    orientation: isLandscape ? 'landscape' : 'portrait',
+                    hotfixes:    ['px_scaling'],
+                },
+            };
+
+            await html2pdf().set(opt).from(container).save();
+
+            // Clean up
+            document.body.removeChild(container);
+
+            btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
             }, 2500);
-            showToast('Print dialog will open — choose "Save as PDF" to download!', 'info', 6000);
+            showToast('PDF downloaded successfully!', 'success');
         } catch (err) {
-            AppLogger.error('One-pager download error:', err);
-            showToast('Download failed. Please try again.', 'error');
+            AppLogger.error('One-pager PDF generation error:', err);
+            showToast('PDF generation failed. Please try again.', 'error');
             btn.innerHTML = originalHTML;
             btn.classList.remove('downloading');
         }
