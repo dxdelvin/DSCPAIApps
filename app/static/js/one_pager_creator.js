@@ -330,8 +330,14 @@ class OnePagerApp {
         const dlRow = document.getElementById('download-btn')?.closest('.result-actions');
         if (dlRow) dlRow.style.display = '';
 
+        // Inject an override style so body/html height or overflow constraints don't crop content
+        const overrideCss = '<style>html,body{height:auto!important;min-height:auto!important;overflow:visible!important;}</style>';
+        const previewHtml = this.currentHtml.includes('</head>')
+            ? this.currentHtml.replace('</head>', overrideCss + '</head>')
+            : overrideCss + this.currentHtml;
+
         const iframe = document.getElementById('preview-frame');
-        iframe.srcdoc = this.currentHtml;
+        iframe.srcdoc = previewHtml;
         this.scalePreview();
         iframe.addEventListener('load', () => this.scalePreview(), { once: true });
     }
@@ -349,12 +355,21 @@ class OnePagerApp {
         const availW = wrapper.clientWidth - pad;
         const scale  = Math.min(1, availW / A4_W);
 
-        iframe.style.width         = A4_W + 'px';
-        iframe.style.height        = A4_H + 'px';
-        iframe.style.transform     = `scale(${scale})`;
+        // Detect actual content height to avoid cropping content that overflows A4 dimensions
+        let contentH = A4_H;
+        try {
+            const doc = iframe.contentDocument || (iframe.contentWindow && iframe.contentWindow.document);
+            if (doc && doc.documentElement) {
+                contentH = Math.max(A4_H, doc.documentElement.scrollHeight, doc.body ? doc.body.scrollHeight : 0);
+            }
+        } catch (e) { /* cross-origin guard */ }
+
+        iframe.style.width           = A4_W + 'px';
+        iframe.style.height          = contentH + 'px';
+        iframe.style.transform       = `scale(${scale})`;
         iframe.style.transformOrigin = 'top left';
-        wrapper.style.height       = Math.round(A4_H * scale + pad) + 'px';
-        wrapper.style.minHeight    = '';
+        wrapper.style.height         = Math.round(contentH * scale + pad) + 'px';
+        wrapper.style.minHeight      = '';
     }
 
     async refreshPreview() {
