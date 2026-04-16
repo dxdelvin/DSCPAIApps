@@ -76,6 +76,35 @@ def _require_env(value: str, name: str) -> str:
     return value
 
 
+def _friendly_http_error(e: "httpx.HTTPStatusError", context: str = "AI service") -> dict:
+    """Return a user-friendly error dict for an HTTP status error.
+
+    Never exposes raw response bodies (which may contain HTML / internal details).
+    Logs the real status + body server-side only.
+    """
+    import logging
+    status_code = e.response.status_code
+    logger = logging.getLogger(__name__)
+    logger.error("%s returned HTTP %s", context, status_code)
+
+    messages = {
+        400: ("Invalid Request", "The request was rejected by the AI service. Please check your inputs and try again."),
+        401: ("Authentication Error", "The AI service rejected the request due to an authentication issue. Please contact your administrator."),
+        403: ("Access Denied", "The AI service could not be reached. This is usually a temporary access restriction — please try again in a moment."),
+        404: ("Service Not Found", "The requested AI service endpoint was not found. Please contact your administrator."),
+        429: ("Too Many Requests", "The AI service is currently rate-limited. Please wait a moment and try again."),
+        500: ("AI Service Error", "The AI service encountered an internal error. Please try again."),
+        502: ("Upstream Service Error", "The AI service returned an invalid response. Please try again."),
+        503: ("AI Service Unavailable", "The AI service is temporarily unavailable. Please try again in a few minutes."),
+        504: ("Gateway Timeout", "The AI service took too long to respond. Please try again."),
+    }
+    title, detail = messages.get(status_code, (
+        "AI Service Error",
+        f"The AI service returned an unexpected error (HTTP {status_code}). Please try again.",
+    ))
+    return {"error": True, "message": title, "detail": detail}
+
+
 def _get_base_url_and_headers(token: str) -> Tuple[str, dict]:
     """Get base URL and headers."""
     base_url = BRAIN_API_BASE_URL
@@ -109,16 +138,12 @@ async def create_chat_history(brain_id: str) -> dict:
             chat_history_id = response.text.strip().strip('"')
             return {"chatHistoryId": chat_history_id}
         except httpx.HTTPStatusError as e:
-            return {
-                "error": True,
-                "message": "Failed to create chat history ",
-                "detail": f"Status {e.response.status_code}: {e.response.text}"
-            }
+            return _friendly_http_error(e, "create_chat_history")
         except httpx.RequestError as e:
             return {
                 "error": True,
-                "message": "Failed to create chat history",
-                "detail": f"Connection error: {e}"
+                "message": "Connection Error",
+                "detail": "Could not connect to the AI service. Please check your network and try again.",
             }
 
 
@@ -158,16 +183,12 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
             # print(f"DEBUG: Files uploaded successfully, IDs: {attachment_ids}")
             return {"attachmentIds": attachment_ids}
         except httpx.HTTPStatusError as e:
-            return {
-                "error": True,
-                "message": "Failed to upload attachments",
-                "detail": f"Status {e.response.status_code}: {e.response.text}"
-            }
+            return _friendly_http_error(e, "upload_attachments")
         except httpx.RequestError as e:
             return {
                 "error": True,
-                "message": "Failed to upload attachments",
-                "detail": f"Connection error: {e}"
+                "message": "Connection Error",
+                "detail": "Could not connect to the AI service. Please check your network and try again.",
             }
 
 
@@ -220,16 +241,12 @@ async def call_brain_workflow_chat(
                 "chatHistoryId": data.get("chatHistoryId", chat_history_id)
             }
         except httpx.HTTPStatusError as e:
-            return {
-                "error": True,
-                "message": "API Not Active",
-                "detail": f"Status {e.response.status_code}: {e.response.text}"
-            }
+            return _friendly_http_error(e, "call_brain_workflow_chat")
         except httpx.RequestError as e:
             return {
                 "error": True,
-                "message": "API Not Active",
-                "detail": f"Connection error: {e}"
+                "message": "Connection Error",
+                "detail": "Could not connect to the AI service. Please check your network and try again.",
             }
 
 
@@ -277,16 +294,12 @@ async def call_brain_chat(
                 "chatHistoryId": data.get("chatHistoryId", chat_history_id)
             }
         except httpx.HTTPStatusError as e:
-            return {
-                "error": True,
-                "message": "API Not Active",
-                "detail": f"Status {e.response.status_code}: {e.response.text}"
-            }
+            return _friendly_http_error(e, "call_brain_chat")
         except httpx.RequestError as e:
             return {
                 "error": True,
-                "message": "API Not Active",
-                "detail": f"Connection error: {e}"
+                "message": "Connection Error",
+                "detail": "Could not connect to the AI service. Please check your network and try again.",
             }
 
 
@@ -361,14 +374,10 @@ async def call_brain_pure_llm_chat(
                     "message": "Upstream Service Error",
                     "detail": "The AI service returned an invalid response while processing the diagram. Please try again.",
                 }
-            return {
-                "error": True,
-                "message": "AI Service Error",
-                "detail": f"Status {e.response.status_code}: {e.response.text}",
-            }
+            return _friendly_http_error(e, "call_brain_pure_llm_chat")
         except httpx.RequestError as e:
             return {
                 "error": True,
                 "message": "Connection Error",
-                "detail": f"Connection error: {e}",
+                "detail": "Could not connect to the AI service. Please check your network and try again.",
             }

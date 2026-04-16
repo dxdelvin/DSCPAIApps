@@ -1,7 +1,7 @@
 /**
  * One Pager Creator – frontend controller.
  * AI generates a complete HTML/CSS document. Preview renders it in an iframe.
- * Export downloads a PNG captured from the browser-rendered preview.
+ * Export downloads a PDF generated client-side via html2pdf.js.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new OnePagerApp();
@@ -191,7 +191,7 @@ class OnePagerApp {
 
         document.getElementById('generate-btn').addEventListener('click', () => this.generateContent());
         document.getElementById('reset-btn').addEventListener('click', () => this.handleResetRequest());
-        document.getElementById('download-btn').addEventListener('click', () => this.downloadPng());
+        document.getElementById('download-btn').addEventListener('click', () => this.downloadPdf());
         document.getElementById('refresh-preview-btn').addEventListener('click', () => this.refreshPreview());
 
         document.getElementById('chat-send-btn').addEventListener('click', () => this.sendChatMessage());
@@ -356,7 +356,7 @@ class OnePagerApp {
         if (dlRow) dlRow.style.display = '';
 
         // Inject an override style so body/html height or overflow constraints don't crop content
-        const overrideCss = '<style>html,body{height:auto!important;min-height:auto!important;overflow:visible!important;}</style>';
+        const overrideCss = '<style>html,body{height:auto!important;min-height:auto!important;overflow:visible!important;}.page{overflow:visible!important;}</style>';
         const previewHtml = this.currentHtml.includes('</head>')
             ? this.currentHtml.replace('</head>', overrideCss + '</head>')
             : overrideCss + this.currentHtml;
@@ -436,56 +436,82 @@ class OnePagerApp {
         showToast(title, 'error');
     }
 
-    /* ── Download PNG ─────────────────────────────────── */
+    /* ── Download PDF ─────────────────────────────────── */
 
-    async downloadPng() {
+    downloadPdf() {
         if (!this.currentHtml) return;
 
-        const btn = document.getElementById('download-btn');
-        const originalHTML = btn.innerHTML;
-        btn.classList.add('downloading');
-        btn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="13" height="10" rx="1.5"/><path d="M5 12.5 6.8 10.2l1.8 1.8 2.7-3.4 2.2 3.9"/></svg></span> Rendering PNG…';
+        const isLandscape = this.orientation === 'landscape';
+        const pageW = isLandscape ? 1122 : 794;
+        const pageH = isLandscape ? 794  : 1122;
+        const filename = this.buildDownloadFilename('pdf');
 
-        try {
-            const blob = await this.capturePreviewAsPng();
-            const url  = URL.createObjectURL(blob);
-            const a    = document.createElement('a');
-            a.href     = url;
-            a.download = this.buildDownloadFilename('png');
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+        // Inject print-specific styles:
+        // - @page sets exact paper size with zero margins
+        // - print-color-adjust forces backgrounds/gradients to print
+        // - overflow:visible on .page so content flows to next pages naturally
+        // - break-inside:avoid prevents cards/sections being split mid-page
+        // - auto-trigger window.print() on load
+        const printStyle = `
+<style>
+@media print {
+  @page { size: ${pageW}px ${pageH}px; margin: 0; }
+  html, body {
+    width: ${pageW}px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .page {
+    width: ${pageW}px !important;
+    min-height: ${pageH}px !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+  .page:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+  div, section, article, aside, figure, table, tr, img, svg {
+    break-inside: avoid !important;
+  }
+  h1, h2, h3, h4, h5, h6 { break-after: avoid !important; }
+}
+</style>
+<script>
+window._pdfFilename = ${JSON.stringify(filename)};
+window.onload = function () {
+  setTimeout(function () {
+    document.title = window._pdfFilename.replace(/\.pdf$/i, '');
+    window.print();
+  }, 400);
+};
+<\/script>`;
+
+        const printHtml = this.currentHtml.includes('</head>')
+            ? this.currentHtml.replace('</head>', printStyle + '</head>')
+            : printStyle + this.currentHtml;
+
+        // Open as a Blob URL in a new full tab so the browser renders it
+        // at full width with all CSS intact — no popup size restrictions.
+        const blob = new Blob([printHtml], { type: 'text/html' });
+        const url  = URL.createObjectURL(blob);
+        const tab  = window.open(url, '_blank');
+
+        if (!tab) {
+            showToast('Popup blocked — allow popups for this site and try again.', 'error');
             URL.revokeObjectURL(url);
-
-            btn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8.5 6.5 12 13 4"/></svg></span> Saved PNG!';
-            setTimeout(() => {
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('downloading');
-            }, 2500);
-            showToast('PNG downloaded successfully!', 'success');
-        } catch (err) {
-            AppLogger.error('One-pager PNG download error:', err);
-            showToast('PNG export failed. Refresh the preview and try again.', 'error');
-            btn.innerHTML = originalHTML;
-            btn.classList.remove('downloading');
-        }
-    }
-
-    async capturePreviewAsPng() {
-        if (!this.currentHtml) throw new Error('No HTML to capture');
-
-        const res = await fetch('/api/one-pager/export-png', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ html: this.currentHtml, orientation: this.orientation }),
-        });
-
-        if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.message || `Server export failed (${res.status})`);
+            return;
         }
 
-        return res.blob();
+        // Revoke the object URL after the tab has had time to load
+        setTimeout(() => URL.revokeObjectURL(url), 15000);
+
+        showToast('Print dialog opened — choose "Save as PDF" and enable "Background graphics".', 'info');
     }
 
     _extractTitle() {

@@ -40,34 +40,41 @@ TEMPLATE_STYLES = {
 def _get_print_rules(orientation: str = "portrait") -> str:
     page_w = "1123px" if orientation == "landscape" else "794px"
     page_h = "794px" if orientation == "landscape" else "1123px"
+    page_w_px = 1123 if orientation == "landscape" else 794
+    page_h_px = 794 if orientation == "landscape" else 1123
     return f"""
 Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>. No markdown, no explanation.
 All CSS in a single <style> tag inside <head>.
 
-CSS RULES (CRITICAL):
-- This document is rendered in a modern browser preview and exported as a high-quality PNG. You MUST use premium, modern CSS layout and design.
-- Create a top-class, premium, highly polished design. Think Stripe, Apple, or Vercel landing pages, adapted for an executive summary format.
-- Layout tools allowed and encouraged: CSS Grid, Flexbox, absolute positioning, pseudo-elements, complex gradients, multi-layered shadows (glassmorphism/neumorphism), beautiful pill-badges, and CSS variables.
-- Keep the design STATIC: NEVER use :hover, :focus, :active, transition, animation, cursor, or @keyframes.
-- No external JavaScript. Pure HTML + CSS only.
-- You CAN use icon fonts (e.g. FontAwesome via cdnjs) or embed SVGs directly for beautiful badging and iconography.
-- On html and body set: width: {page_w}; margin: 0; padding: 0; box-sizing: border-box; overflow-x: hidden;
-- The design should flow naturally to whatever height the content requires — do NOT squash or truncate content to fit a fixed height.
-- SPACING IS CRITICAL: Apply generous padding (at least 28px–36px) on ALL four sides of the page so content never touches the outer edge. Use consistent inner padding (16px–20px) inside every card, section, or column. Maintain clear gutters (16px+) between columns and rows. Font sizes should be small but readable (11px–13px body, 14px–16px headings). Sections should be visually grouped with tight internal spacing but clearly separated from neighboring sections.
+PAGE LAYOUT RULES:
+- Each printed page is {page_w_px}px wide by {page_h_px}px tall.
+- Wrap each page in <div class="page"> with: width:{page_w}; min-height:{page_h}; box-sizing:border-box;
+- Do NOT set overflow:hidden on .page, html, or body — let content flow naturally.
+- If all the content fits in one page, use a single <div class="page">. If there is too much content for one page, add a second <div class="page"> that is also fully designed — never leave a page half-empty.
+- Use break-after:page on each .page div EXCEPT the last one. Never use break-before on .page — it creates blank first pages.
+- Do NOT squash text tiny to force everything onto one page. Let content breathe with proper spacing.
+- Set break-inside:avoid on cards and sections so they are not split at print boundaries.
+- On html and body: width:{page_w}; margin:0; padding:0; box-sizing:border-box; overflow-x:hidden;
 
-COLOR AND STYLING (CRITICAL):
-- Make it visually stunning. Use beautiful gradient text, subtle patterned backgrounds, premium card layouts, and ample white space.
-- LIGHT MODE ONLY: white or very light background with dark readable text. Do not use an entirely dark page.
-- Establish a clear visual hierarchy, intentional spacing rhythm (using rems or explicit px), and distinct section styling.
+CSS RULES:
+- Premium modern design using CSS Grid, Flexbox, gradients, shadows, CSS variables, pseudo-elements.
+- STATIC only: no hover, focus, active, transition, animation, cursor, or keyframes.
+- No external JavaScript. Pure HTML and CSS only.
+- You may use icon fonts (FontAwesome via cdnjs) or inline SVGs.
+- Generous padding (28px-36px) on all sides. Consistent inner padding (16px-20px) in cards. Clear gutters between columns. Body text 11px-13px, headings 14px-16px.
+
+COLOR RULES:
+- LIGHT MODE ONLY: white or very light background with dark readable text.
+- Visually stunning: gradient text, subtle patterns, premium card layouts, ample white space.
+- Clear visual hierarchy and intentional spacing.
 
 IMAGE RULES:
-- Decorate layouts heavily with CSS gradients, polished border radii, and color blocks.
-- If the user provided images as attachments, reference them with a placeholder like <img src="user-image-1" alt="...">.
+- Use CSS gradients, border radii, and color blocks for decoration.
+- If user provided images, reference them as <img src="user-image-1" alt="...">.
 
-CONTENT RULES (CRITICAL):
-- Use ONLY the information provided in the source material, topic, key points, and user context.
-- NEVER invent company names, project names, people, statistics, KPIs, dates, or any other facts.
-- Every number, name, and claim in the output must come directly from the provided content."""
+CONTENT RULES:
+- Use ONLY information from the provided source material.
+- Never invent company names, people, statistics, KPIs, or dates."""
 
 
 _TEMPLATE_STYLE_PROMPTS = {
@@ -116,18 +123,21 @@ RULES:
 - No markdown fences, no explanation - raw HTML only
 - Preserve the template layout, visual design quality, and print readiness of the original
 - Apply the user's changes precisely: content edits, color changes, section additions/removals, tone adjustments
-- Maintain the single-page constraint ({page_w} x {page_h}) - if content grows, make text more concise rather than overflowing
 - Keep output in light mode unless the user explicitly asks for dark mode
 - Improve weak/generic sections when refining; do not return flat boilerplate design
 - Use modern gradients, shadows, and top-tier layout patterns.
 
-CSS CONSTRAINTS (same as original generation):
-- Modern browser CSS is allowed, including flex, grid, CSS variables, gradients, pseudo-elements, and shadows.
-- Keep it STATIC: NEVER use :hover, :focus, :active, transition, animation, cursor, or @keyframes.
-- External fonts and high quality images are allowed to keep it beautiful.
-- html/body: width: {page_w}; margin: 0; padding: 0; overflow-x: hidden; box-sizing: border-box;
-- Let the content flow to its natural height — do NOT force height or overflow: hidden on html/body.
-- Use generous spacing and large readable fonts. Never squash content into tiny text."""
+PAGE LAYOUT RULES:
+- Each printed page is {page_w} by {page_h}. Content is wrapped in <div class="page"> blocks.
+- Do NOT set overflow:hidden on .page, html, or body.
+- If after refinement the content needs more than one page, add a second <div class="page"> fully designed with the remaining content. Never leave a page half-empty.
+- Use break-inside:avoid on cards and sections so they are never split at print boundaries.
+
+CSS CONSTRAINTS:
+- Modern browser CSS allowed: flex, grid, CSS variables, gradients, pseudo-elements, shadows.
+- STATIC only: no hover, focus, active, transition, animation, cursor, or keyframes.
+- html/body: width:{page_w}; margin:0; padding:0; overflow-x:hidden; box-sizing:border-box;
+- Generous spacing and readable fonts. Never squash content into tiny text."""
 
 
 def _strip_external_images(html: str) -> str:
