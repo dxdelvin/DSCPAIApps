@@ -4,8 +4,10 @@ import os
 import re
 from typing import Any, Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field
+
+logger = logging.getLogger(__name__)
 
 _LOG_SANITIZE_RE = re.compile(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]')
 _ALLOWED_LOG_LEVELS = {"debug", "info", "warn", "warning", "error"}
@@ -1232,6 +1234,7 @@ async def one_pager_extract(
     audience: str = Form(default=""),
     purpose: str = Form(default=""),
     templateStyle: str = Form(default="executive_summary"),
+    orientation: str = Form(default="portrait"),
 ):
     """Extract content from uploaded docs and/or user context to build a one-pager."""
     _ALLOWED_EXTS = (".pdf", ".png", ".jpg", ".jpeg")
@@ -1293,6 +1296,8 @@ async def one_pager_extract(
             },
         )
 
+    safe_orientation = orientation if orientation in ("portrait", "landscape") else "portrait"
+
     result = await extract_one_pager_content(
         pdf_bytes_list=pdf_bytes_list,
         topic=topic,
@@ -1300,6 +1305,7 @@ async def one_pager_extract(
         audience=audience,
         purpose=purpose,
         template_style=templateStyle,
+        orientation=safe_orientation,
         image_files=image_files or None,
     )
 
@@ -1335,16 +1341,19 @@ class OnePagerRefineRequest(BaseModel):
     message: str = Field(max_length=5000)
     currentHtml: str = Field(default="", max_length=200000)
     templateStyle: str = Field(default="executive_summary", max_length=50)
+    orientation: str = Field(default="portrait", max_length=20)
 
 
 @router.post("/one-pager/refine")
 async def one_pager_refine(data: OnePagerRefineRequest):
     """Continue conversation to refine the one-pager HTML document."""
+    safe_orientation = data.orientation if data.orientation in ("portrait", "landscape") else "portrait"
     result = await refine_one_pager_content(
         data.chatHistoryId,
         data.message,
         current_html=data.currentHtml,
         template_style=data.templateStyle,
+        orientation=safe_orientation,
     )
 
     if result.get("error"):
@@ -1364,31 +1373,101 @@ async def one_pager_refine(data: OnePagerRefineRequest):
     }
 
 
-class OnePagerDownloadRequest(BaseModel):
-    html: str = Field(max_length=200000)
-    title: str = Field(default="One-Pager", max_length=200)
+class OnePagerExportRequest(BaseModel):
+    html: str = Field(max_length=500000)
+    orientation: str = Field(default="portrait", max_length=20)
 
 
-@router.post("/one-pager/download")
-async def one_pager_download(data: OnePagerDownloadRequest):
-    """Return the one-pager HTML document as a downloadable file (fallback for client-side PDF)."""
-    from fastapi.responses import Response
+@router.post("/one-pager/export-png")
+async def one_pager_export_png(data: OnePagerExportRequest):
+    """Render the one-pager HTML to PNG using the system Edge/Chrome browser (headless)."""
+    import subprocess
+    import shutil
+    import tempfile
 
-    if not data.html or "<html" not in data.html.lower():
-        return JSONResponse(
-            status_code=400,
-            content={
-                "status": "error",
-                "message": "Missing content",
-                "detail": "No one-pager HTML provided.",
-            },
-        )
+    _BROWSER_CANDIDATES = [
+        r"C:\Program Files\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        "/usr/bin/google-chrome",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/chromium",
+    ]
 
-    safe_title = "".join(c if c.isalnum() or c in " _-" else "" for c in data.title).strip() or "One-Pager"
-    filename = safe_title.replace(" ", "_") + ".html"
+    browser = next((p for p in _BROWSER_CANDIDATES if os.path.exists(p)), None)
+    if not browser:
+        return JSONResponse(status_code=500, content={"status": "error", "message": "No supported browser found on server."})
 
-    return Response(
-        content=data.html.encode("utf-8"),
-        media_type="text/html; charset=utf-8",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    safe_orientation = data.orientation if data.orientation in ("portrait", "landscape") else "portrait"
+    # A4-ish dimensions in CSS pixels (96 dpi): 794×1122 portrait, 1122×794 landscape
+    page_w = 1122 if safe_orientation == "landscape" else 794
+    page_h = 794  if safe_orientation == "landscape" else 1122
+
+    size_css = (
+        f"html,body{{width:{page_w}px;margin:0;overflow-x:hidden;"
+        f"scrollbar-width:none}}"
+        f"::-webkit-scrollbar{{display:none !important;width:0;height:0}}"
     )
+    html_with_page = data.html.replace("</head>", f"<style>{size_css}</style></head>", 1)
+    if "</head>" not in data.html:
+        html_with_page = f"<style>{size_css}</style>" + data.html
+
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        html_path = os.path.join(tmp_dir, "page.html")
+        png_path  = os.path.join(tmp_dir, "screenshot.png")
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html_with_page)
+
+        file_url = "file:///" + html_path.replace("\\", "/")
+        # Use a very tall viewport so Edge captures the full scrollable content
+        cmd = [
+            browser,
+            "--headless=new",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--hide-scrollbars",
+            "--force-device-scale-factor=1",
+            f"--window-size={page_w},16000",
+            f"--screenshot={png_path}",
+            file_url,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, timeout=30)
+        if not os.path.exists(png_path):
+            logger.error("Browser screenshot failed: %s", proc.stderr.decode(errors="ignore")[:500])
+            return JSONResponse(status_code=500, content={"status": "error", "message": "PNG export failed."})
+
+        # Auto-crop: trim white borders from all four edges
+        from PIL import Image as _PILImage, ImageChops as _IC
+        import io as _io
+        img = _PILImage.open(png_path).convert("RGB")
+
+        # Create a white reference image and diff to find the content bbox
+        bg = _PILImage.new("RGB", img.size, (255, 255, 255))
+        diff = _IC.difference(img, bg)
+        bbox = diff.getbbox()  # (left, top, right, bottom) of non-white pixels
+        if bbox:
+            # Preserve the AI's spacing — add generous padding so content never touches the edge
+            left   = max(bbox[0] - 20, 0)
+            top    = max(bbox[1] - 20, 0)
+            right  = min(bbox[2] + 20, img.width)
+            bottom = min(bbox[3] + 24, img.height)
+            img = img.crop((left, top, right, bottom))
+
+        buf = _io.BytesIO()
+        img.save(buf, format="PNG")
+        png_bytes = buf.getvalue()
+
+        return Response(
+            content=png_bytes,
+            media_type="image/png",
+            headers={"Content-Disposition": 'attachment; filename="one-pager.png"'},
+        )
+    except Exception:
+        logger.exception("One-pager PNG export failed")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "PNG export failed."})
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+

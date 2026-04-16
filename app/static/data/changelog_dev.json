@@ -1,12 +1,13 @@
 [
   
   {
-    "date": "Apr 14th, 2026",
+    "date": "Apr 16th, 2026",
     "version": "v3.3.0",
     "isNew": true,
     "changes": [
-      "New App: One Pager Creator - generate polished single-page PDFs (cheatsheets, flyers, executive summaries, infographics) from uploaded files or topic descriptions.",
-      "Fix: PDF Parsing issue resolved."
+      "New App: One Pager Creator - generate polished single-page Images (cheatsheets, flyers, executive summaries, infographics) from uploaded files or topic descriptions.",
+      "Fix: PDF Parsing issue resolved.",
+      "New: Added AI Warnings Popups."
     ]
   },
   {

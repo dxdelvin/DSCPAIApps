@@ -235,12 +235,20 @@ _templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 async def custom_http_exception_handler(request: Request, exc: StarletteHTTPException):
     _page_templates = {401: "errors/401.html", 403: "errors/403.html", 404: "errors/404.html"}
     if exc.status_code in _page_templates:
-        return _templates.TemplateResponse(
-            request=request,
-            name=_page_templates[exc.status_code],
-            context={"request": request},
-            status_code=exc.status_code,
-        )
+        context = {"request": request}
+        try:
+            return _templates.TemplateResponse(
+                request=request,
+                name=_page_templates[exc.status_code],
+                context=context,
+                status_code=exc.status_code,
+            )
+        except TypeError:
+            return _templates.TemplateResponse(
+                _page_templates[exc.status_code],
+                context,
+                status_code=exc.status_code,
+            )
     return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
 

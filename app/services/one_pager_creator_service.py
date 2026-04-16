@@ -1,12 +1,10 @@
 ﻿"""
 One Pager Creator Service.
 AI generates a complete, self-contained HTML/CSS document for a single-page
-one-pager. The HTML is previewed in an iframe and converted to PDF
-client-side using html2pdf.js for accurate rendering.
+one-pager. The HTML is previewed in an iframe and exported client-side as PNG.
 """
 import os
 import re
-from typing import Optional
 
 from app.services.common_service import (
     create_chat_history,
@@ -39,88 +37,97 @@ TEMPLATE_STYLES = {
     },
 }
 
-_COMMON_PRINT_RULES = """
+def _get_print_rules(orientation: str = "portrait") -> str:
+    page_w = "1123px" if orientation == "landscape" else "794px"
+    page_h = "794px" if orientation == "landscape" else "1123px"
+    return f"""
 Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>. No markdown, no explanation.
-All CSS in a single <style> tag.
-Include in body: -webkit-print-color-adjust: exact; print-color-adjust: exact;
-Everything must fit on one A4 page in print.
-LIGHT MODE ONLY: white or very light background with dark readable text. Never use dark/black backgrounds.
-Do not generate dark mode, neon themes, or low-contrast color combinations.
-Use CSS variables in :root for colors, spacing, and radius tokens.
-Avoid generic template look: create clear visual hierarchy, intentional spacing rhythm, and section-specific styling.
-Prefer practical typography pairings available on most systems (for example: Segoe UI, Georgia, Trebuchet MS, Verdana).
-Keep the design polished, modern, and business-credible while still visually distinct.
+All CSS in a single <style> tag inside <head>.
 
-IMAGE RULES (CRITICAL - NO EXCEPTIONS):
-- NEVER include <img> tags with external URLs (http://, https://, imgur, unsplash, cdnjs, etc.).
-- NEVER embed stock photos, placeholder images, or icons from the internet.
-- If the user provided images as attachments and they add direct value to the layout, you may reference them with a placeholder like <img src="user-image-1" alt="..."> — but only if truly useful.
-- If no user images were provided, use pure CSS shapes, colored divs, or text-based layouts instead.
-- Decorate layouts with CSS gradients, borders, and color blocks — never external images.
+CSS RULES (CRITICAL):
+- This document is rendered in a modern browser preview and exported as a high-quality PNG. You MUST use premium, modern CSS layout and design.
+- Create a top-class, premium, highly polished design. Think Stripe, Apple, or Vercel landing pages, adapted for an executive summary format.
+- Layout tools allowed and encouraged: CSS Grid, Flexbox, absolute positioning, pseudo-elements, complex gradients, multi-layered shadows (glassmorphism/neumorphism), beautiful pill-badges, and CSS variables.
+- Keep the design STATIC: NEVER use :hover, :focus, :active, transition, animation, cursor, or @keyframes.
+- No external JavaScript. Pure HTML + CSS only.
+- You CAN use icon fonts (e.g. FontAwesome via cdnjs) or embed SVGs directly for beautiful badging and iconography.
+- On html and body set: width: {page_w}; margin: 0; padding: 0; box-sizing: border-box; overflow-x: hidden;
+- The design should flow naturally to whatever height the content requires — do NOT squash or truncate content to fit a fixed height.
+- SPACING IS CRITICAL: Apply generous padding (at least 28px–36px) on ALL four sides of the page so content never touches the outer edge. Use consistent inner padding (16px–20px) inside every card, section, or column. Maintain clear gutters (16px+) between columns and rows. Font sizes should be small but readable (11px–13px body, 14px–16px headings). Sections should be visually grouped with tight internal spacing but clearly separated from neighboring sections.
+
+COLOR AND STYLING (CRITICAL):
+- Make it visually stunning. Use beautiful gradient text, subtle patterned backgrounds, premium card layouts, and ample white space.
+- LIGHT MODE ONLY: white or very light background with dark readable text. Do not use an entirely dark page.
+- Establish a clear visual hierarchy, intentional spacing rhythm (using rems or explicit px), and distinct section styling.
+
+IMAGE RULES:
+- Decorate layouts heavily with CSS gradients, polished border radii, and color blocks.
+- If the user provided images as attachments, reference them with a placeholder like <img src="user-image-1" alt="...">.
 
 CONTENT RULES (CRITICAL):
 - Use ONLY the information provided in the source material, topic, key points, and user context.
 - NEVER invent company names, project names, people, statistics, KPIs, dates, or any other facts.
-- NEVER use placeholder or example data like "QuantumLeap", "Acme Corp", "Project Synapse", "John Doe", etc.
-- If the source material lacks a company name or specific detail, leave it generic (e.g. just use a section heading) rather than fabricating one.
 - Every number, name, and claim in the output must come directly from the provided content."""
 
-TEMPLATE_BEHAVIOURS = {
-    "cheatsheet": """You are a creative print designer. Create a beautiful CHEATSHEET one-pager.
 
-Vibe: dense, scannable, real-world quick reference card used by professionals.
-Layout: A4 landscape with a disciplined 3-column grid and balanced gutters.
-Style: compact but readable body text, high-contrast heading chips, subtle separators, and practical icon-free visual cues.
-Quality bar: this must look like a real operations handout, not a demo template.
-Content behavior: prioritize short actionable bullets, checklists, and command-style snippets.
-
-""" + _COMMON_PRINT_RULES,
+_TEMPLATE_STYLE_PROMPTS = {
+    "cheatsheet": """Create a dense, scannable cheatsheet one-pager. Multi-column layout, compact text, grouped sections with clear headers. Content-first — minimal decoration. Never cut off content.""",
 
     "flyer": """You are a creative print designer. Create a stunning PROMOTIONAL FLYER one-pager.
 
 Vibe: bold and premium, like a real campaign flyer prepared by a design agency.
-Layout: A4 portrait with a strong hero band, one focal message, supporting proof points, and a clear CTA zone.
+Layout: strong hero band at top, one focal message, supporting proof points, and a clear CTA zone at bottom. Use modern browser layout tools for punchy composition.
 Style: expressive headline typography, controlled accent usage, large readable sections, and visual momentum from top to bottom.
 Quality bar: avoid generic gradients and random blobs; every visual block should support the message.
 Content behavior: concise persuasive copy with concrete benefits and outcomes.
 Hero area: use a CSS gradient or solid color block for the hero background — NEVER an external image URL.
-Background: use a light base (white or very light tint) for the overall page; reserve bold color only for hero bands or accent strips.
-
-""" + _COMMON_PRINT_RULES,
+Background: use a light base (white or very light tint) for the overall page; reserve bold color only for hero bands or accent strips.""",
 
     "executive_summary": """You are a creative business document designer. Create a polished EXECUTIVE SUMMARY one-pager.
 
 Vibe: board-ready, data-led, and high trust.
-Layout: A4 portrait with branded header, KPI strip, two-column narrative, and a crisp conclusion zone.
+Layout: branded header, KPI strip, two-column narrative, and a crisp conclusion zone with strong alignment and spacing.
 Style: restrained but premium, clear typographic hierarchy, strong alignment, and subtle but intentional accents.
 Quality bar: this should look like a consultant-grade brief, not a generic AI report.
-Content behavior: concise claims backed by concrete numbers, milestones, risks, and next steps.
-
-""" + _COMMON_PRINT_RULES,
+Content behavior: concise claims backed by concrete numbers, milestones, risks, and next steps.""",
 
     "infographic": """You are a creative infographic designer. Create a visually striking INFOGRAPHIC one-pager.
 
 Vibe: visual-first narrative with clarity and momentum.
-Layout: A4 portrait with an obvious reading path, large data callouts, and numbered blocks that guide the eye.
+Layout: obvious reading path, large data callouts, and numbered blocks that guide the eye. Use grid or flex for side-by-side sections when useful.
 Style: bold numeric hierarchy, strong contrast between data and explanation, and controlled accent colors.
 Quality bar: avoid clipart-like styling and novelty effects; prioritize clarity and credibility.
-Content behavior: every visual block should communicate one clear fact or step.
-
-""" + _COMMON_PRINT_RULES,
+Content behavior: every visual block should communicate one clear fact or step.""",
 }
 
-EXTRACT_BEHAVIOUR = TEMPLATE_BEHAVIOURS["executive_summary"]
-REFINE_BEHAVIOUR = """You are an expert document designer. Modify the provided one-pager HTML document according to the user's request.
+
+def _get_template_behaviour(template_style: str, orientation: str) -> str:
+    style_prompt = _TEMPLATE_STYLE_PROMPTS.get(template_style, _TEMPLATE_STYLE_PROMPTS["executive_summary"])
+    return style_prompt + "\n\n" + _get_print_rules(orientation)
+
+
+def _get_refine_behaviour(orientation: str) -> str:
+    page_w = "1123px" if orientation == "landscape" else "794px"
+    page_h = "794px" if orientation == "landscape" else "1123px"
+    return f"""You are an expert document designer. Modify the provided one-pager HTML document according to the user's request.
 
 RULES:
 - Return ONLY the complete updated HTML - start with <!DOCTYPE html>, end with </html>
 - No markdown fences, no explanation - raw HTML only
 - Preserve the template layout, visual design quality, and print readiness of the original
 - Apply the user's changes precisely: content edits, color changes, section additions/removals, tone adjustments
-- Maintain the single-page A4 constraint - if content grows, make text more concise rather than overflowing
+- Maintain the single-page constraint ({page_w} x {page_h}) - if content grows, make text more concise rather than overflowing
 - Keep output in light mode unless the user explicitly asks for dark mode
 - Improve weak/generic sections when refining; do not return flat boilerplate design
-- NEVER add <img> tags with external URLs (http://, https://, imgur, unsplash, etc.) — use CSS shapes and color blocks instead"""
+- Use modern gradients, shadows, and top-tier layout patterns.
+
+CSS CONSTRAINTS (same as original generation):
+- Modern browser CSS is allowed, including flex, grid, CSS variables, gradients, pseudo-elements, and shadows.
+- Keep it STATIC: NEVER use :hover, :focus, :active, transition, animation, cursor, or @keyframes.
+- External fonts and high quality images are allowed to keep it beautiful.
+- html/body: width: {page_w}; margin: 0; padding: 0; overflow-x: hidden; box-sizing: border-box;
+- Let the content flow to its natural height — do NOT force height or overflow: hidden on html/body.
+- Use generous spacing and large readable fonts. Never squash content into tiny text."""
 
 
 def _strip_external_images(html: str) -> str:
@@ -131,6 +138,15 @@ def _strip_external_images(html: str) -> str:
         html, 
         flags=re.IGNORECASE
     )
+
+
+def _strip_interactive_css(html: str) -> str:
+    """Remove interactive CSS properties so the exported one-pager stays static."""
+    html = re.sub(r'\s*transition[^:]*:[^;]+;', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s*animation[^:]*:[^;]+;', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'\s*cursor\s*:[^;]+;', '', html, flags=re.IGNORECASE)
+    html = re.sub(r'@keyframes\s+[\w-]+\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}', '', html, flags=re.IGNORECASE)
+    return html
 
 
 def _extract_html_response(text: str) -> str:
@@ -145,7 +161,7 @@ def _extract_html_response(text: str) -> str:
         if idx > 0:
             text = text[idx:]
             break
-    return _strip_external_images(text)
+    return _strip_interactive_css(text)
 
 
 async def extract_one_pager_content(
@@ -155,6 +171,7 @@ async def extract_one_pager_content(
     audience: str = "",
     purpose: str = "",
     template_style: str = "executive_summary",
+    orientation: str = "portrait",
     image_files: list = None,
 ) -> dict:
     """Generate a complete one-pager HTML document from source material and user context.
@@ -220,9 +237,9 @@ async def extract_one_pager_content(
 
     prompt_parts = [
         f"STYLE: {template_style} - {style_info['description']}",
+        f"PAGE ORIENTATION: {orientation}",
         "QUALITY BAR: Build a realistic, designer-quality, light-mode document that feels production-ready, not a generic AI template.",
         "STRICT: Use ONLY the actual content from the provided source material below. Do NOT invent any company names, project names, statistics, KPIs, people, or dates. Every piece of text in the one-pager must come from the user's input or uploaded documents.",
-
     ]
     if topic:
         prompt_parts.append(f"TOPIC: {topic}")
@@ -267,7 +284,7 @@ async def extract_one_pager_content(
         prompt,
         chat_history_id=chat_history_id,
         attachment_ids=attachment_ids or None,
-        custom_behaviour=TEMPLATE_BEHAVIOURS.get(template_style, TEMPLATE_BEHAVIOURS["executive_summary"]),
+        custom_behaviour=_get_template_behaviour(template_style, orientation),
     )
 
     if response.get("error"):
@@ -294,6 +311,7 @@ async def refine_one_pager_content(
     message: str,
     current_html: str = "",
     template_style: str = "executive_summary",
+    orientation: str = "portrait",
 ) -> dict:
     """Continue the conversation to refine the one-pager HTML document."""
     brain_id = os.getenv("BPMN_CHECKER_BRAIN_ID") or os.getenv("SIGNAVIO_BRAIN_ID")
@@ -314,7 +332,7 @@ async def refine_one_pager_content(
         brain_id,
         prompt,
         chat_history_id=chat_history_id,
-        custom_behaviour=REFINE_BEHAVIOUR,
+        custom_behaviour=_get_refine_behaviour(orientation),
     )
 
     if response.get("error"):

@@ -194,6 +194,45 @@
     color: var(--text-secondary, #64748b);
 }
 
+/* ── Orientation toggle ───────────────────────────────── */
+
+.orientation-toggle {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.orientation-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.55rem 1.1rem;
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 9px;
+    background: var(--bg, #f8fafc);
+    color: var(--text-secondary, #64748b);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.orientation-btn.active {
+    border-color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.08);
+    color: var(--brand-orange, #FF6840);
+}
+
+body.dark-mode .orientation-btn {
+    background: var(--surface-secondary);
+    border-color: var(--border, #334155);
+    color: var(--text-secondary);
+}
+
+body.dark-mode .orientation-btn.active {
+    border-color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.12);
+    color: var(--brand-orange, #FF6840);
+}
+
 /* ── Template grid (four cards) ───────────────────────── */
 
 .template-grid {

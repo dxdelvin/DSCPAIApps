@@ -13,7 +13,7 @@
     <div>
         <p class="eyebrow">Document Tools | One Pager Creator</p>
         <h1>AI One Pager Creator</h1>
-        <p class="lede">Upload files or describe your topic, pick a style, and generate a polished single-page PDF.</p>
+        <p class="lede">Upload files or describe your topic, pick a style, and generate a polished single-page Image.</p>
     </div>
 </section>
 
@@ -22,7 +22,7 @@
         <div class="builder-head">
             <div>
                 <p class="eyebrow">One Pager Tools</p>
-                <h2 class="builder-title">Create a Single-Page PDF</h2>
+                <h2 class="builder-title">Create a Single-Page Image</h2>
             </div>
         </div>
 
@@ -96,7 +96,19 @@
                         </div>
                     </div>
 
-
+                    <div class="form-group">
+                        <label>Page Orientation</label>
+                        <div class="orientation-toggle" id="orientation-toggle">
+                            <button class="orientation-btn active" type="button" data-orientation="portrait">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="1" width="10" height="14" rx="1.5"/></svg>
+                                Portrait
+                            </button>
+                            <button class="orientation-btn" type="button" data-orientation="landscape">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="14" height="10" rx="1.5"/></svg>
+                                Landscape
+                            </button>
+                        </div>
+                    </div>
 
                     <div class="warning-notice">
                         <span class="warning-icon">⚠️</span>
@@ -131,10 +143,10 @@
                     <div class="result-panel" id="result-panel" style="display:none">
                         <div class="form-actions result-actions">
                             <button class="btn btn-secondary btn-sm" id="refresh-preview-btn">Refresh Preview</button>
-                            <button class="btn btn-primary" id="download-btn">Download PDF</button>
+                            <button class="btn btn-primary" id="download-btn">Download PNG</button>
                         </div>
                         <div class="preview-frame-wrapper">
-                            <iframe id="preview-frame" class="preview-frame" sandbox></iframe>
+                            <iframe id="preview-frame" class="preview-frame" sandbox="allow-same-origin"></iframe>
                         </div>
                     </div>
 
@@ -191,6 +203,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js" integrity="sha512-MpDFIChbcXl2QgipQrt1VkPHMTB1N/1sMF1VL0dGHNKKKAzo9kOm/axy28qe8VLa8S0xs8IN3RdokhvMYroKgg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="/static/js/one_pager_creator.js?v={{ css_version }}"></script>
 {% endblock %}

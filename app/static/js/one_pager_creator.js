@@ -1,7 +1,7 @@
 /**
  * One Pager Creator – frontend controller.
  * AI generates a complete HTML/CSS document. Preview renders it in an iframe.
- * PDF download uses html2pdf.js (html2canvas + jsPDF) for client-side conversion.
+ * Export downloads a PNG captured from the browser-rendered preview.
  */
 document.addEventListener('DOMContentLoaded', () => {
     const app = new OnePagerApp();
@@ -13,6 +13,7 @@ class OnePagerApp {
         this.chatHistoryId = null;
         this.currentHtml   = null;
         this.templateStyle = 'executive_summary';
+        this.orientation   = 'portrait';
 
         this.MAX_FILE_SIZE = 10 * 1024 * 1024;
         this.MAX_IMAGES = 3;
@@ -22,6 +23,7 @@ class OnePagerApp {
     init() {
         this.setupUpload();
         this.setupTemplateSelector();
+        this.setupOrientationToggle();
         this.setupColorPicker();
         this.setupEventListeners();
         window.addEventListener('resize', () => this.scalePreview());
@@ -152,6 +154,26 @@ class OnePagerApp {
             grid.querySelectorAll('.template-card').forEach(c => c.classList.remove('active'));
             card.classList.add('active');
             this.templateStyle = card.dataset.style;
+            this.setOrientation(card.dataset.style === 'cheatsheet' ? 'landscape' : 'portrait');
+        });
+    }
+
+    /* ── Orientation toggle ───────────────────────────── */
+
+    setupOrientationToggle() {
+        const toggle = document.getElementById('orientation-toggle');
+        if (!toggle) return;
+        toggle.addEventListener('click', e => {
+            const btn = e.target.closest('.orientation-btn');
+            if (!btn) return;
+            this.setOrientation(btn.dataset.orientation);
+        });
+    }
+
+    setOrientation(orientation) {
+        this.orientation = orientation;
+        document.querySelectorAll('.orientation-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.orientation === orientation);
         });
     }
 
@@ -169,7 +191,7 @@ class OnePagerApp {
 
         document.getElementById('generate-btn').addEventListener('click', () => this.generateContent());
         document.getElementById('reset-btn').addEventListener('click', () => this.handleResetRequest());
-        document.getElementById('download-btn').addEventListener('click', () => this.downloadPdf());
+        document.getElementById('download-btn').addEventListener('click', () => this.downloadPng());
         document.getElementById('refresh-preview-btn').addEventListener('click', () => this.refreshPreview());
 
         document.getElementById('chat-send-btn').addEventListener('click', () => this.sendChatMessage());
@@ -219,7 +241,7 @@ class OnePagerApp {
         formData.append('audience', audience);
         formData.append('purpose', purpose);
         formData.append('templateStyle', this.templateStyle);
-
+        formData.append('orientation', this.orientation);
 
         try {
             const res  = await fetch('/api/one-pager/extract', { method: 'POST', body: formData });
@@ -280,6 +302,7 @@ class OnePagerApp {
                     message:       msg,
                     currentHtml:   this.currentHtml || '',
                     templateStyle: this.templateStyle,
+                    orientation:   this.orientation,
                 }),
             });
             const data = await res.json();
@@ -349,7 +372,7 @@ class OnePagerApp {
         const iframe  = document.getElementById('preview-frame');
         if (!wrapper || !iframe || !this.currentHtml) return;
 
-        const isLandscape = this.templateStyle === 'cheatsheet';
+        const isLandscape = this.orientation === 'landscape';
         const A4_W = isLandscape ? 1122 : 794;
         const A4_H = isLandscape ? 794  : 1123;
 
@@ -413,122 +436,70 @@ class OnePagerApp {
         showToast(title, 'error');
     }
 
-    /* ── Download PDF ─────────────────────────────────── */
+    /* ── Download PNG ─────────────────────────────────── */
 
-    async downloadPdf() {
+    async downloadPng() {
         if (!this.currentHtml) return;
 
         const btn = document.getElementById('download-btn');
         const originalHTML = btn.innerHTML;
         btn.classList.add('downloading');
-        btn.innerHTML = '<span class="btn-icon">⏳</span> Generating PDF…';
-
-        // Declared outside try so the catch block can clean it up if needed
-        let printFrame = null;
+        btn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2" width="13" height="10" rx="1.5"/><path d="M5 12.5 6.8 10.2l1.8 1.8 2.7-3.4 2.2 3.9"/></svg></span> Rendering PNG…';
 
         try {
-            // Use a dedicated hidden iframe with sandbox="allow-same-origin":
-            // - Prevents any AI-generated scripts from running (no allow-scripts)
-            // - Parent JS can still access contentDocument via same-origin access
-            // - Fully isolated from the main app's CSS and DOM
-            printFrame = document.createElement('iframe');
-            printFrame.setAttribute('sandbox', 'allow-same-origin');
-            printFrame.style.position = 'fixed';
-            printFrame.style.left = '-10000px';
-            printFrame.style.top = '0';
-            printFrame.style.border = 'none';
+            const blob = await this.capturePreviewAsPng();
+            const url  = URL.createObjectURL(blob);
+            const a    = document.createElement('a');
+            a.href     = url;
+            a.download = this.buildDownloadFilename('png');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
 
-            const isLandscape = this.templateStyle === 'cheatsheet';
-            const A4_W = isLandscape ? 1122 : 794;
-            const A4_H = isLandscape ? 794  : 1123;
-
-            printFrame.style.width = A4_W + 'px';
-            printFrame.style.height = A4_H + 'px';
-
-            document.body.appendChild(printFrame);
-
-            // Write the full HTML into the hidden iframe
-            const printDoc = printFrame.contentDocument || printFrame.contentWindow.document;
-            printDoc.open();
-            printDoc.write(this.currentHtml);
-            printDoc.close();
-
-            // Wait for the iframe to fully render
-            await new Promise(resolve => {
-                if (printDoc.readyState === 'complete') {
-                    setTimeout(resolve, 300);
-                } else {
-                    printFrame.addEventListener('load', () => setTimeout(resolve, 300), { once: true });
-                }
-            });
-
-            const printBody = printDoc.body;
-            if (!printBody) {
-                showToast('Could not render document for PDF. Please try again.', 'warning');
-                document.body.removeChild(printFrame);
-                printFrame = null;
-                btn.innerHTML = originalHTML;
-                btn.classList.remove('downloading');
-                return;
-            }
-
-            const contentHeight = Math.max(
-                A4_H,
-                printDoc.documentElement.scrollHeight,
-                printBody.scrollHeight
-            );
-            const contentWidth = A4_W;
-
-            const filename = (this._extractTitle() || 'One-Pager') + '.pdf';
-
-            const opt = {
-                margin:      0,
-                filename:    filename,
-                image:       { type: 'jpeg', quality: 0.98 },
-                html2canvas: {
-                    scale:          2,
-                    useCORS:        true,
-                    width:          contentWidth,
-                    height:         contentHeight,
-                    windowWidth:    contentWidth,
-                    windowHeight:   contentHeight,
-                    backgroundColor: null,
-                },
-                jsPDF: {
-                    unit:        'px',
-                    format:      [contentWidth, contentHeight],
-                    orientation: isLandscape ? 'landscape' : 'portrait',
-                    hotfixes:    ['px_scaling'],
-                },
-            };
-
-            await html2pdf().set(opt).from(printBody).save();
-
-            // Clean up
-            document.body.removeChild(printFrame);
-            printFrame = null;
-
-            btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
+            btn.innerHTML = '<span class="btn-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 8.5 6.5 12 13 4"/></svg></span> Saved PNG!';
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
             }, 2500);
-            showToast('PDF downloaded successfully!', 'success');
+            showToast('PNG downloaded successfully!', 'success');
         } catch (err) {
-            AppLogger.error('One-pager PDF generation error:', err);
-            if (printFrame && document.body.contains(printFrame)) {
-                document.body.removeChild(printFrame);
-            }
-            showToast('PDF generation failed. Please try again.', 'error');
+            AppLogger.error('One-pager PNG download error:', err);
+            showToast('PNG export failed. Refresh the preview and try again.', 'error');
             btn.innerHTML = originalHTML;
             btn.classList.remove('downloading');
         }
+    }
+
+    async capturePreviewAsPng() {
+        if (!this.currentHtml) throw new Error('No HTML to capture');
+
+        const res = await fetch('/api/one-pager/export-png', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ html: this.currentHtml, orientation: this.orientation }),
+        });
+
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.message || `Server export failed (${res.status})`);
+        }
+
+        return res.blob();
     }
 
     _extractTitle() {
         if (!this.currentHtml) return 'One-Pager';
         const m = this.currentHtml.match(/<title[^>]*>([^<]+)<\/title>/i);
         return m ? m[1].trim() : 'One-Pager';
+    }
+
+    buildDownloadFilename(extension) {
+        const base = (this._extractTitle() || 'One-Pager')
+            .replace(/[^a-z0-9 _-]+/gi, '')
+            .trim()
+            .replace(/\s+/g, '_');
+        return `${base || 'One-Pager'}.${extension}`;
     }
 
     /* ── UI helpers ───────────────────────────────────── */
@@ -589,7 +560,7 @@ class OnePagerApp {
         const defaultCard = document.querySelector('.template-card[data-style="executive_summary"]');
         if (defaultCard) defaultCard.classList.add('active');
         this.templateStyle = 'executive_summary';
-
+        this.setOrientation('portrait');
 
         document.getElementById('chat-container').style.display = 'none';
         document.getElementById('chat-messages').innerHTML = '';
