@@ -7,8 +7,9 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     box-shadow: var(--shadow-soft);
-    padding: 20px;
-    margin: 40px 0px;
+    padding: 0;
+    margin: 24px 0;
+    overflow: hidden;
 }
 
 /* BPMN-specific hero tuning */
@@ -21,7 +22,8 @@
     line-height: 1.45;
 }
 
-.builder-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.builder-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.builder-head .eyebrow { color: var(--brand-orange); }
 .builder-title { margin: 0; }
 .builder-actions { display: flex; gap: 10px; align-items: center; }
 .builder-actions .mode-tabs {
@@ -1162,6 +1164,11 @@ body.dark-mode .analysis-content::-webkit-scrollbar-track {
     background: #e55700;
 }
 
+/* Build tab panel — padding to match history wrapper */
+#bpmn-tab-build {
+    padding: 1.5rem 2rem;
+}
+
 /* Mode Panel - page-specific active state */
 .mode-panel {
     display: none;
@@ -1365,14 +1372,16 @@ body.dark-mode .not-bpmn-warning {
 @media (max-width: 992px) {
     .bpmn-builder {
         margin: 24px 0;
-        padding: 16px;
     }
 
     .builder-head {
-        margin-bottom: 10px;
         align-items: center;
         justify-content: space-between;
         gap: 10px;
+    }
+
+    #bpmn-tab-build {
+        padding: 1.25rem 1.5rem;
     }
 
     .builder-actions {
@@ -1415,8 +1424,11 @@ body.dark-mode .not-bpmn-warning {
 
     .bpmn-builder {
         margin: 16px 0;
-        padding: 12px;
         border-radius: 12px;
+    }
+
+    #bpmn-tab-build {
+        padding: 1rem 1.25rem;
     }
 
     .builder-head {
@@ -1628,7 +1640,10 @@ body.dark-mode .not-bpmn-warning {
 
     .bpmn-builder {
         margin: 12px 0;
-        padding: 10px;
+    }
+
+    #bpmn-tab-build {
+        padding: 0.875rem 1rem;
     }
 
     .builder-head {
