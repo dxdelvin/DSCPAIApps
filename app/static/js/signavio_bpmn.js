@@ -16,6 +16,10 @@ let bpmnViewer = null;
 let lastGeneratedXml = null;
 let lastGeneratedFilename = null;
 
+// History state
+const bpmnUserId = typeof window.__BPMN_USER_ID__ !== 'undefined' ? window.__BPMN_USER_ID__ : 'Guest';
+let currentBpmnGenId = null;
+
 const BPMN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="8.5" y="14" width="7" height="7" rx="1.5"/><line x1="6.5" y1="10" x2="6.5" y2="14" opacity="0.5"/><line x1="17.5" y1="10" x2="17.5" y2="14" opacity="0.5"/><line x1="6.5" y1="14" x2="8.5" y2="14" opacity="0.5"/><line x1="17.5" y1="14" x2="15.5" y2="14" opacity="0.5"/></svg>';
 const BPMN_GENERATE_MESSAGES = ['Analyzing process structure', 'Building BPMN elements', 'Arranging swimlanes', 'Generating diagram file'];
 
@@ -23,6 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initializeFormHandlers();
     initializeUploadHandlers();
     initializeModeSwitch();
+    initializeBpmnOuterTabs();
     initializeCharCounters();
     initializeMobileSwipe();
     updateFormNavigation();
@@ -76,7 +81,7 @@ function initializeFormHandlers() {
                 resetForm();
             },
             {
-                icon: '⚠️',
+                icon: '',
                 confirmText: 'Clear Data',
                 cancelText: 'Cancel'
             }
@@ -335,7 +340,7 @@ async function analyzeUploadedFile() {
         uploadChatHistoryId = result.chatHistoryId;
         uploadDocumentValid = result.document_valid !== false;
 
-        if (statusEl) statusEl.textContent = uploadDocumentValid ? '✓ Complete' : '⚠ Invalid Document';
+        if (statusEl) statusEl.textContent = uploadDocumentValid ? 'Complete' : 'Invalid Document';
         if (contentEl) {
             let html = formatAnalysisResponse(result.analysis || 'No analysis returned.');
             if (!uploadDocumentValid) {
@@ -416,7 +421,7 @@ async function refreshUploadAnalysis() {
             return;
         }
 
-        if (statusEl) statusEl.textContent = '✓ Complete';
+        if (statusEl) statusEl.textContent = 'Complete';
         if (contentEl) contentEl.innerHTML = formatAnalysisResponse(result.response || 'No analysis returned.');
         if (generateBtn) generateBtn.disabled = !uploadDocumentValid;
         // Clear override after success
@@ -463,6 +468,13 @@ async function generateUploadBPMN() {
         lastGeneratedFilename = result.filename;
         await showBpmnViewer(result.xml);
         showToast('BPMN generated successfully! Preview your diagram below.', 'success');
+        _persistBpmnToHistory('upload', {
+            mode: 'upload',
+            analysis: document.getElementById('uploadAnalysisContent')?.innerText || '',
+            xml: result.xml,
+            filename: result.filename,
+            chatHistoryId: uploadChatHistoryId,
+        });
 
     } catch (error) {
         AppLogger.error('Upload BPMN generation error:', error);
@@ -1110,7 +1122,7 @@ async function fetchBrainAnalysis() {
         // Store the chat history ID for BPMN generation context
         chatHistoryId = result.chatHistoryId;
         
-        if (statusEl) statusEl.textContent = '✓ Complete';
+        if (statusEl) statusEl.textContent = 'Complete';
         if (contentEl) {
             // Format and display the analysis nicely
             contentEl.innerHTML = formatAnalysisResponse(result.analysis || 'No analysis returned.');
@@ -1324,7 +1336,7 @@ async function refreshAnalysis() {
             return;
         }
 
-        if (statusEl) statusEl.textContent = '✓ Complete';
+        if (statusEl) statusEl.textContent = 'Complete';
         if (contentEl) contentEl.innerHTML = formatAnalysisResponse(result.response || 'No analysis returned.');
         updateGenerateButtonState();
         // Clear Modify Inputs textbox on successful completion
@@ -1391,6 +1403,13 @@ async function generateBPMN() {
         lastGeneratedFilename = result.filename;
         await showBpmnViewer(result.xml);
         showToast('BPMN generated successfully! Preview your diagram below.', 'success');
+        _persistBpmnToHistory('form', {
+            mode: 'form',
+            formData: { ...formData },
+            xml: result.xml,
+            filename: result.filename,
+            chatHistoryId: chatHistoryId,
+        });
         
     } catch (error) {
         AppLogger.error('BPMN generation error:', error);
@@ -1614,3 +1633,271 @@ function toggleInlineOverride(forceShow = false) {
         textarea.focus();
     }
 }
+
+// ============== BPMN Outer Tab Navigation ==============
+
+function initializeBpmnOuterTabs() {
+    document.querySelectorAll('.bpmn-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.bpmn-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.bpmn-tab-panel').forEach(p => { p.style.display = 'none'; });
+            btn.classList.add('active');
+            const panel = document.getElementById('bpmn-tab-' + btn.dataset.tab);
+            if (panel) panel.style.display = 'block';
+            // Toggle mode-tabs visibility
+            const modeTabs = document.getElementById('bpmnModeTabs');
+            if (modeTabs) modeTabs.style.display = btn.dataset.tab === 'build' ? 'flex' : 'none';
+            if (btn.dataset.tab === 'history') loadBpmnHistory();
+        });
+    });
+}
+
+// ============== BPMN History ==============
+
+async function _persistBpmnToHistory(mode, content) {
+    try {
+        const response = await fetch('/api/bpmn/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ content }),
+        });
+        const result = await response.json();
+        if (response.ok && result.genId) {
+            currentBpmnGenId = result.genId;
+        }
+    } catch (err) {
+        AppLogger.error('Failed to persist BPMN to history:', err);
+    }
+}
+
+async function loadBpmnHistory() {
+    const loadingEl = document.getElementById('bpmn-history-loading');
+    const emptyEl = document.getElementById('bpmn-history-empty');
+    const gridEl = document.getElementById('bpmn-history-grid');
+    if (!gridEl) return;
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (emptyEl) emptyEl.style.display = 'none';
+    gridEl.innerHTML = '';
+
+    try {
+        const response = await fetch('/api/bpmn/history');
+        const result = await response.json();
+
+        if (!response.ok) throw new Error(result.message || 'Failed to load history');
+
+        const history = result.history || [];
+        if (loadingEl) loadingEl.style.display = 'none';
+
+        if (history.length === 0) {
+            if (emptyEl) emptyEl.style.display = 'flex';
+            return;
+        }
+
+        history.forEach(entry => {
+            const card = _renderBpmnHistoryCard(entry);
+            gridEl.appendChild(card);
+        });
+
+    } catch (err) {
+        AppLogger.error('Load BPMN history error:', err);
+        if (loadingEl) loadingEl.style.display = 'none';
+        gridEl.innerHTML = '<div class="history-error">Failed to load history. Please try again.</div>';
+    }
+}
+
+function _renderBpmnHistoryCard(entry) {
+    const card = document.createElement('div');
+    card.className = 'gen-card';
+    card.dataset.genId = entry.id;
+
+    const modeBadge = entry.mode === 'upload'
+        ? `<span class="gen-badge">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v7"/><path d="m5.5 6.5 2.5 2.5 2.5-2.5"/><path d="M2.5 10.5v1.8c0 .9.8 1.7 1.7 1.7h7.6c.9 0 1.7-.8 1.7-1.7v-1.8"/></svg>
+            Upload</span>`
+        : `<span class="gen-badge gen-badge-orange">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3.5A1.5 1.5 0 0 1 3.5 2h17A1.5 1.5 0 0 1 22 3.5v17a1.5 1.5 0 0 1-1.5 1.5h-17A1.5 1.5 0 0 1 2 20.5z"/><path d="M5 8h14M5 12h14M5 16h6"/></svg>
+            Form</span>`;
+
+    const hasXml = entry.hasXml ? `<span class="gen-badge">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        XML</span>` : '';
+
+    const date = new Date(entry.updatedAt || entry.createdAt);
+    const dateStr = isNaN(date) ? '' : date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+    const timeStr = isNaN(date) ? '' : date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+
+    const processName = escapeHtml(entry.processName || 'Untitled BPMN');
+
+    card.innerHTML = `
+        <button class="gen-card-delete" title="Delete" aria-label="Delete generation" data-gen-id="${escapeHtml(entry.id)}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                <path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+            </svg>
+        </button>
+        <div class="gen-card-body">
+            <div class="gen-card-title-row">
+                <h4 class="gen-card-title">${processName}</h4>
+                <div class="gen-card-badges">${modeBadge}${hasXml}</div>
+            </div>
+            <div class="gen-card-meta">
+                <span class="gen-meta-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    ${escapeHtml(dateStr)}
+                </span>
+                <span class="gen-meta-item">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    ${escapeHtml(timeStr)}
+                </span>
+            </div>
+        </div>
+        <div class="gen-card-actions">
+            <button class="btn btn-sm btn-ghost bpmn-history-edit-btn" data-gen-id="${escapeHtml(entry.id)}" data-mode="${escapeHtml(entry.mode || 'form')}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                Edit
+            </button>
+            ${entry.hasXml ? `<button class="btn btn-sm bpmn-history-download-btn" data-gen-id="${escapeHtml(entry.id)}" data-filename="${escapeHtml(entry.filename || 'diagram.bpmn')}">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download
+            </button>` : ''}
+        </div>`;
+
+    // Bind actions
+    card.querySelector('.gen-card-delete').addEventListener('click', () => deleteBpmnGeneration(entry.id, card));
+    card.querySelector('.bpmn-history-edit-btn').addEventListener('click', () => loadBpmnGeneration(entry.id, entry.mode || 'form'));
+    card.querySelector('.bpmn-history-download-btn')?.addEventListener('click', () => downloadBpmnGeneration(entry.id, entry.filename || 'diagram.bpmn'));
+
+    return card;
+}
+
+async function loadBpmnGeneration(genId, mode) {
+    try {
+        const response = await fetch(`/api/bpmn/history/${encodeURIComponent(genId)}`);
+        const result = await response.json();
+        if (!response.ok || !result.content) {
+            showToast('Could not load this generation.', 'error');
+            return;
+        }
+
+        const content = result.content;
+        currentBpmnGenId = genId;
+
+        // Switch to build tab
+        document.querySelectorAll('.bpmn-tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.bpmn-tab-panel').forEach(p => { p.style.display = 'none'; });
+        const buildBtn = document.querySelector('.bpmn-tab-btn[data-tab="build"]');
+        if (buildBtn) buildBtn.classList.add('active');
+        const buildPanel = document.getElementById('bpmn-tab-build');
+        if (buildPanel) buildPanel.style.display = 'block';
+        const modeTabs = document.getElementById('bpmnModeTabs');
+        if (modeTabs) modeTabs.style.display = 'flex';
+
+        if (mode === 'upload') {
+            _restoreUploadMode(content);
+        } else {
+            _restoreFormMode(content);
+        }
+
+        showToast('Generation loaded. You can review and regenerate.', 'success');
+
+    } catch (err) {
+        AppLogger.error('Load BPMN generation error:', err);
+        showToast('Failed to load generation.', 'error');
+    }
+}
+
+function _restoreFormMode(content) {
+    switchMode('form');
+
+    const fd = content.formData || {};
+    // Restore formData object
+    Object.assign(formData, fd);
+    if (content.chatHistoryId) chatHistoryId = content.chatHistoryId;
+
+    // Populate text/textarea inputs on each step
+    ['processName', 'poolName', 'startTriggers', 'processActivities', 'processEnding', 'intermediateEvents', 'reviewOverride'].forEach(fieldId => {
+        const el = document.getElementById(fieldId);
+        if (el && fd[fieldId] != null) el.value = fd[fieldId];
+    });
+
+    // Rebuild lanes (step 2)
+    if (fd.lanesData && fd.lanesData.length > 0) {
+        loadLanesData();
+    }
+
+    // Unlock all steps and jump to step 6
+    maxAccessibleStep = 6;
+    goToStep(6);
+    updateProgressBar();
+}
+
+function _restoreUploadMode(content) {
+    switchMode('upload');
+
+    if (content.chatHistoryId) uploadChatHistoryId = content.chatHistoryId;
+    uploadDocumentValid = true;
+
+    const panel = document.getElementById('upload-analysis-panel');
+    const statusEl = document.getElementById('uploadAnalysisStatus');
+    const contentEl = document.getElementById('uploadAnalysisContent');
+    const generateBtn = document.getElementById('uploadGenerateBtn');
+    const ctaPanel = document.getElementById('upload-cta-panel');
+
+    if (panel) panel.style.display = '';
+    if (ctaPanel) ctaPanel.style.display = '';
+    if (statusEl) statusEl.textContent = 'Loaded from history';
+    if (contentEl && content.analysis) {
+        contentEl.innerHTML = formatAnalysisResponse(content.analysis);
+    }
+    if (generateBtn) generateBtn.disabled = false;
+
+    // If XML is present, show viewer
+    if (content.xml) {
+        lastGeneratedXml = content.xml;
+        lastGeneratedFilename = content.filename;
+        showBpmnViewer(content.xml);
+    }
+}
+
+async function deleteBpmnGeneration(genId, cardEl) {
+    cardEl.style.opacity = '0.5';
+    try {
+        const response = await fetch(`/api/bpmn/history/${encodeURIComponent(genId)}`, { method: 'DELETE' });
+        if (response.ok) {
+            cardEl.remove();
+            const gridEl = document.getElementById('bpmn-history-grid');
+            if (gridEl && gridEl.children.length === 0) {
+                const emptyEl = document.getElementById('bpmn-history-empty');
+                if (emptyEl) emptyEl.style.display = 'flex';
+            }
+        } else {
+            cardEl.style.opacity = '';
+            showToast('Failed to delete generation.', 'error');
+        }
+    } catch (err) {
+        AppLogger.error('Delete BPMN generation error:', err);
+        cardEl.style.opacity = '';
+        showToast('Failed to delete generation.', 'error');
+    }
+}
+
+async function downloadBpmnGeneration(genId, filename) {
+    try {
+        const response = await fetch(`/api/bpmn/history/${encodeURIComponent(genId)}/download`, { method: 'POST' });
+        if (!response.ok) {
+            showToast('Failed to download BPMN file.', 'error');
+            return;
+        }
+        const blob = await response.blob();
+        Utils.triggerBlobDownload(blob, filename);
+    } catch (err) {
+        AppLogger.error('Download BPMN history error:', err);
+        showToast('Failed to download BPMN file.', 'error');
+    }
+}
+
+// Bind refresh button (delegated, safe to call multiple times)
+document.addEventListener('click', (e) => {
+    if (e.target.closest('#bpmnHistoryRefreshBtn')) loadBpmnHistory();
+});

@@ -1147,6 +1147,62 @@ body.dark-mode .refine-dropdown {
     overflow-y: auto;
 }
 
+/* ── Tab Navigation ──────────────────────────────────────── */
+.dg-tab-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    background: var(--card, #ffffff);
+    gap: 0;
+    padding: 0 2rem;
+}
+
+.dg-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.95rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.dg-tab-btn svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+}
+
+.dg-tab-btn:hover {
+    color: var(--text-secondary, #64748b);
+}
+
+.dg-tab-btn.active {
+    color: var(--brand-orange, #FF6840);
+    border-bottom-color: var(--brand-orange, #FF6840);
+}
+
+body.dark-mode .dg-tab-nav {
+    background: var(--card-dark, #1e293b);
+}
+
+body.dark-mode .dg-tab-btn {
+    color: var(--text-muted-dark, #64748b);
+}
+
+body.dark-mode .dg-tab-btn:hover {
+    color: var(--text-secondary-dark, #cbd5e1);
+}
+
+/* ── History Panel ───────────────────────────────────────── */
+.dg-history-panel {
+    padding: 0.5rem 0;
+}
+
 .dg-guide-card {
     border: 1.5px solid var(--border, #e2e8f0);
     border-radius: 10px;

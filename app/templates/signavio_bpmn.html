@@ -26,10 +26,27 @@
                 <h2 class="builder-title">BPMN Builder</h2>
             </div>
             <div class="builder-actions">
-                <!-- Mode Tabs -->
-                <div class="mode-tabs">
-                    <button class="mode-tab active" data-mode="form">Form Builder</button>
-                    <button class="mode-tab" data-mode="upload">Upload & Build</button>
+                <!-- Mode Tabs (only shown on Build tab) -->
+                <div class="mode-tabs" id="bpmnModeTabs">
+                    <button class="mode-tab active" data-mode="form">
+                        <span class="tab-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 3.5C2 2.7 2.7 2 3.5 2h9C13.3 2 14 2.7 14 3.5v9c0 .8-.7 1.5-1.5 1.5h-9C2.7 14 2 13.3 2 12.5v-9Z" stroke="currentColor" stroke-width="1.2"/>
+                                <path d="M5 5h6M5 8h6M5 11h4" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        Form Builder
+                    </button>
+                    <button class="mode-tab" data-mode="upload">
+                        <span class="tab-icon" aria-hidden="true">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M8 2v7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                                <path d="m5.5 6.5 2.5 2.5 2.5-2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="M2.5 10.5v1.8c0 .9.8 1.7 1.7 1.7h7.6c.9 0 1.7-.8 1.7-1.7v-1.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        Upload & Build
+                    </button>
                 </div>
                 <button class="btn btn-icon-help" type="button" id="infoBtn" title="View guide and tips">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -40,6 +57,27 @@
             </div>
         </div>
 
+        <!-- Top-level tab nav: Build | My History -->
+        <div class="bpmn-tab-nav">
+            <button class="bpmn-tab-btn active" data-tab="build">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="8.5" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
+                Build
+            </button>
+            <button class="bpmn-tab-btn" data-tab="history">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                My History
+            </button>
+        </div>
+
+        <!-- Build Tab Panel -->
+        <div class="bpmn-tab-panel" id="bpmn-tab-build">
         <!-- Form Builder Mode -->
         <div class="mode-panel active" id="form-mode">
         <!-- Step Indicator -->
@@ -159,7 +197,16 @@
                 
                 <div class="analysis-panel">
                     <div class="analysis-header">
-                        <h4 data-i18n-html="bpmn.ai_analysis">🤖 AI Analysis</h4>
+                        <h4 data-i18n-html="bpmn.ai_analysis" class="analysis-title">
+                            <span class="analysis-title-icon" aria-hidden="true">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                                    <rect x="8.5" y="14" width="7" height="7" rx="1.5"/>
+                                </svg>
+                            </span>
+                            AI Analysis
+                        </h4>
                         <span id="analysisStatus" class="analysis-status" data-i18n="bpmn.analysis_ready">Ready</span>
                     </div>
                     <div id="analysisContent" class="analysis-content">
@@ -297,7 +344,47 @@
                 </div>
             </div>
         </div><!-- /upload-mode -->
-    </div>
+        </div><!-- /bpmn-tab-build -->
+
+        <!-- History Tab Panel -->
+        <div class="bpmn-tab-panel" id="bpmn-tab-history" style="display:none">
+            <div class="bpmn-history-wrapper">
+                <div class="history-panel">
+                    <div class="history-header">
+                        <div>
+                            <h3 style="margin:0;font-size:1.1rem;font-weight:700;color:var(--text-primary)">My BPMN History</h3>
+                            <p class="history-subtitle">Your previously generated BPMN diagrams</p>
+                        </div>
+                        <button class="btn btn-ghost btn-sm" id="bpmnHistoryRefreshBtn" title="Refresh history">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="23 4 23 10 17 10"/>
+                                <polyline points="1 20 1 14 7 14"/>
+                                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                    <div id="bpmn-history-loading" class="history-loading" style="display:none">
+                        <span class="history-spinner" aria-hidden="true"></span>
+                        Loading your history...
+                    </div>
+                    <div id="bpmn-history-empty" class="history-empty" style="display:none">
+                        <span class="history-empty-icon" aria-hidden="true">
+                            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" opacity="0.4">
+                                <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                                <rect x="8.5" y="14" width="7" height="7" rx="1.5"/>
+                            </svg>
+                        </span>
+                        <h4>No BPMN diagrams yet</h4>
+                        <p>Generate your first BPMN diagram using the Form Builder or Upload mode to see it here.</p>
+                    </div>
+                    <div id="bpmn-history-grid" class="history-grid"></div>
+                </div>
+            </div>
+        </div><!-- /bpmn-tab-history -->
+
+    </div><!-- /bpmn-builder -->
 </div>
 
 <!-- BPMN Viewer Panel -->
@@ -342,6 +429,9 @@
 {% endblock %}
 
 {% block extra_js %}
+<script>
+    window.__BPMN_USER_ID__ = {{ user_id | tojson }};
+</script>
 <script src="https://unpkg.com/bpmn-js@18.6.3/dist/bpmn-viewer.production.min.js"></script>
 <script src="/static/js/signavio_bpmn.js?v={{ css_version }}"></script>
 {% endblock %}

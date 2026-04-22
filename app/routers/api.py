@@ -47,7 +47,7 @@ from app.services.ppt_creator_service import (
     refine_ppt_content,
     generate_pptx_file,
 )
-from app.services.History import ppt_history_service
+from app.services.History import ppt_history_service, diagram_history_service, bpmn_history_service
 from app.services.auth_service import get_current_user
 from app.services.diagram_generator_service import (
     analyze_pdf_content as diagram_analyze_pdf,
@@ -964,6 +964,266 @@ async def diagram_download(data: DiagramDownloadRequest):
     )
 
 
+# ── Diagram History API ───────────────────────────────
+
+_GEN_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
+
+
+def _validate_gen_id(gen_id: str) -> None:
+    if not _GEN_ID_RE.match(gen_id):
+        raise ValueError(f"Invalid generation id: {gen_id!r}")
+
+
+class DiagramHistorySaveRequest(BaseModel):
+    content: dict
+    chatHistoryId: str = Field(max_length=200)
+
+
+class DiagramHistoryUpdateRequest(BaseModel):
+    content: dict
+
+
+@router.get("/diagram/history")
+async def diagram_history_list(request: Request):
+    """Return the current user's diagram generation history (newest first)."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        history = await diagram_history_service.get_history(user_id)
+        return {"status": "success", "history": history}
+    except Exception:
+        logger.exception("Failed to fetch diagram history")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load history."})
+
+
+@router.get("/diagram/history/{gen_id}")
+async def diagram_history_get(gen_id: str, request: Request):
+    """Fetch stored diagram content for a specific generation (used by Load action)."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await diagram_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success", "content": content}
+    except Exception:
+        logger.exception("Failed to load diagram generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load generation."})
+
+
+@router.post("/diagram/history")
+async def diagram_history_save(data: DiagramHistorySaveRequest, request: Request):
+    """Save a new generation to the user's history after their first download."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        gen_id = await diagram_history_service.save_generation(
+            user_id, data.content, data.chatHistoryId
+        )
+        if gen_id is None:
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+        return {"status": "success", "genId": gen_id}
+    except Exception:
+        logger.exception("Failed to save diagram generation")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save generation."})
+
+
+@router.put("/diagram/history/{gen_id}")
+async def diagram_history_update(gen_id: str, data: DiagramHistoryUpdateRequest, request: Request):
+    """Update an existing generation's content after a refinement + re-download."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await diagram_history_service.update_generation(user_id, gen_id, data.content)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found or storage unavailable."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to update diagram generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not update generation."})
+
+
+@router.delete("/diagram/history/{gen_id}")
+async def diagram_history_delete(gen_id: str, request: Request):
+    """Delete a generation from the user's history."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await diagram_history_service.delete_generation(user_id, gen_id)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to delete diagram generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
+
+
+class DiagramHistoryDownloadRequest(BaseModel):
+    username: str = Field(default="Unknown User", max_length=200)
+
+
+@router.post("/diagram/history/{gen_id}/download")
+async def diagram_history_download(gen_id: str, data: DiagramHistoryDownloadRequest, request: Request):
+    """Re-generate and stream a .drawio from a stored generation."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await diagram_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+
+        drawio_content = build_drawio_download(content.get("diagrams", []))
+        title = content.get("title", "Diagrams").replace(" ", "_")
+        safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Diagrams"
+
+        return Response(
+            content=drawio_content,
+            media_type="application/xml",
+            headers={"Content-Disposition": f'attachment; filename="{safe}.drawio"'},
+        )
+    except Exception:
+        logger.exception("Failed to download diagram history gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not download generation."})
+
+
+# ── BPMN History API ──────────────────────────────────────────
+
+class BpmnHistorySaveRequest(BaseModel):
+    content: dict
+
+
+class BpmnHistoryUpdateRequest(BaseModel):
+    content: dict
+
+
+@router.get("/bpmn/history")
+async def bpmn_history_list(request: Request):
+    """Return the current user's BPMN generation history (newest first)."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        history = await bpmn_history_service.get_history(user_id)
+        return {"status": "success", "history": history}
+    except Exception:
+        logger.exception("Failed to fetch BPMN history")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load history."})
+
+
+@router.get("/bpmn/history/{gen_id}")
+async def bpmn_history_get(gen_id: str, request: Request):
+    """Fetch stored BPMN content for a specific generation."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await bpmn_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success", "content": content}
+    except Exception:
+        logger.exception("Failed to load BPMN generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load generation."})
+
+
+@router.post("/bpmn/history")
+async def bpmn_history_save(data: BpmnHistorySaveRequest, request: Request):
+    """Save a new BPMN generation to the user's history."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        gen_id = await bpmn_history_service.save_generation(user_id, data.content)
+        if gen_id is None:
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+        return {"status": "success", "genId": gen_id}
+    except Exception:
+        logger.exception("Failed to save BPMN generation")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save generation."})
+
+
+@router.put("/bpmn/history/{gen_id}")
+async def bpmn_history_update(gen_id: str, data: BpmnHistoryUpdateRequest, request: Request):
+    """Update an existing BPMN generation's content after a refinement."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await bpmn_history_service.update_generation(user_id, gen_id, data.content)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found or storage unavailable."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to update BPMN generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not update generation."})
+
+
+@router.delete("/bpmn/history/{gen_id}")
+async def bpmn_history_delete(gen_id: str, request: Request):
+    """Delete a BPMN generation from the user's history."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await bpmn_history_service.delete_generation(user_id, gen_id)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to delete BPMN generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
+
+
+@router.post("/bpmn/history/{gen_id}/download")
+async def bpmn_history_download(gen_id: str, request: Request):
+    """Stream the stored BPMN XML as a downloadable .bpmn file."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await bpmn_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+
+        xml = content.get("xml", "")
+        if not xml:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "No BPMN XML available for this generation."})
+
+        filename = content.get("filename") or "diagram.bpmn"
+        safe = "".join(c if c.isalnum() or c in "_-." else "_" for c in filename) or "diagram.bpmn"
+
+        return Response(
+            content=xml.encode("utf-8"),
+            media_type="application/xml",
+            headers={"Content-Disposition": f'attachment; filename="{safe}"'},
+        )
+    except Exception:
+        logger.exception("Failed to download BPMN history gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not download generation."})
+
+
 class PptRefineRequest(BaseModel):
     chatHistoryId: str
     message: str
@@ -1043,14 +1303,6 @@ async def ppt_download(data: PptDownloadRequest):
                 "detail": "An internal error occurred while generating the presentation.",
             },
         )
-
-
-_GEN_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
-
-
-def _validate_gen_id(gen_id: str) -> None:
-    if not _GEN_ID_RE.match(gen_id):
-        raise ValueError(f"Invalid generation id: {gen_id!r}")
 
 
 class PptHistorySaveRequest(BaseModel):

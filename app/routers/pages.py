@@ -49,7 +49,8 @@ async def home(request: Request):
 
 @router.get("/signavio-bpmn")
 async def signavio_bpmn(request: Request):
-    return _render_template(request, "signavio_bpmn.html")
+    user_info = get_current_user(request)
+    return _render_template(request, "signavio_bpmn.html", {"user_id": user_info.get("user", "Guest")})
 
 @router.get("/audit-check")
 async def audit_check(  request: Request):

@@ -1,6 +1,6 @@
 /**
  * PPT Creator – frontend controller.
- * Handles PDF upload, AI extraction, chat refinement,
+ * Handles PDF upload, AI extraction, refinement,
  * result summary, and PPTX download.
  */
 document.addEventListener('DOMContentLoaded', () => {
@@ -13,7 +13,6 @@ class PptCreatorApp {
         this.chatHistoryId = null;
         this.currentContent = null;
         this.currentGenId = null;     // set after first save; used to update on re-download
-        this.refinementCount = 0;     // increments on each refine+download cycle
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         this.MAX_IMAGES = 3;
         this.userId = (typeof window.__PPT_USER_ID__ !== 'undefined') ? window.__PPT_USER_ID__ : 'Guest';
@@ -120,7 +119,7 @@ class PptCreatorApp {
             const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
             return `
             <div class="file-item">
-                <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
+                <span class="file-icon">${isImg ? this.iconSvg('image') : this.iconSvg('file')}</span>
                 <span class="file-name">${escapeHtml(f.name)}</span>
                 <span class="file-size">${formatFileSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
@@ -128,7 +127,7 @@ class PptCreatorApp {
         `;
         }).join('') + `
             <div class="file-item total-size">
-                <span class="file-icon">📊</span>
+                <span class="file-icon">${this.iconSvg('stats')}</span>
                 <span class="file-name"><strong>Total Size</strong></span>
                 <span class="file-size"><strong>${totalSizeStr} / ${limitStr}</strong></span>
                 <span style="width: 24px;"></span>
@@ -154,9 +153,10 @@ class PptCreatorApp {
         document.getElementById('extract-btn').addEventListener('click', () => this.extractContent());
         document.getElementById('reset-btn').addEventListener('click', ()   => this.handleResetRequest());
         document.getElementById('download-btn').addEventListener('click', () => this.downloadPptx());
+        document.getElementById('refine-btn')?.addEventListener('click', () => this.jumpToRefinement());
 
-        document.getElementById('chat-send-btn').addEventListener('click', () => this.sendChatMessage());
-        document.getElementById('chat-input').addEventListener('keydown', e => {
+        document.getElementById('chat-send-btn')?.addEventListener('click', () => this.sendChatMessage());
+        document.getElementById('chat-input')?.addEventListener('keydown', e => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 this.sendChatMessage();
@@ -223,7 +223,8 @@ class PptCreatorApp {
 
             this.hideLoading();
             this.showResult();
-            document.getElementById('chat-container').style.display = 'block';
+            const chatContainer = document.getElementById('chat-container');
+            if (chatContainer) chatContainer.style.display = 'block';
             showToast('Presentation generated successfully!', 'success');
         } catch (err) {
             AppLogger.error('PPT extraction connection error:', err);
@@ -232,17 +233,33 @@ class PptCreatorApp {
         }
     }
 
-    /* ── Chat / Refine ────────────────────────────────── */
+    /* ── Refinement ───────────────────────────────────── */
+
+    jumpToRefinement() {
+        const chatContainer = document.getElementById('chat-container');
+        const chatInput = document.getElementById('chat-input');
+        if (!chatContainer || !chatInput || !this.currentContent || !this.chatHistoryId) {
+            showToast('Generate a presentation first.', 'warning');
+            return;
+        }
+        chatContainer.style.display = 'block';
+        chatContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(() => chatInput.focus(), 180);
+    }
 
     async sendChatMessage() {
         const input = document.getElementById('chat-input');
-        const msg   = input.value.trim();
-        if (!msg) return;
+        const msg   = input?.value.trim();
+        if (!input || !msg) return;
+        if (!this.currentContent || !this.chatHistoryId) {
+            showToast('Generate a presentation first.', 'warning');
+            return;
+        }
 
         this.appendChat('user', msg);
         input.value = '';
 
-        this.appendChat('assistant', '⏳ Thinking…');
+        this.appendChat('assistant', 'Processing your refinement request...');
         const thinkingEl = document.querySelector('#chat-messages .chat-msg:last-child');
 
         try {
@@ -260,9 +277,9 @@ class PptCreatorApp {
 
             if (thinkingEl) thinkingEl.remove();
 
-            if (data.error) {
-                AppLogger.error('PPT refinement failed:', data.message);
-                this.appendChat('assistant', 'Something went wrong while updating the presentation. Please try again.');
+            if (!res.ok || data.error || data.status === 'error') {
+                AppLogger.error('PPT refinement failed:', data.message || data.detail);
+                this.appendChat('assistant', 'Unable to apply refinement. Please try again.');
                 return;
             }
 
@@ -270,19 +287,21 @@ class PptCreatorApp {
                 this.currentContent = data.content;
                 this.chatHistoryId  = data.chatHistoryId || this.chatHistoryId;
                 this.showResult();
-                this.appendChat('assistant', 'Presentation updated! Check the result panel.');
+                this.appendChat('assistant', 'Refinement applied. You can review and download now.');
+                showToast('Refinement applied.', 'success');
             } else {
-                this.appendChat('assistant', data.result || 'No structured update received.');
+                this.appendChat('assistant', data.result || 'No update returned.');
             }
         } catch (err) {
             if (thinkingEl) thinkingEl.remove();
-            AppLogger.error('PPT chat error:', err);
-            this.appendChat('assistant', 'Unable to connect to the server. Please try again.');
+            AppLogger.error('PPT refinement error:', err);
+            this.appendChat('assistant', 'Connection error during refinement. Please try again.');
         }
     }
 
     appendChat(role, text) {
         const msgs = document.getElementById('chat-messages');
+        if (!msgs) return;
         const div  = document.createElement('div');
         div.className = `chat-msg chat-${role}`;
         div.textContent = text;
@@ -303,7 +322,7 @@ class PptCreatorApp {
         if (dlRow) dlRow.style.display = 'none';
 
         let html = '<div class="result-error">';
-        html += '<span class="error-icon">⚠️</span>';
+        html += `<span class="error-icon">${this.iconSvg('warning')}</span>`;
         html += `<h4 class="error-title">${escapeHtml(title)}</h4>`;
         html += `<p class="error-detail">${escapeHtml(detail)}</p>`;
         html += '<p class="error-hint">You can try uploading a different PDF or add more specific instructions.</p>';
@@ -367,11 +386,10 @@ class PptCreatorApp {
         html += '<h5>Slide Breakdown</h5>';
         slides.forEach((s, i) => {
             const layout = (s.layout || 'content').replace(/_/g, ' ');
-            const icon   = this.getLayoutIcon(s.layout);
             html += '<div class="result-slide-row">';
             html += `<span class="slide-num">${i + 1}</span>`;
             html += `<span class="slide-info">${escapeHtml(s.title || '(No title)')}</span>`;
-            html += `<span class="slide-layout-tag">${icon} ${layout}</span>`;
+            html += `<span class="slide-layout-tag">${layout}</span>`;
             html += '</div>';
         });
         html += '</div>';
@@ -395,24 +413,6 @@ class PptCreatorApp {
         });
     }
 
-    getLayoutIcon(layout) {
-        const icons = {
-            title_slide:        '🎯',
-            chapter:            '📖',
-            content:            '📝',
-            smart_art:          '✨',
-            content_with_image: '🖼️',
-            image_with_content: '🖼️',
-            two_columns:        '▪▪',
-            three_columns:      '▪▪▪',
-            four_quadrants:     '⊞',
-            full_image:         '🌄',
-            title_only:         '🏷️',
-            end_slide:          '🏁',
-        };
-        return icons[layout] || '📄';
-    }
-
     /* ── Download ─────────────────────────────────────── */
 
     async downloadPptx() {
@@ -421,7 +421,7 @@ class PptCreatorApp {
         const btn = document.getElementById('download-btn');
         const originalHTML = btn.innerHTML;
         btn.classList.add('downloading');
-        btn.innerHTML = '<span class="btn-icon">⏳</span> Preparing…';
+        btn.innerHTML = `<span class="btn-icon">${this.iconSvg('loader')}</span> Preparing...`;
 
         const userName = document.getElementById('user-name').value.trim() || 'Unknown User';
 
@@ -455,7 +455,7 @@ class PptCreatorApp {
             a.remove();
             URL.revokeObjectURL(url);
 
-            btn.innerHTML = '<span class="btn-icon">✅</span> Downloaded!';
+            btn.innerHTML = `<span class="btn-icon">${this.iconSvg('check')}</span> Downloaded`;
             setTimeout(() => {
                 btn.innerHTML = originalHTML;
                 btn.classList.remove('downloading');
@@ -495,7 +495,7 @@ class PptCreatorApp {
                 'Are you sure you want to reset uploaded files and generated content? This cannot be undone.',
                 () => this.resetAll(),
                 {
-                    icon: '⚠️',
+                    icon: '!',
                     confirmText: 'Clear Data',
                     cancelText: 'Cancel'
                 }
@@ -512,16 +512,16 @@ class PptCreatorApp {
         this.chatHistoryId  = null;
         this.currentContent = null;
         this.currentGenId   = null;
-        this.refinementCount = 0;
-
         this.renderFilesList();
         this.updateExtractBtn();
         document.getElementById('user-name').value                  = '';
         document.getElementById('user-instructions').value          = '';
         const orangeToggle = document.getElementById('orange-theme-toggle');
         if (orangeToggle) orangeToggle.checked = false;
-        document.getElementById('chat-container').style.display     = 'none'
-        document.getElementById('chat-messages').innerHTML          = '';
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) chatContainer.style.display = 'none';
+        const chatMessages = document.getElementById('chat-messages');
+        if (chatMessages) chatMessages.innerHTML = '';
         const rp = document.getElementById('result-panel');
         if (rp) rp.style.display = 'none';
         document.getElementById('empty-state').style.display        = 'flex';
@@ -537,6 +537,19 @@ class PptCreatorApp {
             if (progress < 1) requestAnimationFrame(step);
         };
         requestAnimationFrame(step);
+    }
+
+    iconSvg(name) {
+        if (HistoryIcons[name] !== undefined) return HistoryIcons[name];
+        const icons = {
+            file: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></svg>',
+            image: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 15-4-4-5 5-2-2-4 4"/></svg>',
+            stats: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg>',
+            warning: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg>',
+            loader: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9"/></svg>',
+            check: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m20 6-11 11-5-5"/></svg>',
+        };
+        return icons[name] || '';
     }
 
 
@@ -580,7 +593,7 @@ PptCreatorApp.prototype._persistToHistory = async function () {
                 this.currentGenId = d.genId || null;
             }
         } else {
-            // Subsequent download after refinements — update existing entry
+            // Subsequent downloads update the existing history entry
             await fetch(`/api/ppt/history/${this.currentGenId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -640,32 +653,31 @@ PptCreatorApp.prototype.loadHistory = async function () {
 PptCreatorApp.prototype._renderCard = function (entry) {
     const date      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
     const time      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    const refined   = entry.refinements > 0 ? `<span class="gen-badge gen-badge-refined">${entry.refinements} refinement${entry.refinements > 1 ? 's' : ''}</span>` : '';
-    const orange    = entry.forceOrangeTheme ? `<span class="gen-badge gen-badge-orange">🎨 Orange</span>` : '';
+    const orange    = entry.forceOrangeTheme ? `<span class="gen-badge gen-badge-orange">Orange Theme</span>` : '';
     const subtitle  = entry.subtitle ? `<p class="gen-card-subtitle">${escapeHtml(entry.subtitle)}</p>` : '';
     return `
     <div class="gen-card" data-gen-id="${escapeHtml(entry.id)}">
+        <button class="btn btn-ghost btn-sm btn-danger gen-card-delete" data-action="delete" data-id="${escapeHtml(entry.id)}" aria-label="Delete generation" title="Delete">
+            ${this.iconSvg('delete')}
+        </button>
         <div class="gen-card-body">
             <div class="gen-card-title-row">
                 <span class="gen-card-title">${escapeHtml(entry.title || 'Untitled')}</span>
-                <div class="gen-card-badges">${refined}${orange}</div>
+                <div class="gen-card-badges">${orange}</div>
             </div>
             ${subtitle}
             <div class="gen-card-meta">
-                <span class="gen-meta-item">📊 ${entry.slideCount || 0} slides</span>
-                ${entry.smartArtCount ? `<span class="gen-meta-item">✨ ${entry.smartArtCount} SmartArt</span>` : ''}
-                <span class="gen-meta-item">🕐 ${date} ${time}</span>
+                <span class="gen-meta-item">Slides: ${entry.slideCount || 0}</span>
+                ${entry.smartArtCount ? `<span class="gen-meta-item">SmartArt: ${entry.smartArtCount}</span>` : ''}
+                <span class="gen-meta-item">Updated: ${date} ${time}</span>
             </div>
         </div>
         <div class="gen-card-actions">
             <button class="btn btn-secondary btn-sm" data-action="load" data-id="${escapeHtml(entry.id)}" data-chat-history-id="${escapeHtml(entry.chatHistoryId || '')}">
-                📂 Load &amp; Edit
+                ${this.iconSvg('open')} Load
             </button>
             <button class="btn btn-primary btn-sm" data-action="download" data-id="${escapeHtml(entry.id)}" data-title="${escapeHtml(entry.title || 'Presentation')}">
-                ⬇️ Download
-            </button>
-            <button class="btn btn-ghost btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(entry.id)}">
-                🗑️
+                ${this.iconSvg('download')} Download
             </button>
         </div>
     </div>`;
@@ -684,12 +696,12 @@ PptCreatorApp.prototype.loadGeneration = async function (genId, chatHistoryId) {
         this.currentContent  = data.content;
         this.chatHistoryId   = chatHistoryId || null;
         this.currentGenId    = genId;
-        this.refinementCount = 0;
 
         this.switchTab('generate');
         this.showResult();
-        document.getElementById('chat-container').style.display = 'block';
-        showToast('Generation loaded — you can continue refining it.', 'success');
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) chatContainer.style.display = 'block';
+        showToast('Generation loaded.', 'success');
     } catch (err) {
         AppLogger.error('Load generation error:', err);
         showToast('Failed to load generation.', 'error');
@@ -711,14 +723,8 @@ PptCreatorApp.prototype.downloadFromHistory = async function (genId, title) {
             return;
         }
         const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        a.download = (title || 'Presentation').replace(/[^a-zA-Z0-9 _-]/g, '') + '.pptx';
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        const filename = (title || 'Presentation').replace(/[^a-zA-Z0-9 _-]/g, '') + '.pptx';
+        Utils.triggerBlobDownload(blob, filename);
         showToast('Download started!', 'success');
     } catch (err) {
         AppLogger.error('History download error:', err);
@@ -734,7 +740,7 @@ PptCreatorApp.prototype.deleteGeneration = function (genId, cardEl) {
             'Delete Generation?',
             'This will permanently remove this presentation from your history.',
             () => this._doDelete(genId, cardEl),
-            { icon: '🗑️', confirmText: 'Delete', cancelText: 'Cancel' }
+            { icon: '!', confirmText: 'Delete', cancelText: 'Cancel' }
         );
     } else {
         this._doDelete(genId, cardEl);

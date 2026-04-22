@@ -1802,6 +1802,77 @@ body.dark-mode .bpmn-viewer-canvas {
     }
 }
 
+/* ── Final UI Consistency Overrides (Mode Tabs) ─────────── */
+.builder-actions .mode-tabs {
+    display: flex;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: var(--card, #ffffff);
+    padding: 2px;
+    gap: 0;
+}
+
+.mode-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: none;
+    background: transparent;
+    color: var(--text-muted, #94a3b8);
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.mode-tab:hover {
+    color: var(--text-secondary, #64748b);
+    background: rgba(255, 104, 64, 0.06);
+}
+
+.mode-tab.active {
+    color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.12);
+}
+
+.mode-tab .tab-icon,
+.analysis-title .analysis-title-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mode-tab .tab-icon svg,
+.analysis-title .analysis-title-icon svg {
+    display: block;
+}
+
+.analysis-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+body.dark-mode .builder-actions .mode-tabs {
+    background: var(--card-dark, #1e293b);
+    border-color: var(--border, #334155);
+}
+
+body.dark-mode .mode-tab {
+    color: var(--text-muted-dark, #64748b);
+}
+
+body.dark-mode .mode-tab:hover {
+    color: var(--text-secondary-dark, #cbd5e1);
+    background: rgba(255, 104, 64, 0.15);
+}
+
+body.dark-mode .mode-tab.active {
+    color: var(--brand-orange, #FF6840);
+    background: rgba(255, 104, 64, 0.2);
+}
+
 /* Micro-interactions */
 .review-summary {
     animation: reviewSummaryIn 0.35s ease both;
@@ -1843,3 +1914,50 @@ body.dark-mode .bpmn-viewer-canvas {
     from { opacity: 0; transform: translateY(8px); }
     to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ── BPMN Top-level Tab Navigation ──────────────────────────────── */
+.bpmn-tab-nav {
+    display: flex;
+    border-bottom: 1px solid var(--border, #e2e8f0);
+    background: var(--card, #ffffff);
+    gap: 0;
+    padding: 0 2rem;
+}
+.bpmn-tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.95rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted, #94a3b8);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+.bpmn-tab-btn svg { display: block; width: 16px; height: 16px; flex-shrink: 0; }
+.bpmn-tab-btn:hover { color: var(--text-secondary, #64748b); }
+.bpmn-tab-btn.active {
+    color: var(--brand-orange, #FF6840);
+    border-bottom-color: var(--brand-orange, #FF6840);
+}
+
+.bpmn-tab-panel { display: block; }
+
+/* Hide mode-tabs when on history tab */
+.bpmn-tab-nav ~ * #bpmnModeTabs { display: flex; }
+
+.bpmn-history-wrapper {
+    padding: 1.5rem 2rem;
+}
+
+/* Dark mode */
+body.dark-mode .bpmn-tab-nav {
+    background: var(--card-dark, #1e293b);
+    border-bottom-color: var(--border-dark, #334155);
+}
+body.dark-mode .bpmn-tab-btn { color: var(--text-muted-dark, #64748b); }
+body.dark-mode .bpmn-tab-btn:hover { color: var(--text-secondary-dark, #cbd5e1); }
+body.dark-mode .bpmn-tab-btn.active { color: var(--brand-orange, #FF6840); border-bottom-color: var(--brand-orange, #FF6840); }

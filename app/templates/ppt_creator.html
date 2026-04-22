@@ -20,26 +20,37 @@
 <script>window.__PPT_USER_ID__ = {{ user_id | tojson }};</script>
 
 <div class="container ppt-container">
+    <div class="ppt-builder">
+        <div class="builder-head">
+            <div>
+                <p class="eyebrow">PowerPoint Tools</p>
+                <h2 class="builder-title">Create Presentation from Files</h2>
+            </div>
+        </div>
 
     <div class="ppt-tab-nav">
         <button class="ppt-tab-btn active" id="tab-generate-btn" data-tab="generate">
-            <span class="tab-icon">✨</span> Generate
+            <span class="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 12h16" />
+                    <path d="M12 4v16" />
+                </svg>
+            </span>
+            Generate
         </button>
         <button class="ppt-tab-btn" id="tab-history-btn" data-tab="history">
-            <span class="tab-icon">🕐</span> My History
+            <span class="tab-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                </svg>
+            </span>
+            My History
         </button>
     </div>
 
     <!-- Generate Tab -->
     <div class="ppt-tab-panel" id="tab-generate">
-        <div class="ppt-builder">
-            <div class="builder-head">
-                <div>
-                    <p class="eyebrow">PowerPoint Tools</p>
-                    <h2 class="builder-title">Create Presentation from Files</h2>
-                </div>
-            </div>
-
             <div class="ppt-content">
                 <div class="builder-left">
                     <div class="form-container">
@@ -50,7 +61,12 @@
                             <h4>Upload Files</h4>
                             <div class="upload-area" id="upload-area">
                                 <div class="upload-placeholder">
-                                    <span class="upload-icon">📄</span>
+                                    <span class="upload-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+                                            <path d="M14 2v5h5" />
+                                        </svg>
+                                    </span>
                                     <p>Drag &amp; drop files here or click to select</p>
                                     <p class="upload-hint">Supports .pdf, .png, .jpg, .jpeg (max 10 MB total)</p>
                                 </div>
@@ -63,7 +79,7 @@
                             <div class="files-list" id="files-list"></div>
                             <div class="form-group">
                                 <button class="btn btn-secondary btn-sm" id="add-more-btn">
-                                    <span>➕</span> Add More Files
+                                    Add More Files
                                 </button>
                             </div>
                         </div>
@@ -81,7 +97,15 @@
                                 <input type="checkbox" id="orange-theme-toggle" class="theme-toggle-input">
                                 <label class="theme-tag" for="orange-theme-toggle">
                                     <span class="tag-body">
-                                        <span class="tag-icon">🎨</span> Use Orange Theme <span class="tag-badge">SmartArt</span>
+                                        <span class="tag-icon" aria-hidden="true">
+                                            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="9" />
+                                                <circle cx="8.5" cy="10" r="1" />
+                                                <circle cx="12" cy="7.5" r="1" />
+                                                <circle cx="15.5" cy="10" r="1" />
+                                            </svg>
+                                        </span>
+                                        Use Orange Theme <span class="tag-badge">SmartArt</span>
                                     </span>
                                 </label>
                                 <div class="theme-tag-hint">
@@ -91,7 +115,13 @@
                         </div>
 
                         <div class="warning-notice">
-                            <span class="warning-icon">⚠️</span>
+                            <span class="warning-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+                                    <path d="M12 9v5" />
+                                    <path d="M12 17h.01" />
+                                </svg>
+                            </span>
                             <div class="warning-content">
                                 <strong>PDFs:</strong> Only text is extracted — embedded images/charts are skipped. Use text-based PDFs for best results.<br>
                                 <strong>Images (PNG/JPG):</strong> The AI reads the image directly using vision capabilities.
@@ -107,14 +137,15 @@
                     </div>
 
                     <div class="chat-container" id="chat-container" style="display:none">
-                        <h3>Refine Content</h3>
-                        <p>Ask AI to modify the slides, add content, or restructure.</p>
+                        <h3>Refinement</h3>
+                        <p>Adjust the generated slides using AI instructions.</p>
                         <div class="chat-messages" id="chat-messages"></div>
                         <div class="chat-input-row">
-                            <textarea id="chat-input" rows="2" placeholder="E.g. Add a summary slide at the end..."></textarea>
+                            <textarea id="chat-input" rows="2" placeholder="Describe what to change in the generated slides..."></textarea>
                             <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
                         </div>
                     </div>
+
                 </div>
 
                 <div class="builder-right">
@@ -124,8 +155,15 @@
                         <div class="result-panel" id="result-panel" style="display:none">
                             <div class="result-info" id="result-info"></div>
                             <div class="form-actions result-actions">
+                                <button class="btn btn-secondary" id="refine-btn">Refine</button>
                                 <button class="btn btn-primary" id="download-btn">
-                                    <span class="btn-icon">⬇️</span>
+                                    <span class="btn-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M12 3v12" />
+                                            <path d="m7 10 5 5 5-5" />
+                                            <path d="M4 21h16" />
+                                        </svg>
+                                    </span>
                                     Download .pptx
                                 </button>
                             </div>
@@ -134,7 +172,14 @@
                         <div class="empty-state" id="empty-state">
                             <div class="guide-panel">
                                 <div class="guide-header">
-                                    <span class="guide-header-icon">📋</span>
+                                    <span class="guide-header-icon" aria-hidden="true">
+                                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="8" y="2" width="8" height="4" rx="1" />
+                                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                                            <path d="M9 12h6" />
+                                            <path d="M9 16h6" />
+                                        </svg>
+                                    </span>
                                     <div>
                                         <p class="eyebrow">Quick Start</p>
                                         <h4>How to Use</h4>
@@ -173,14 +218,14 @@
                                     <li class="guide-step">
                                         <span class="step-badge">5</span>
                                         <div class="step-body">
-                                            <strong>Refine with chat</strong>
-                                            <span>Use the <b>Refine Content</b> panel to ask AI to adjust any slides.</span>
+                                            <strong>Reuse from history</strong>
+                                            <span>Open <b>My History</b> and load or re-download a saved generation anytime.</span>
                                         </div>
                                     </li>
                                 </ol>
 
                                 <div class="guide-tips">
-                                    <p class="guide-tips-title">💡 Tips</p>
+                                    <p class="guide-tips-title">Tips</p>
                                     <ul>
                                         <li>Text-based PDFs produce the best results.</li>
                                         <li>Images are read directly by vision AI.</li>
@@ -204,9 +249,9 @@
                 <div>
                     <p class="eyebrow">Saved Presentations</p>
                     <h2 class="builder-title">My Generation History</h2>
-                    <p class="history-subtitle">All your downloads are saved here. Load any previous generation to continue refining it.</p>
+                    <p class="history-subtitle">All your downloads are saved here. Load any previous generation or re-download it anytime.</p>
                 </div>
-                <button class="btn btn-ghost-text" id="history-refresh-btn" title="Refresh">↻ Refresh</button>
+                <button class="btn btn-ghost-text" id="history-refresh-btn" title="Refresh">Refresh</button>
             </div>
 
             <div id="history-loading" class="history-loading" style="display:none">
@@ -215,16 +260,21 @@
             </div>
 
             <div id="history-empty" class="history-empty" style="display:none">
-                <span class="history-empty-icon">📂</span>
+                <span class="history-empty-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                    </svg>
+                </span>
                 <h4>No saved generations yet</h4>
                 <p>Generate and download a presentation — it will appear here automatically.</p>
                 <button class="btn btn-primary btn-sm" id="history-go-generate-btn">
-                    ✨ Go to Generate
+                    Go to Generate
                 </button>
             </div>
 
             <div id="history-grid" class="history-grid"></div>
         </div>
+    </div>
     </div>
 
 </div>

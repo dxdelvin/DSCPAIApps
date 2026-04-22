@@ -14,6 +14,7 @@ class DiagramGeneratorApp {
         this.analysis = null;
         this.extractedText = null;
         this.diagrams = [];          // { name, type, xml }
+        this.generationId = null;    // for tracking saved generation in history
         this.activeTabIndex = 0;
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB total
         this.MAX_IMAGES = 3;
@@ -28,6 +29,7 @@ class DiagramGeneratorApp {
         this.setupEventListeners();
         this.setupGuide();
         this.setupWordCounter();
+        this.loadHistory();
     }
 
     /* ── Upload handling ──────────────────────────────── */
@@ -246,6 +248,18 @@ class DiagramGeneratorApp {
                 this.sendChatMessage();
             }
         });
+
+        // Tab navigation
+        document.querySelectorAll('.dg-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+
+        // History
+        document.getElementById('refresh-history-btn').addEventListener('click', () => this.loadHistory());
+        const historyGoGenerateBtn = document.getElementById('history-go-generate-btn');
+        if (historyGoGenerateBtn) {
+            historyGoGenerateBtn.addEventListener('click', () => this.switchTab('generate'));
+        }
     }
 
     updateAnalyzeBtn() {
@@ -388,6 +402,7 @@ class DiagramGeneratorApp {
                 ...d,
                 name: d.name || `Copied Diagram ${i + 1}`,
             }));
+            this.generationId = null;
             this.chatHistoryId = data.chatHistoryId || this.chatHistoryId;
             this.activeTabIndex = 0;
 
@@ -497,6 +512,7 @@ class DiagramGeneratorApp {
                 ...d,
                 name: this.formatDiagramName(d, i),
             }));
+            this.generationId = null;
             this.chatHistoryId = data.chatHistoryId || this.chatHistoryId;
             this.activeTabIndex = 0;
 
@@ -566,6 +582,10 @@ class DiagramGeneratorApp {
                 this.activeTabIndex = targetIdx;
                 this.showResult();
                 this.appendChat('assistant', `Diagram "${this.formatDiagramName(diagram, targetIdx)}" updated! Check the preview.`);
+                // Save refinement to history
+                if (this.generationId) {
+                    await this._updateHistory();
+                }
             } else {
                 this.appendChat('assistant', 'No structured update received.');
             }
@@ -876,6 +896,8 @@ class DiagramGeneratorApp {
             const started = this.triggerBlobDownload(blob, filename);
             if (started) {
                 showToast('Download started!', 'success');
+                // Save to history on first download
+                await this._saveToHistory();
             } else {
                 showToast('Browser blocked automatic download.', 'warning');
             }
@@ -887,24 +909,56 @@ class DiagramGeneratorApp {
         }
     }
 
+    async _saveToHistory() {
+        if (this.generationId) return; // Already saved
+        if (!this.diagrams.length) return;
+
+        try {
+            const content = {
+                title: this.analysis?.title || 'Generated Diagrams',
+                diagrams: this.diagrams,
+                analysis: this.analysis,
+            };
+
+            const response = await Utils.apiRequest('/api/diagram/history', {
+                method: 'POST',
+                body: JSON.stringify({
+                    content: content,
+                    chatHistoryId: this.chatHistoryId || '',
+                }),
+            });
+
+            if (response.status === 'success') {
+                this.generationId = response.genId;
+            }
+        } catch (error) {
+            AppLogger.error('Failed to save to history', error);
+            // Don't show error toast - the download already succeeded
+        }
+    }
+
+    async _updateHistory() {
+        if (!this.generationId) return;
+
+        try {
+            const content = {
+                title: this.analysis?.title || 'Generated Diagrams',
+                diagrams: this.diagrams,
+                analysis: this.analysis,
+            };
+
+            await Utils.apiRequest(`/api/diagram/history/${this.generationId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ content: content }),
+            });
+        } catch (error) {
+            AppLogger.error('Failed to update history', error);
+            // Silent failure - refinement already applied to UI
+        }
+    }
+
     triggerBlobDownload(blob, filename) {
-        if (!blob || blob.size === 0) return false;
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.style.display = 'none';
-        document.body.appendChild(a);
-
-        // In some browsers, async-triggered downloads can be ignored.
-        a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
-        document.body.removeChild(a);
-
-        // Delay revoke slightly so browser has time to start download.
-        setTimeout(() => URL.revokeObjectURL(url), 3000);
-
-        return true;
+        return Utils.triggerBlobDownload(blob, filename);
     }
 
     /* ── UI helpers ───────────────────────────────────── */
@@ -944,6 +998,7 @@ class DiagramGeneratorApp {
     resetAll() {
         this.files          = [];
         this.chatHistoryId  = null;
+        this.generationId   = null;
         this.analysis       = null;
         this.extractedText  = null;
         this.diagrams       = [];
@@ -982,6 +1037,186 @@ class DiagramGeneratorApp {
             copyBtn.classList.remove('copy-btn-pdf-warn');
             copyBtn.title = 'Upload an image to use Copy as Diagram';
         }
+    }
+
+    /* ── Tab Navigation ───────────────────────────────── */
+
+    switchTab(tabName) {
+        // Update tab buttons
+        document.querySelectorAll('.dg-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+
+        // Update tab panels
+        document.querySelectorAll('[data-tab-panel]').forEach(panel => {
+            panel.style.display = panel.dataset.tabPanel === tabName ? 'block' : 'none';
+        });
+
+        if (tabName === 'history') {
+            this.loadHistory();
+        }
+    }
+
+    /* ── History Management ───────────────────────────── */
+
+    async loadHistory() {
+        const grid = document.getElementById('history-grid');
+        const empty = document.getElementById('history-empty');
+        const loading = document.getElementById('history-loading');
+
+        if (grid) grid.innerHTML = '';
+        if (empty) empty.style.display = 'none';
+        if (loading) loading.style.display = 'flex';
+
+        try {
+            const response = await Utils.apiRequest('/api/diagram/history', { method: 'GET' });
+            if (loading) loading.style.display = 'none';
+            if (response.status === 'success') {
+                this.renderHistoryGrid(response.history || []);
+            }
+        } catch (error) {
+            if (loading) loading.style.display = 'none';
+            AppLogger.error('Failed to load diagram history', error);
+            if (grid) {
+                grid.innerHTML = '<p class="history-error">Connection error loading history.</p>';
+            }
+            showToast('Failed to load history', 'error');
+        }
+    }
+
+    renderHistoryGrid(historyEntries) {
+        const grid = document.getElementById('history-grid');
+        const empty = document.getElementById('history-empty');
+
+        if (!historyEntries || historyEntries.length === 0) {
+            if (grid) grid.innerHTML = '';
+            if (empty) empty.style.display = 'flex';
+            return;
+        }
+
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.innerHTML = '';
+
+        historyEntries.forEach(entry => {
+            const card = this._createHistoryCard(entry);
+            if (grid) grid.appendChild(card);
+        });
+    }
+
+    _createHistoryCard(entry) {
+        const card = document.createElement('div');
+        card.className = 'gen-card';
+
+        const title = escapeHtml(entry.title || 'Untitled');
+        const typeCount = Array.isArray(entry.diagramTypes) ? entry.diagramTypes.length : 0;
+        const typesBadge = typeCount ? `${typeCount} type${typeCount > 1 ? 's' : ''}` : '';
+        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+        const time = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        const typesMeta = Array.isArray(entry.diagramTypes) && entry.diagramTypes.length
+            ? entry.diagramTypes.slice(0, 3).map(t => this.formatTypeLabel(t)).join(', ')
+            : 'General';
+
+        card.innerHTML = `
+            <button class="btn btn-ghost btn-sm btn-danger gen-card-delete" aria-label="Delete generation" title="Delete">
+                ${this.iconSvg('delete')}
+            </button>
+            <div class="gen-card-body">
+                <div class="gen-card-title-row">
+                    <span class="gen-card-title">${title}</span>
+                    <div class="gen-card-badges">
+                        ${typesBadge ? `<span class="gen-badge gen-badge-orange">${escapeHtml(typesBadge)}</span>` : ''}
+                    </div>
+                </div>
+                <div class="gen-card-meta">
+                    <span class="gen-meta-item">Diagrams: ${entry.diagramCount || 0}</span>
+                    <span class="gen-meta-item">Types: ${escapeHtml(typesMeta)}</span>
+                    <span class="gen-meta-item">Updated: ${date} ${time}</span>
+                </div>
+            </div>
+            <div class="gen-card-actions">
+                <button class="btn btn-secondary btn-sm dg-card-load" title="Load and continue editing">
+                    ${this.iconSvg('open')} Load
+                </button>
+                <button class="btn btn-primary btn-sm dg-card-download" title="Download as .drawio">
+                    ${this.iconSvg('download')} Download
+                </button>
+            </div>
+        `;
+
+        // Event listeners
+        card.querySelector('.gen-card-delete').addEventListener('click', () => this._deleteGeneration(entry.id));
+        card.querySelector('.dg-card-load').addEventListener('click', () => this._loadGeneration(entry.id));
+        card.querySelector('.dg-card-download').addEventListener('click', () => this._downloadGeneration(entry.id));
+
+        return card;
+    }
+
+    async _loadGeneration(genId) {
+        try {
+            const response = await Utils.apiRequest(`/api/diagram/history/${genId}`, { method: 'GET' });
+            if (response.status === 'success') {
+                this.diagrams = response.content.diagrams || [];
+                this.chatHistoryId = response.content.chatHistoryId || null;
+                this.analysis = response.content.analysis || null;
+                this.generationId = genId;
+
+                // Switch to generate tab
+                this.switchTab('generate');
+
+                // Show result
+                this.showResult(response.content);
+
+                // Show chat container for refinement
+                const chatContainer = document.getElementById('chat-container');
+                if (chatContainer) chatContainer.style.display = 'block';
+
+                showToast('Diagram loaded! You can refine it below.', 'success');
+            }
+        } catch (error) {
+            AppLogger.error('Failed to load generation', error);
+            showToast('Failed to load diagram generation', 'error');
+        }
+    }
+
+    async _downloadGeneration(genId) {
+        try {
+            const res = await fetch(`/api/diagram/history/${genId}/download`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'User' }),
+            });
+
+            if (!res.ok) {
+                showToast('Download failed', 'error');
+                return;
+            }
+
+            const blob = await res.blob();
+            this.triggerBlobDownload(blob, `diagrams_${genId.slice(0, 8)}.drawio`);
+            showToast('Downloaded successfully', 'success');
+        } catch (error) {
+            AppLogger.error('Failed to download generation', error);
+            showToast('Failed to download diagram', 'error');
+        }
+    }
+
+    async _deleteGeneration(genId) {
+        if (!confirm('Are you sure you want to delete this diagram generation?')) return;
+
+        try {
+            const response = await Utils.apiRequest(`/api/diagram/history/${genId}`, { method: 'DELETE' });
+            if (response.status === 'success') {
+                showToast('Diagram deleted', 'success');
+                this.loadHistory();
+            }
+        } catch (error) {
+            AppLogger.error('Failed to delete generation', error);
+            showToast('Failed to delete diagram', 'error');
+        }
+    }
+
+    iconSvg(kind) {
+        return HistoryIcons[kind] || '';
     }
 
 
