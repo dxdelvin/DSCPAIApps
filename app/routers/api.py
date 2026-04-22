@@ -379,8 +379,8 @@ async def audit_doc_check(file: UploadFile = File(...)):
 
 @router.post("/audit-chat")
 async def audit_chat(
-    chatHistoryId: str = Form(...),
-    message: str = Form(...),
+    chatHistoryId: str = Form(..., max_length=200),
+    message: str = Form(..., max_length=5000),
     file: Optional[UploadFile] = File(None)
 ):
     """Continue audit conversation with optional file attachment."""
@@ -412,7 +412,26 @@ async def bpmn_diagram_check(
     context: Optional[str] = Form(None)
 ):
     """Analyze a BPMN diagram (PDF or image) for errors, best practices, and logical flow."""
-    # Use the BPMN checker service
+    _BPMN_EXTS = (".png", ".jpg", ".jpeg", ".pdf")
+    if not (file.filename or "").lower().endswith(_BPMN_EXTS):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid file type", "detail": "Please upload a PNG, JPG, or PDF file."},
+        )
+
+    contents = await file.read()
+    if len(contents) > MAX_UPLOAD_SIZE:
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "File too large", "detail": "Maximum file size is 10 MB."},
+        )
+    if not _validate_magic(contents, file.filename or ""):
+        return JSONResponse(
+            status_code=400,
+            content={"status": "error", "message": "Invalid file", "detail": "File content does not match its declared type."},
+        )
+    await file.seek(0)
+
     result = await check_bpmn_diagram(file, context)
     
     if result.get("error"):
@@ -437,31 +456,31 @@ async def bpmn_diagram_check(
 # ============== Functional Specification Export ==============
 
 class FSExportRequest(BaseModel):
-    title: str = ""
-    date: str = ""
-    version: str = ""
-    author: str = ""
+    title: str = Field(default="", max_length=200)
+    date: str = Field(default="", max_length=50)
+    version: str = Field(default="", max_length=50)
+    author: str = Field(default="", max_length=200)
     responsibilities: dict = {}
-    projectGoal: str = ""
-    solutionDesc: str = ""
-    improvementPotential: str = ""
-    delimitation: str = ""
+    projectGoal: str = Field(default="", max_length=10000)
+    solutionDesc: str = Field(default="", max_length=10000)
+    improvementPotential: str = Field(default="", max_length=10000)
+    delimitation: str = Field(default="", max_length=10000)
     previousSteps: list = []
-    report: str = ""
-    transaction: str = ""
-    sourceSystem: str = ""
-    functionality: str = ""
-    userView: str = ""
-    languageTopics: str = ""
-    dataStructures: str = ""
-    dataMaintenance: str = ""
-    interfaces: str = ""
-    authorization: str = ""
-    infoSecurity: str = ""
-    architecture: str = ""
-    risks: str = ""
-    openIssues: str = ""
-    migration: str = ""
+    report: str = Field(default="", max_length=200)
+    transaction: str = Field(default="", max_length=200)
+    sourceSystem: str = Field(default="", max_length=200)
+    functionality: str = Field(default="", max_length=10000)
+    userView: str = Field(default="", max_length=10000)
+    languageTopics: str = Field(default="", max_length=10000)
+    dataStructures: str = Field(default="", max_length=10000)
+    dataMaintenance: str = Field(default="", max_length=10000)
+    interfaces: str = Field(default="", max_length=10000)
+    authorization: str = Field(default="", max_length=10000)
+    infoSecurity: str = Field(default="", max_length=10000)
+    architecture: str = Field(default="", max_length=10000)
+    risks: str = Field(default="", max_length=10000)
+    openIssues: str = Field(default="", max_length=10000)
+    migration: str = Field(default="", max_length=10000)
     glossary: list = []
     docHistory: list = []
 
@@ -495,15 +514,15 @@ async def export_functional_spec(data: FSExportRequest):
 # ============== Business Requirement Export ==============
 
 class BRExportRequest(BaseModel):
-    title: str = ""
-    project: str = ""
-    productOwner: str = ""
-    itProduct: str = ""
-    targetDate: str = ""
-    requestor: str = ""
-    requestorCompany: str = ""
-    createDate: str = ""
-    createdBy: str = ""
+    title: str = Field(default="", max_length=200)
+    project: str = Field(default="", max_length=200)
+    productOwner: str = Field(default="", max_length=200)
+    itProduct: str = Field(default="", max_length=200)
+    targetDate: str = Field(default="", max_length=50)
+    requestor: str = Field(default="", max_length=200)
+    requestorCompany: str = Field(default="", max_length=200)
+    createDate: str = Field(default="", max_length=50)
+    createdBy: str = Field(default="", max_length=200)
     responsibles: dict = {}
     description: dict = {}
     benefits: dict = {}
@@ -542,39 +561,39 @@ async def export_business_requirement(data: BRExportRequest):
 # ============== FS Template (Variant) Export ==============
 
 class FSVariantExportRequest(BaseModel):
-    description: str = ""
-    writtenBy: str = ""
-    date: str = ""
-    updatedBy: str = ""
-    version: str = ""
+    description: str = Field(default="", max_length=200)
+    writtenBy: str = Field(default="", max_length=200)
+    date: str = Field(default="", max_length=50)
+    updatedBy: str = Field(default="", max_length=200)
+    version: str = Field(default="", max_length=50)
     revisionHistory: list = []
-    purpose: str = ""
-    type: str = ""
-    latency: str = ""
-    frequency: str = ""
-    system: str = ""
-    impactedSystem: str = ""
-    processingLogic: str = ""
-    prerequisites: str = ""
+    purpose: str = Field(default="", max_length=10000)
+    type: str = Field(default="", max_length=200)
+    latency: str = Field(default="", max_length=200)
+    frequency: str = Field(default="", max_length=200)
+    system: str = Field(default="", max_length=200)
+    impactedSystem: str = Field(default="", max_length=200)
+    processingLogic: str = Field(default="", max_length=10000)
+    prerequisites: str = Field(default="", max_length=5000)
     selectionScreen: list = []
     reportCharacteristics: dict = {}
-    reportDelivery: str = ""
-    reportLayout: str = ""
-    reportAttributes: str = ""
-    customTransitions: str = ""
-    printerRequirements: str = ""
-    exclusions: str = ""
-    outputFileLocation: str = ""
-    outputFileRemarks: str = ""
-    exceptionHandling: str = ""
-    constraints: str = ""
-    dependencies: str = ""
-    scheduling: str = ""
-    roleAuthorization: str = ""
+    reportDelivery: str = Field(default="", max_length=5000)
+    reportLayout: str = Field(default="", max_length=5000)
+    reportAttributes: str = Field(default="", max_length=5000)
+    customTransitions: str = Field(default="", max_length=5000)
+    printerRequirements: str = Field(default="", max_length=2000)
+    exclusions: str = Field(default="", max_length=5000)
+    outputFileLocation: str = Field(default="", max_length=500)
+    outputFileRemarks: str = Field(default="", max_length=2000)
+    exceptionHandling: str = Field(default="", max_length=5000)
+    constraints: str = Field(default="", max_length=5000)
+    dependencies: str = Field(default="", max_length=5000)
+    scheduling: str = Field(default="", max_length=2000)
+    roleAuthorization: str = Field(default="", max_length=5000)
     testScenarios: list = []
-    testData: str = ""
-    testSystem: str = ""
-    testClient: str = ""
+    testData: str = Field(default="", max_length=5000)
+    testSystem: str = Field(default="", max_length=200)
+    testClient: str = Field(default="", max_length=200)
     changeHistory: list = []
 
 
@@ -762,9 +781,9 @@ async def diagram_analyze(
 
 
 class DiagramGenerateRequest(BaseModel):
-    chatHistoryId: str
+    chatHistoryId: str = Field(max_length=200)
     analysis: dict
-    extractedText: str
+    extractedText: str = Field(max_length=50000)
     selectedIndices: Optional[List[int]] = None
 
 
@@ -796,10 +815,10 @@ async def diagram_generate(data: DiagramGenerateRequest):
 
 
 class DiagramRefineRequest(BaseModel):
-    chatHistoryId: str
-    message: str
-    currentXml: str = ""
-    diagramName: str = ""
+    chatHistoryId: str = Field(max_length=200)
+    message: str = Field(max_length=5000)
+    currentXml: str = Field(default="", max_length=50000)
+    diagramName: str = Field(default="", max_length=200)
 
 
 @router.post("/diagram/refine")
@@ -1225,8 +1244,8 @@ async def bpmn_history_download(gen_id: str, request: Request):
 
 
 class PptRefineRequest(BaseModel):
-    chatHistoryId: str
-    message: str
+    chatHistoryId: str = Field(max_length=200)
+    message: str = Field(max_length=5000)
     currentContent: Optional[dict] = None
     forceOrangeTheme: bool = False
 
@@ -1436,15 +1455,15 @@ async def ppt_history_download(gen_id: str, data: PptHistoryDownloadRequest, req
 
 
 class ConfluenceDraftPayload(BaseModel):
-    storageXml: str = ""
+    storageXml: str = Field(default="", max_length=50000)
     attachmentReferences: list[dict[str, Any]] = Field(default_factory=list)
     displayImages: list[dict[str, Any]] = Field(default_factory=list)
     warnings: list[str] = Field(default_factory=list)
 
 
 class ConfluenceRefineRequest(BaseModel):
-    chatHistoryId: str = ""
-    instruction: str = ""
+    chatHistoryId: str = Field(default="", max_length=200)
+    instruction: str = Field(default="", max_length=5000)
     draft: ConfluenceDraftPayload
 
 
@@ -1687,6 +1706,11 @@ async def one_pager_extract(
         )
 
     safe_orientation = orientation if orientation in ("portrait", "landscape") else "portrait"
+    _ALLOWED_STYLES = {
+        "executive_summary", "project_brief", "status_update",
+        "technical_overview", "business_case",
+    }
+    safe_style = templateStyle if templateStyle in _ALLOWED_STYLES else "executive_summary"
 
     result = await extract_one_pager_content(
         pdf_bytes_list=pdf_bytes_list,
@@ -1694,7 +1718,7 @@ async def one_pager_extract(
         key_points=keyPoints,
         audience=audience,
         purpose=purpose,
-        template_style=templateStyle,
+        template_style=safe_style,
         orientation=safe_orientation,
         image_files=image_files or None,
     )

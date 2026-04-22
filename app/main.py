@@ -53,7 +53,12 @@ async def startup_event():
 
 # ============== Auth Middleware Class ==============
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
-    """Reject requests whose declared Content-Length exceeds 15 MB."""
+    """Reject requests whose declared Content-Length exceeds 15 MB.
+
+    Also guards against chunked transfer encoding (no Content-Length) by
+    reading the full body before passing it downstream. BaseHTTPMiddleware
+    caches the body in request._body so route handlers still receive it.
+    """
 
     _MAX_BYTES = 15 * 1024 * 1024  # 15 MB
 
@@ -68,6 +73,15 @@ class MaxBodySizeMiddleware(BaseHTTPMiddleware):
                     )
             except ValueError:
                 pass
+        # Also enforce the limit for chunked-encoded bodies that carry no
+        # Content-Length header. Starlette's Request.body() caches the bytes
+        # so downstream handlers read the same data without re-consuming it.
+        body = await request.body()
+        if len(body) > self._MAX_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request body too large (max 15 MB)"},
+            )
         return await call_next(request)
 
 

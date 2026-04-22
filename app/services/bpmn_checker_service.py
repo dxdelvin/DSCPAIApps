@@ -50,30 +50,8 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
             "detail": "BPMN_CHECKER_BRAIN_ID is not configured."
         }
 
-    # Validate file type
-    allowed_types = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg']
-    allowed_extensions = ['.pdf', '.jpg', '.jpeg', '.png']
-    
-    file_ext = os.path.splitext(file.filename)[1].lower() if file.filename else ''
-    is_valid = (
-        (file.content_type and file.content_type in allowed_types) or
-        file_ext in allowed_extensions
-    )
-    
-    if not is_valid:
-        return {
-            "error": True,
-            "message": "Invalid file type",
-            "detail": "Please upload a PDF or image file (JPG, JPEG, PNG) containing your BPMN diagram."
-        }
-
-    contents = await file.read()
-    if len(contents) > 10 * 1024 * 1024:
-        return {
-            "error": True,
-            "message": "File too large",
-            "detail": "Maximum file size is 10 MB."
-        }
+    # File type + size validation is enforced in the API router before this
+    # function is called. Re-seek to ensure the pointer is at the start.
     await file.seek(0)
 
     # Create a chat history
