@@ -65,7 +65,8 @@ async def spec_builder(request: Request):
 
 @router.get("/ppt-creator")
 async def ppt_creator(request: Request):
-    return _render_template(request, "ppt_creator.html")
+    user_info = get_current_user(request)
+    return _render_template(request, "ppt_creator.html", {"user_id": user_info.get("user", "Guest")})
 
 @router.get("/diagram-generator")
 async def diagram_generator(request: Request):

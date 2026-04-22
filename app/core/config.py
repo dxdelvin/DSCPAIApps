@@ -1,3 +1,4 @@
+import json
 import os
 import ssl
 from pathlib import Path
@@ -41,3 +42,62 @@ def get_ssl_context():
         return ctx
 
     return True
+
+
+def get_object_store_config() -> dict:
+    """Return Object Store (S3-compatible) credentials.
+
+    In production (Cloud Foundry / SAP BTP), credentials are automatically
+    injected by the platform via ``VCAP_SERVICES`` when the service instance
+    ``DSCP_APPS_Object_DB`` is bound in manifest.yml.
+
+    For local development, set these environment variables (copy values from
+    the BTP Cockpit service key JSON):
+        OBJECT_STORE_HOST, OBJECT_STORE_BUCKET,
+        OBJECT_STORE_ACCESS_KEY_ID, OBJECT_STORE_SECRET_ACCESS_KEY,
+        OBJECT_STORE_REGION
+
+    Returns a dict with keys: host, bucket, access_key_id, secret_access_key, region.
+    Returns None when credentials are unavailable (silently disables history in dev).
+    Raises RuntimeError in production when credentials are missing.
+    """
+    vcap_raw = os.getenv("VCAP_SERVICES")
+    if vcap_raw:
+        try:
+            vcap = json.loads(vcap_raw)
+            creds_list = vcap.get("objectstore", [])
+            if creds_list:
+                creds = creds_list[0]["credentials"]
+                return {
+                    "host": creds["host"],
+                    "bucket": creds["bucket"],
+                    "access_key_id": creds["access_key_id"],
+                    "secret_access_key": creds["secret_access_key"],
+                    "region": creds.get("region", "eu-central-1"),
+                }
+        except (KeyError, IndexError, json.JSONDecodeError):
+            pass
+
+    # Local dev fallback — individual env vars
+    host = os.getenv("OBJECT_STORE_HOST")
+    bucket = os.getenv("OBJECT_STORE_BUCKET")
+    access_key = os.getenv("OBJECT_STORE_ACCESS_KEY_ID")
+    secret_key = os.getenv("OBJECT_STORE_SECRET_ACCESS_KEY")
+    region = os.getenv("OBJECT_STORE_REGION", "eu-central-1")
+
+    if host and bucket and access_key and secret_key:
+        return {
+            "host": host,
+            "bucket": bucket,
+            "access_key_id": access_key,
+            "secret_access_key": secret_key,
+            "region": region,
+        }
+
+    if IS_PRODUCTION:
+        raise RuntimeError(
+            "Object Store credentials are missing. "
+            "Ensure DSCP_APPS_Object_DB is bound in manifest.yml and the app is restaged."
+        )
+
+    return None

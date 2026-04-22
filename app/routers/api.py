@@ -47,6 +47,8 @@ from app.services.ppt_creator_service import (
     refine_ppt_content,
     generate_pptx_file,
 )
+from app.services.History import ppt_history_service
+from app.services.auth_service import get_current_user
 from app.services.diagram_generator_service import (
     analyze_pdf_content as diagram_analyze_pdf,
     generate_diagrams,
@@ -1043,9 +1045,145 @@ async def ppt_download(data: PptDownloadRequest):
         )
 
 
+_GEN_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
+
+
+def _validate_gen_id(gen_id: str) -> None:
+    if not _GEN_ID_RE.match(gen_id):
+        raise ValueError(f"Invalid generation id: {gen_id!r}")
+
+
+class PptHistorySaveRequest(BaseModel):
+    content: dict
+    chatHistoryId: str = Field(max_length=200)
+    forceOrangeTheme: bool = False
+
+
+class PptHistoryUpdateRequest(BaseModel):
+    content: dict
+
+
+@router.get("/ppt/history")
+async def ppt_history_list(request: Request):
+    """Return the current user's PPT generation history (newest first)."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        history = await ppt_history_service.get_history(user_id)
+        return {"status": "success", "history": history}
+    except Exception:
+        logger.exception("Failed to fetch PPT history")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load history."})
+
+
+@router.get("/ppt/history/{gen_id}")
+async def ppt_history_get(gen_id: str, request: Request):
+    """Fetch stored slide content for a specific generation (used by Load action)."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await ppt_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success", "content": content}
+    except Exception:
+        logger.exception("Failed to load PPT generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load generation."})
+
+
+@router.post("/ppt/history")
+async def ppt_history_save(data: PptHistorySaveRequest, request: Request):
+    """Save a new generation to the user's history after their first download."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        gen_id = await ppt_history_service.save_generation(
+            user_id, data.content, data.chatHistoryId, data.forceOrangeTheme
+        )
+        if gen_id is None:
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+        return {"status": "success", "genId": gen_id}
+    except Exception:
+        logger.exception("Failed to save PPT generation")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save generation."})
+
+
+@router.put("/ppt/history/{gen_id}")
+async def ppt_history_update(gen_id: str, data: PptHistoryUpdateRequest, request: Request):
+    """Update an existing generation's content after a refinement + re-download."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await ppt_history_service.update_generation(user_id, gen_id, data.content)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found or storage unavailable."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to update PPT generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not update generation."})
+
+
+@router.delete("/ppt/history/{gen_id}")
+async def ppt_history_delete(gen_id: str, request: Request):
+    """Delete a generation from the user's history."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await ppt_history_service.delete_generation(user_id, gen_id)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to delete PPT generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
+
+
+class PptHistoryDownloadRequest(BaseModel):
+    forceOrangeTheme: bool = False
+    username: str = Field(default="Unknown User", max_length=200)
+
+
+@router.post("/ppt/history/{gen_id}/download")
+async def ppt_history_download(gen_id: str, data: PptHistoryDownloadRequest, request: Request):
+    """Re-generate and stream a .pptx from a stored generation."""
+    from fastapi.responses import StreamingResponse
+
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await ppt_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+
+        buf = generate_pptx_file(content, data.username, force_orange_theme=data.forceOrangeTheme)
+        title = content.get("title", "Presentation").replace(" ", "_")
+        safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
+
+        return StreamingResponse(
+            buf,
+            media_type="application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            headers={"Content-Disposition": f'attachment; filename="{safe}.pptx"'},
+        )
+    except Exception:
+        logger.exception("Failed to re-download PPT generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not generate presentation."})
+
+
 class ConfluenceDraftPayload(BaseModel):
-    title: str = ""
-    summary: str = ""
     storageXml: str = ""
     attachmentReferences: list[dict[str, Any]] = Field(default_factory=list)
     displayImages: list[dict[str, Any]] = Field(default_factory=list)

@@ -12,8 +12,11 @@ class PptCreatorApp {
         this.files = [];
         this.chatHistoryId = null;
         this.currentContent = null;
+        this.currentGenId = null;     // set after first save; used to update on re-download
+        this.refinementCount = 0;     // increments on each refine+download cycle
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         this.MAX_IMAGES = 3;
+        this.userId = (typeof window.__PPT_USER_ID__ !== 'undefined') ? window.__PPT_USER_ID__ : 'Guest';
         this.init();
     }
 
@@ -22,6 +25,7 @@ class PptCreatorApp {
     init() {
         this.setupUpload();
         this.setupEventListeners();
+        this.setupTabs();
     }
 
     /* ── Upload handling ──────────────────────────────── */
@@ -158,6 +162,9 @@ class PptCreatorApp {
                 this.sendChatMessage();
             }
         });
+
+        document.getElementById('history-refresh-btn')?.addEventListener('click', () => this.loadHistory());
+        document.getElementById('history-go-generate-btn')?.addEventListener('click', () => this.switchTab('generate'));
     }
 
     updateExtractBtn() {
@@ -422,7 +429,7 @@ class PptCreatorApp {
             const res = await fetch('/api/ppt/download', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     content: this.currentContent,
                     username: userName,
                     forceOrangeTheme: this.isOrangeThemeEnabled(),
@@ -454,6 +461,9 @@ class PptCreatorApp {
                 btn.classList.remove('downloading');
             }, 2000);
             showToast('Download started!', 'success');
+
+            // Auto-save / update history silently
+            await this._persistToHistory();
         } catch (err) {
             AppLogger.error('PPT download error:', err);
             showToast('Download failed. Please try again.', 'error');
@@ -501,6 +511,8 @@ class PptCreatorApp {
         this.files          = [];
         this.chatHistoryId  = null;
         this.currentContent = null;
+        this.currentGenId   = null;
+        this.refinementCount = 0;
 
         this.renderFilesList();
         this.updateExtractBtn();
@@ -529,4 +541,224 @@ class PptCreatorApp {
 
 
 }
+
+
+/* ── Tab switching ────────────────────────────────────────── */
+
+PptCreatorApp.prototype.setupTabs = function () {
+    document.querySelectorAll('.ppt-tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+    });
+};
+
+PptCreatorApp.prototype.switchTab = function (tab) {
+    document.querySelectorAll('.ppt-tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+    document.querySelectorAll('.ppt-tab-panel').forEach(p => {
+        p.style.display = p.id === `tab-${tab}` ? '' : 'none';
+    });
+    if (tab === 'history') this.loadHistory();
+};
+
+/* ── History — persist ────────────────────────────────────── */
+
+PptCreatorApp.prototype._persistToHistory = async function () {
+    if (!this.currentContent || !this.chatHistoryId) return;
+    try {
+        if (!this.currentGenId) {
+            // First download for this session — create new entry
+            const res = await fetch('/api/ppt/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    content: this.currentContent,
+                    chatHistoryId: this.chatHistoryId,
+                    forceOrangeTheme: this.isOrangeThemeEnabled(),
+                }),
+            });
+            if (res.ok) {
+                const d = await res.json();
+                this.currentGenId = d.genId || null;
+            }
+        } else {
+            // Subsequent download after refinements — update existing entry
+            await fetch(`/api/ppt/history/${this.currentGenId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: this.currentContent }),
+            });
+        }
+    } catch (err) {
+        AppLogger.error('History auto-save failed (non-critical):', err);
+    }
+};
+
+/* ── History — list ───────────────────────────────────────── */
+
+PptCreatorApp.prototype.loadHistory = async function () {
+    const grid    = document.getElementById('history-grid');
+    const empty   = document.getElementById('history-empty');
+    const loading = document.getElementById('history-loading');
+
+    grid.innerHTML   = '';
+    empty.style.display   = 'none';
+    loading.style.display = 'flex';
+
+    try {
+        const res  = await fetch('/api/ppt/history');
+        const data = await res.json();
+        loading.style.display = 'none';
+
+        if (!res.ok || data.status === 'error') {
+            grid.innerHTML = `<p class="history-error">Could not load history. Please try again.</p>`;
+            return;
+        }
+
+        const history = data.history || [];
+        if (!history.length) {
+            empty.style.display = 'flex';
+            return;
+        }
+
+        grid.innerHTML = history.map(e => this._renderCard(e)).join('');
+
+        grid.querySelectorAll('[data-action="load"]').forEach(btn => {
+            btn.addEventListener('click', () => this.loadGeneration(btn.dataset.id, btn.dataset.chatHistoryId));
+        });
+        grid.querySelectorAll('[data-action="download"]').forEach(btn => {
+            btn.addEventListener('click', () => this.downloadFromHistory(btn.dataset.id, btn.dataset.title));
+        });
+        grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
+            btn.addEventListener('click', () => this.deleteGeneration(btn.dataset.id, btn.closest('.gen-card')));
+        });
+    } catch (err) {
+        loading.style.display = 'none';
+        AppLogger.error('History load error:', err);
+        grid.innerHTML = `<p class="history-error">Connection error loading history.</p>`;
+    }
+};
+
+PptCreatorApp.prototype._renderCard = function (entry) {
+    const date      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+    const time      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+    const refined   = entry.refinements > 0 ? `<span class="gen-badge gen-badge-refined">${entry.refinements} refinement${entry.refinements > 1 ? 's' : ''}</span>` : '';
+    const orange    = entry.forceOrangeTheme ? `<span class="gen-badge gen-badge-orange">🎨 Orange</span>` : '';
+    const subtitle  = entry.subtitle ? `<p class="gen-card-subtitle">${escapeHtml(entry.subtitle)}</p>` : '';
+    return `
+    <div class="gen-card" data-gen-id="${escapeHtml(entry.id)}">
+        <div class="gen-card-body">
+            <div class="gen-card-title-row">
+                <span class="gen-card-title">${escapeHtml(entry.title || 'Untitled')}</span>
+                <div class="gen-card-badges">${refined}${orange}</div>
+            </div>
+            ${subtitle}
+            <div class="gen-card-meta">
+                <span class="gen-meta-item">📊 ${entry.slideCount || 0} slides</span>
+                ${entry.smartArtCount ? `<span class="gen-meta-item">✨ ${entry.smartArtCount} SmartArt</span>` : ''}
+                <span class="gen-meta-item">🕐 ${date} ${time}</span>
+            </div>
+        </div>
+        <div class="gen-card-actions">
+            <button class="btn btn-secondary btn-sm" data-action="load" data-id="${escapeHtml(entry.id)}" data-chat-history-id="${escapeHtml(entry.chatHistoryId || '')}">
+                📂 Load &amp; Edit
+            </button>
+            <button class="btn btn-primary btn-sm" data-action="download" data-id="${escapeHtml(entry.id)}" data-title="${escapeHtml(entry.title || 'Presentation')}">
+                ⬇️ Download
+            </button>
+            <button class="btn btn-ghost btn-sm btn-danger" data-action="delete" data-id="${escapeHtml(entry.id)}">
+                🗑️
+            </button>
+        </div>
+    </div>`;
+};
+
+/* ── History — load generation into editor ────────────────── */
+
+PptCreatorApp.prototype.loadGeneration = async function (genId, chatHistoryId) {
+    try {
+        const res  = await fetch(`/api/ppt/history/${encodeURIComponent(genId)}`);
+        const data = await res.json();
+        if (!res.ok || !data.content) {
+            showToast('Could not load this generation.', 'error');
+            return;
+        }
+        this.currentContent  = data.content;
+        this.chatHistoryId   = chatHistoryId || null;
+        this.currentGenId    = genId;
+        this.refinementCount = 0;
+
+        this.switchTab('generate');
+        this.showResult();
+        document.getElementById('chat-container').style.display = 'block';
+        showToast('Generation loaded — you can continue refining it.', 'success');
+    } catch (err) {
+        AppLogger.error('Load generation error:', err);
+        showToast('Failed to load generation.', 'error');
+    }
+};
+
+/* ── History — download from history ─────────────────────── */
+
+PptCreatorApp.prototype.downloadFromHistory = async function (genId, title) {
+    const userName = this.userId || 'Unknown User';
+    try {
+        const res = await fetch(`/api/ppt/history/${encodeURIComponent(genId)}/download`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: userName, forceOrangeTheme: false }),
+        });
+        if (!res.ok) {
+            showToast('Download failed. Please try again.', 'error');
+            return;
+        }
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = (title || 'Presentation').replace(/[^a-zA-Z0-9 _-]/g, '') + '.pptx';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('Download started!', 'success');
+    } catch (err) {
+        AppLogger.error('History download error:', err);
+        showToast('Download failed.', 'error');
+    }
+};
+
+/* ── History — delete ─────────────────────────────────────── */
+
+PptCreatorApp.prototype.deleteGeneration = function (genId, cardEl) {
+    if (typeof showConfirmation === 'function') {
+        showConfirmation(
+            'Delete Generation?',
+            'This will permanently remove this presentation from your history.',
+            () => this._doDelete(genId, cardEl),
+            { icon: '🗑️', confirmText: 'Delete', cancelText: 'Cancel' }
+        );
+    } else {
+        this._doDelete(genId, cardEl);
+    }
+};
+
+PptCreatorApp.prototype._doDelete = async function (genId, cardEl) {
+    try {
+        const res = await fetch(`/api/ppt/history/${encodeURIComponent(genId)}`, { method: 'DELETE' });
+        if (res.ok) {
+            cardEl?.remove();
+            // If grid is now empty, show empty state
+            if (!document.querySelector('.gen-card')) {
+                document.getElementById('history-empty').style.display = 'flex';
+            }
+            // Clear currentGenId if we just deleted the active generation
+            if (this.currentGenId === genId) this.currentGenId = null;
+            showToast('Generation deleted.', 'success');
+        } else {
+            showToast('Could not delete this generation.', 'error');
+        }
+    } catch (err) {
+        AppLogger.error('Delete generation error:', err);
+        showToast('Failed to delete generation.', 'error');
+    }
+};
 
