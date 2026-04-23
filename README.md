@@ -8,7 +8,7 @@ A FastAPI application with Jinja2 templating for DSCP AI APPS
 
 1. **Clone the repository**
 ```bash
-cd c:\Users\dxdel\Extra Activities\THEAI\Ai Projects\DSCP_AI
+cd DSCPAIApps
 ```
 
 2. **Create a virtual environment** 
