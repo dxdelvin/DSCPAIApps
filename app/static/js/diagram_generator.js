@@ -520,6 +520,7 @@ class DiagramGeneratorApp {
             this.showResult();
             this.showChatPanel();
             showToast(`${this.diagrams.length} diagram${this.diagrams.length > 1 ? 's' : ''} generated!`, 'success');
+            await this._saveToHistory();
         } catch (err) {
             AppLogger.error('Diagram generation connection error:', err);
             this.hideLoading();
@@ -896,8 +897,6 @@ class DiagramGeneratorApp {
             const started = this.triggerBlobDownload(blob, filename);
             if (started) {
                 showToast('Download started!', 'success');
-                // Save to history on first download
-                await this._saveToHistory();
             } else {
                 showToast('Browser blocked automatic download.', 'warning');
             }
@@ -1049,8 +1048,7 @@ class DiagramGeneratorApp {
 
         // Update tab panels
         document.querySelectorAll('[data-tab-panel]').forEach(panel => {
-            const isActive = panel.dataset.tabPanel === tabName;
-            panel.style.display = isActive ? (panel.dataset.tabPanel === 'generate' ? 'flex' : 'block') : 'none';
+            panel.style.display = panel.dataset.tabPanel === tabName ? 'block' : 'none';
         });
 
         if (tabName === 'history') {

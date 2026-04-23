@@ -27,9 +27,10 @@ async def get_brain_access_token():
     
     async with httpx.AsyncClient(**request_kwargs) as client:
         try:
-            response = await client.post(url, data=data)
+            response = await client.post(url, data=data, timeout=30.0)
             response.raise_for_status()
             return response.json().get("access_token")
         except httpx.HTTPStatusError as e:
-            print(f"Auth Error: {e.response.text}")
-            raise HTTPException(status_code=e.response.status_code, detail="Brain authentication failed")
+            raise HTTPException(status_code=502, detail="Brain authentication failed.")
+        except httpx.RequestError:
+            raise HTTPException(status_code=503, detail="Could not reach the authentication service. Please try again.")

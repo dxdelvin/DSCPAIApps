@@ -226,6 +226,7 @@ class PptCreatorApp {
             const chatContainer = document.getElementById('chat-container');
             if (chatContainer) chatContainer.style.display = 'block';
             showToast('Presentation generated successfully!', 'success');
+            await this._persistToHistory();
         } catch (err) {
             AppLogger.error('PPT extraction connection error:', err);
             this.hideLoading();
@@ -289,6 +290,7 @@ class PptCreatorApp {
                 this.showResult();
                 this.appendChat('assistant', 'Refinement applied. You can review and download now.');
                 showToast('Refinement applied.', 'success');
+                await this._persistToHistory();
             } else {
                 this.appendChat('assistant', data.result || 'No update returned.');
             }
@@ -461,9 +463,6 @@ class PptCreatorApp {
                 btn.classList.remove('downloading');
             }, 2000);
             showToast('Download started!', 'success');
-
-            // Auto-save / update history silently
-            await this._persistToHistory();
         } catch (err) {
             AppLogger.error('PPT download error:', err);
             showToast('Download failed. Please try again.', 'error');

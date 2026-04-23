@@ -270,6 +270,16 @@ async def bpmn_upload_analyze(file: UploadFile = File(...)):
 @router.post("/generate-bpmn")
 async def generate_bpmn(data: BPMNGenerateRequest):
     """Generate BPMN XML, optionally using existing chat history for context."""
+    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    if not brain_id:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "API Not Active",
+                "detail": "SIGNAVIO_BRAIN_ID is not configured.",
+            },
+        )
     result = await get_signavio_bpmn_xml(
         data.model_dump(), 
         chat_history_id=data.chatHistoryId
