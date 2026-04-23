@@ -197,57 +197,93 @@
 
     // ── Generations horizontal bars ───────────────────────────
     function renderGenBars(data) {
-        const { generations, app_labels } = data;
+        const { daily_generations, generations, app_labels } = data;
         const container = $('genBars');
         if (!container) return;
 
-        const appKeys = Object.keys(app_labels);
-        const maxGen  = Math.max(...appKeys.map(k => generations[k] || 0), 1);
+        const appKeys    = Object.keys(app_labels);
+        const todayKey   = today();
+        const week7Start = nDaysAgo(7);
+        const day28Start = nDaysAgo(28);
+
+        // Compute per-app generation counts for each period
+        const stats = {};
+        appKeys.forEach(k => {
+            let todayC = 0, week7C = 0, day28C = 0;
+            for (const [d, apps] of Object.entries(daily_generations || {})) {
+                const v = apps[k] || 0;
+                if (d === todayKey)   todayC += v;
+                if (d >= week7Start)  week7C += v;
+                if (d >= day28Start)  day28C += v;
+            }
+            stats[k] = { todayC, week7C, day28C, allTime: generations[k] || 0 };
+        });
+
+        // Normalise bars against the largest all-time value
+        const maxVal = Math.max(...appKeys.map(k => stats[k].allTime), 1);
+
+        const periods = [
+            { label: 'Today',    key: 'todayC' },
+            { label: '7 Days',   key: 'week7C' },
+            { label: '28 Days',  key: 'day28C' },
+            { label: 'All Time', key: 'allTime' },
+        ];
 
         container.innerHTML = appKeys.map(k => {
-            const count = generations[k] || 0;
-            const pct   = Math.round((count / maxGen) * 100);
             const color = appColor(k);
+            const s     = stats[k];
+            const periodRows = periods.map(p => {
+                const val = s[p.key];
+                const pct = Math.round((val / maxVal) * 100);
+                return `
+                <div class="adm-gen-period-row">
+                    <span class="adm-gen-period-label">${p.label}</span>
+                    <div class="adm-gen-track">
+                        <div class="adm-gen-fill" style="width:${pct}%;background:${color}"></div>
+                    </div>
+                    <span class="adm-gen-count">${fmt(val)}</span>
+                </div>`;
+            }).join('');
+
             return `
-            <div class="adm-gen-row">
-                <div class="adm-gen-row-head">
+            <div class="adm-gen-app">
+                <div class="adm-gen-app-head">
+                    <span class="adm-gen-dot" style="background:${color}"></span>
                     <span class="adm-gen-name">${escapeHtml(app_labels[k])}</span>
-                    <span class="adm-gen-count">${fmt(count)}</span>
                 </div>
-                <div class="adm-gen-track">
-                    <div class="adm-gen-fill" style="width:${pct}%;background:${color}"></div>
-                </div>
+                ${periodRows}
             </div>`;
         }).join('');
     }
 
     // ── App breakdown table ───────────────────────────────────
     function renderAppTable(data) {
-        const { daily_clicks, daily_unique_users, generations, app_labels } = data;
-        const tbody  = $('appTableBody');
+        const { daily_unique_users, app_labels } = data;
+        const tbody = $('appTableBody');
         if (!tbody) return;
 
-        const todayKey  = today();
-        const weekStart = nDaysAgo(7);
-        const appKeys   = Object.keys(app_labels);
+        const todayKey   = today();
+        const week7Start = nDaysAgo(7);
+        const day28Start = nDaysAgo(28);
+        const appKeys    = Object.keys(app_labels);
 
         const rows = appKeys.map(k => {
-            let todayC = 0, weekC = 0, totalC = 0;
-            for (const [d, apps] of Object.entries(daily_clicks)) {
-                const v = apps[k] || 0;
-                if (d === todayKey) todayC += v;
-                if (d >= weekStart) weekC  += v;
-                totalC += v;
+            const todaySet = new Set();
+            const week7Set = new Set();
+            const day28Set = new Set();
+
+            for (const [d, apps] of Object.entries(daily_unique_users || {})) {
+                const ids = apps[k];
+                if (!Array.isArray(ids)) continue;
+                if (d === todayKey)   ids.forEach(id => todaySet.add(id));
+                if (d >= week7Start)  ids.forEach(id => week7Set.add(id));
+                if (d >= day28Start)  ids.forEach(id => day28Set.add(id));
             }
 
-            // Unique users for this app today
-            const todayUserList = ((daily_unique_users || {})[todayKey] || {})[k] || [];
-            const uniqueToday = new Set(todayUserList).size;
-
-            return { key: k, label: app_labels[k], todayC, weekC, totalC, uniqueToday, gens: generations[k] || 0 };
+            return { key: k, label: app_labels[k], todayU: todaySet.size, week7U: week7Set.size, day28U: day28Set.size };
         });
 
-        rows.sort((a, b) => b.totalC - a.totalC);
+        rows.sort((a, b) => b.day28U - a.day28U);
 
         tbody.innerHTML = rows.map(r => `
             <tr>
@@ -257,11 +293,9 @@
                         <span class="adm-app-name">${escapeHtml(r.label)}</span>
                     </div>
                 </td>
-                <td class="${r.todayC     === 0 ? 'adm-num-zero' : ''}">${fmt(r.todayC)}</td>
-                <td class="${r.uniqueToday === 0 ? 'adm-num-zero' : ''}">${fmt(r.uniqueToday)}</td>
-                <td class="${r.weekC      === 0 ? 'adm-num-zero' : ''}">${fmt(r.weekC)}</td>
-                <td class="${r.totalC     === 0 ? 'adm-num-zero' : ''}">${fmt(r.totalC)}</td>
-                <td class="${r.gens       === 0 ? 'adm-num-zero' : ''}">${fmt(r.gens)}</td>
+                <td class="${r.todayU === 0 ? 'adm-num-zero' : ''}">${fmt(r.todayU)}</td>
+                <td class="${r.week7U === 0 ? 'adm-num-zero' : ''}">${fmt(r.week7U)}</td>
+                <td class="${r.day28U === 0 ? 'adm-num-zero' : ''}">${fmt(r.day28U)}</td>
             </tr>`).join('');
     }
 

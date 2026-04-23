@@ -2,9 +2,10 @@
 Analytics tracking — best-effort, non-blocking counters backed by BTP Object Store.
 
 Storage layout:
-    analytics/clicks/{YYYY-MM-DD}.json  — per-app page-open counts for that calendar day
-    analytics/users/{YYYY-MM-DD}.json   — per-app sets of unique user IDs for that day
-    analytics/generations.json          — all-time total generation count per app
+    analytics/clicks/{YYYY-MM-DD}.json      — per-app page-open counts for that calendar day
+    analytics/users/{YYYY-MM-DD}.json       — per-app sets of unique user IDs for that day
+    analytics/gen_daily/{YYYY-MM-DD}.json   — per-app generation counts for that calendar day
+    analytics/generations.json              — all-time total generation count per app
 """
 
 import asyncio
@@ -29,7 +30,7 @@ APP_LABELS: dict[str, str] = {
 }
 
 # Users allowed to access /dscpadmin (lowercase)
-ADMIN_USERS: frozenset = frozenset({"dsd9di", "local-dev"})
+ADMIN_USERS: frozenset = frozenset({"dsd9di", "local-dev", "eim1di"})
 
 
 def _clicks_key(date_str: str) -> str:
@@ -42,6 +43,10 @@ def _users_key(date_str: str) -> str:
 
 def _generations_key() -> str:
     return "analytics/generations.json"
+
+
+def _gen_daily_key(date_str: str) -> str:
+    return f"analytics/gen_daily/{date_str}.json"
 
 
 async def track_click(app_key: str, user_id: str = "anonymous") -> None:
@@ -88,32 +93,54 @@ async def track_click(app_key: str, user_id: str = "anonymous") -> None:
 
 
 async def track_generation(app_key: str) -> None:
-    """Increment total generation counter for app_key. Best-effort — never raises."""
+    """Increment total and daily generation counters for app_key. Best-effort — never raises."""
     try:
-        key = _generations_key()
-        raw = await store.get_object(key)
-        data: dict = {}
-        if raw:
+        today_str   = date.today().isoformat()
+        all_time_key = _generations_key()
+        daily_key    = _gen_daily_key(today_str)
+
+        all_time_raw, daily_raw = await asyncio.gather(
+            store.get_object(all_time_key),
+            store.get_object(daily_key),
+            return_exceptions=True,
+        )
+
+        all_time: dict = {}
+        if all_time_raw and not isinstance(all_time_raw, Exception):
             try:
-                data = json.loads(raw.decode("utf-8"))
+                all_time = json.loads(all_time_raw.decode("utf-8"))
             except Exception:
-                data = {}
-        data[app_key] = data.get(app_key, 0) + 1
-        await store.put_object(key, json.dumps(data).encode(), "application/json")
+                pass
+        all_time[app_key] = all_time.get(app_key, 0) + 1
+
+        daily: dict = {}
+        if daily_raw and not isinstance(daily_raw, Exception):
+            try:
+                daily = json.loads(daily_raw.decode("utf-8"))
+            except Exception:
+                pass
+        daily[app_key] = daily.get(app_key, 0) + 1
+
+        await asyncio.gather(
+            store.put_object(all_time_key, json.dumps(all_time).encode(), "application/json"),
+            store.put_object(daily_key,    json.dumps(daily).encode(),    "application/json"),
+        )
     except Exception:
         logger.exception("analytics track_generation failed for app=%r", app_key)
 
 
-async def get_analytics(days: int = 14) -> dict:
+async def get_analytics(days: int = 28) -> dict:
     """
     Fetch analytics data for the admin dashboard.
 
     Returns:
         {
-            "daily_clicks": {"2026-04-23": {"ppt": 3, ...}, ...},  # oldest → newest
-            "generations":  {"ppt": 10, ...},
-            "app_labels":   {...},
-            "date_range":   ["2026-04-10", ..., "2026-04-23"],
+            "daily_clicks":       {"2026-04-23": {"ppt": 3, ...}, ...},  # oldest → newest
+            "daily_unique_users": {"2026-04-23": {"ppt": ["user1", ...], ...}, ...},
+            "daily_generations":  {"2026-04-23": {"ppt": 2, ...}, ...},
+            "generations":        {"ppt": 10, ...},
+            "app_labels":         {...},
+            "date_range":         ["2026-03-26", ..., "2026-04-23"],
         }
     """
     today = date.today()
@@ -122,18 +149,20 @@ async def get_analytics(days: int = 14) -> dict:
         for i in range(days - 1, -1, -1)
     ]
 
-    # Fetch click files, user files, and generation totals all in parallel
+    # Fetch click files, user files, daily generation files, and all-time totals in parallel
     all_raws = await asyncio.gather(
-        *[store.get_object(_clicks_key(d)) for d in date_range],
-        *[store.get_object(_users_key(d))  for d in date_range],
+        *[store.get_object(_clicks_key(d))    for d in date_range],
+        *[store.get_object(_users_key(d))     for d in date_range],
+        *[store.get_object(_gen_daily_key(d)) for d in date_range],
         store.get_object(_generations_key()),
         return_exceptions=True,
     )
 
-    n = len(date_range)
+    n          = len(date_range)
     click_raws = all_raws[:n]
     users_raws = all_raws[n : 2 * n]
-    gen_raw    = all_raws[2 * n]
+    gen_daily_raws = all_raws[2 * n : 3 * n]
+    gen_raw    = all_raws[3 * n]
 
     daily_clicks: dict[str, dict] = {}
     for d, raw in zip(date_range, click_raws):
@@ -155,6 +184,16 @@ async def get_analytics(days: int = 14) -> dict:
         except Exception:
             daily_unique_users[d] = {}
 
+    daily_generations: dict[str, dict] = {}
+    for d, raw in zip(date_range, gen_daily_raws):
+        if isinstance(raw, Exception) or raw is None:
+            daily_generations[d] = {}
+            continue
+        try:
+            daily_generations[d] = json.loads(raw.decode("utf-8"))
+        except Exception:
+            daily_generations[d] = {}
+
     generations: dict = {}
     if gen_raw and not isinstance(gen_raw, Exception):
         try:
@@ -163,9 +202,10 @@ async def get_analytics(days: int = 14) -> dict:
             pass
 
     return {
-        "daily_clicks": daily_clicks,
+        "daily_clicks":       daily_clicks,
         "daily_unique_users": daily_unique_users,
-        "generations": generations,
-        "app_labels": APP_LABELS,
-        "date_range": date_range,
+        "daily_generations":  daily_generations,
+        "generations":        generations,
+        "app_labels":         APP_LABELS,
+        "date_range":         date_range,
     }

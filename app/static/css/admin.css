@@ -105,6 +105,9 @@
 @keyframes adm-spin { to { transform: rotate(360deg); } }
 .adm-refresh.spinning svg { animation: adm-spin 0.7s linear infinite; }
 
+/* Ensure the HTML `hidden` attribute is respected even when CSS sets display */
+.adm-loading[hidden], .adm-error[hidden], .adm-content[hidden] { display: none !important; }
+
 /* ── Loading / Error states ──────────────────────────── */
 .adm-loading, .adm-error {
     display: flex;
@@ -292,22 +295,31 @@
 
 /* ── Generation Bars ─────────────────────────────────── */
 .adm-gen-bars {
-    padding: 16px 24px 20px;
+    padding: 12px 24px 20px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 0;
 }
 
-.adm-gen-row {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
+/* One block per app */
+.adm-gen-app {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
 }
+.adm-gen-app:last-child { border-bottom: none; }
 
-.adm-gen-row-head {
+.adm-gen-app-head {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.adm-gen-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
 }
 
 .adm-gen-name {
@@ -316,14 +328,34 @@
     font-weight: 600;
 }
 
+/* One row per time-period */
+.adm-gen-period-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+.adm-gen-period-row:last-child { margin-bottom: 0; }
+
+.adm-gen-period-label {
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    width: 52px;
+    flex-shrink: 0;
+}
+
 .adm-gen-count {
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--text-secondary);
+    width: 28px;
+    text-align: right;
+    flex-shrink: 0;
 }
 
 .adm-gen-track {
-    height: 8px;
+    flex: 1;
+    height: 7px;
     border-radius: 100px;
     background: var(--surface-secondary);
     border: 1px solid var(--border);
