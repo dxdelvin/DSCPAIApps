@@ -14,6 +14,7 @@ class OnePagerApp {
         this.currentHtml   = null;
         this.templateStyle = 'executive_summary';
         this.orientation   = 'portrait';
+        this.currentGenId  = null;
 
         this.MAX_FILE_SIZE = 10 * 1024 * 1024;
         this.MAX_IMAGES = 3;
@@ -26,6 +27,7 @@ class OnePagerApp {
         this.setupOrientationToggle();
         this.setupColorPicker();
         this.setupEventListeners();
+        this.loadHistory();
         window.addEventListener('resize', () => this.scalePreview());
     }
 
@@ -209,6 +211,17 @@ class OnePagerApp {
                 element.addEventListener('input', () => this.updateGenerateBtn());
             }
         });
+
+        // Tab navigation
+        document.querySelectorAll('.dg-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => this.switchTab(btn.dataset.tab));
+        });
+
+        const refreshBtn = document.getElementById('refresh-history-btn');
+        if (refreshBtn) refreshBtn.addEventListener('click', () => this.loadHistory());
+
+        const goCreateBtn = document.getElementById('history-go-create-btn');
+        if (goCreateBtn) goCreateBtn.addEventListener('click', () => this.switchTab('create'));
     }
 
     updateGenerateBtn() {
@@ -268,11 +281,14 @@ class OnePagerApp {
 
             this.currentHtml   = data.html;
             this.chatHistoryId = data.chatHistoryId;
+            this.currentGenId  = null;
 
             this.hideLoading();
             this.showPreview();
             document.getElementById('chat-container').style.display = 'block';
             showToast('One-pager generated! Preview is ready.', 'success');
+
+            this._persistToHistory();
         } catch (err) {
             AppLogger.error('One-pager extraction connection error:', err);
             this.hideLoading();
@@ -320,6 +336,7 @@ class OnePagerApp {
                 this.chatHistoryId = data.chatHistoryId || this.chatHistoryId;
                 this.showPreview();
                 this.appendChat('assistant', 'One-pager updated! Check the preview on the right.');
+                this._updateHistory();
             } else {
                 this.appendChat('assistant', 'The AI responded but did not regenerate the document. Try a more specific request.');
             }
@@ -567,6 +584,7 @@ window.onload = function () {
         this.files         = [];
         this.chatHistoryId = null;
         this.currentHtml   = null;
+        this.currentGenId  = null;
 
         this.renderFilesList();
         this.updateGenerateBtn();
@@ -600,5 +618,232 @@ window.onload = function () {
         // Clear iframe
         const iframe = document.getElementById('preview-frame');
         if (iframe) iframe.srcdoc = '';
+    }
+
+    /* ── Tab Navigation ───────────────────────────────── */
+
+    switchTab(tabName) {
+        document.querySelectorAll('.dg-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.tab === tabName);
+        });
+        document.querySelectorAll('[data-tab-panel]').forEach(panel => {
+            panel.style.display = panel.dataset.tabPanel === tabName ? 'block' : 'none';
+        });
+        if (tabName === 'history') {
+            this.loadHistory();
+        }
+    }
+
+    /* ── History Persist ──────────────────────────────── */
+
+    async _persistToHistory() {
+        if (!this.currentHtml) return;
+        try {
+            const title = this._extractTitle() || 'Untitled';
+            const res = await Utils.apiRequest('/api/one-pager/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title,
+                    html: this.currentHtml,
+                    templateStyle: this.templateStyle,
+                    orientation: this.orientation,
+                    chatHistoryId: this.chatHistoryId || '',
+                }),
+            });
+            if (res.status === 'success') {
+                this.currentGenId = res.genId;
+            }
+        } catch (err) {
+            AppLogger.error('Failed to persist one-pager to history', err);
+        }
+    }
+
+    async _updateHistory() {
+        if (!this.currentHtml || !this.currentGenId) return;
+        try {
+            await Utils.apiRequest(`/api/one-pager/history/${this.currentGenId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    html: this.currentHtml,
+                    chatHistoryId: this.chatHistoryId || '',
+                }),
+            });
+        } catch (err) {
+            AppLogger.error('Failed to update one-pager history', err);
+        }
+    }
+
+    /* ── History Panel ────────────────────────────────── */
+
+    async loadHistory() {
+        const grid = document.getElementById('op-history-grid');
+        const empty = document.getElementById('history-empty');
+        const loading = document.getElementById('history-loading');
+
+        if (grid) grid.innerHTML = '';
+        if (empty) empty.style.display = 'none';
+        if (loading) loading.style.display = 'flex';
+
+        try {
+            const response = await Utils.apiRequest('/api/one-pager/history', { method: 'GET' });
+            if (loading) loading.style.display = 'none';
+            if (response.status === 'success') {
+                this._renderHistoryGrid(response.history || []);
+            }
+        } catch (error) {
+            if (loading) loading.style.display = 'none';
+            AppLogger.error('Failed to load one-pager history', error);
+            if (grid) {
+                grid.innerHTML = '<p class="history-error">Connection error loading history.</p>';
+            }
+        }
+    }
+
+    _renderHistoryGrid(entries) {
+        const grid = document.getElementById('op-history-grid');
+        const empty = document.getElementById('history-empty');
+
+        if (!entries || entries.length === 0) {
+            if (grid) grid.innerHTML = '';
+            if (empty) empty.style.display = 'flex';
+            return;
+        }
+        if (empty) empty.style.display = 'none';
+        if (grid) grid.innerHTML = '';
+
+        entries.forEach(entry => {
+            const card = this._createHistoryCard(entry);
+            if (grid) grid.appendChild(card);
+        });
+    }
+
+    _createHistoryCard(entry) {
+        const card = document.createElement('div');
+        card.className = 'gen-card';
+
+        const title = escapeHtml(entry.title || 'Untitled');
+        const style = escapeHtml(entry.templateStyle || '');
+        const orient = escapeHtml(entry.orientation || '');
+        const refinements = entry.refinements || 0;
+        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+        const time = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        card.innerHTML = `
+            <button class="btn btn-ghost btn-sm btn-danger gen-card-delete" aria-label="Delete" title="Delete">
+                ${HistoryIcons.delete}
+            </button>
+            <div class="gen-card-body">
+                <div class="gen-card-title-row">
+                    <span class="gen-card-title">${title}</span>
+                    <div class="gen-card-badges">
+                        <span class="gen-badge gen-badge-orange">${style}</span>
+                    </div>
+                </div>
+                <div class="gen-card-meta">
+                    <span class="gen-meta-item">Orientation: ${orient}</span>
+                    <span class="gen-meta-item">Refinements: ${refinements}</span>
+                    <span class="gen-meta-item">Updated: ${date} ${time}</span>
+                </div>
+            </div>
+            <div class="gen-card-actions">
+                <button class="btn btn-secondary btn-sm op-card-load" title="Load and continue editing">
+                    ${HistoryIcons.open} Load
+                </button>
+                <button class="btn btn-primary btn-sm op-card-download" title="Download as PDF">
+                    ${HistoryIcons.download} PDF
+                </button>
+            </div>
+        `;
+
+        card.querySelector('.gen-card-delete').addEventListener('click', () => this._deleteGeneration(entry.id, card));
+        card.querySelector('.op-card-load').addEventListener('click', () => this._loadGeneration(entry.id));
+        card.querySelector('.op-card-download').addEventListener('click', () => this._downloadGeneration(entry.id));
+
+        return card;
+    }
+
+    async _loadGeneration(genId) {
+        try {
+            const response = await Utils.apiRequest(`/api/one-pager/history/${genId}`, { method: 'GET' });
+            if (response.status !== 'success' || !response.content) {
+                showToast('Could not load this generation.', 'error');
+                return;
+            }
+            const content = response.content;
+            this.currentHtml   = content.html || null;
+            this.chatHistoryId = content.chatHistoryId || null;
+            this.templateStyle = content.templateStyle || 'executive_summary';
+            this.orientation   = content.orientation || 'portrait';
+            this.currentGenId  = genId;
+
+            // Restore template selection UI
+            document.querySelectorAll('.template-card').forEach(c => {
+                c.classList.toggle('active', c.dataset.style === this.templateStyle);
+            });
+            this.setOrientation(this.orientation);
+
+            // Restore topic field if title is set
+            const topicInput = document.getElementById('topic-input');
+            if (topicInput && content.title && content.title !== 'Untitled') {
+                topicInput.value = content.title;
+            }
+
+            this.switchTab('create');
+
+            if (this.currentHtml) {
+                this.showPreview();
+                document.getElementById('chat-container').style.display = 'block';
+                showToast('One-pager loaded! You can refine it below.', 'success');
+            } else {
+                showToast('Loaded, but no preview available.', 'warning');
+            }
+        } catch (error) {
+            AppLogger.error('Failed to load one-pager generation', error);
+            showToast('Failed to load generation.', 'error');
+        }
+    }
+
+    async _downloadGeneration(genId) {
+        try {
+            const response = await Utils.apiRequest(`/api/one-pager/history/${genId}`, { method: 'GET' });
+            if (response.status !== 'success' || !response.content || !response.content.html) {
+                showToast('No content available to download.', 'error');
+                return;
+            }
+            const savedHtml = this.currentHtml;
+            const savedOrientation = this.orientation;
+            this.currentHtml = response.content.html;
+            this.orientation = response.content.orientation || 'portrait';
+            this.downloadPdf();
+            this.currentHtml = savedHtml;
+            this.orientation = savedOrientation;
+        } catch (error) {
+            AppLogger.error('Failed to download one-pager from history', error);
+            showToast('Failed to download.', 'error');
+        }
+    }
+
+    async _deleteGeneration(genId, cardEl) {
+        if (!confirm('Delete this one-pager from history?')) return;
+        try {
+            const response = await Utils.apiRequest(`/api/one-pager/history/${genId}`, { method: 'DELETE' });
+            if (response.status === 'success') {
+                if (cardEl) cardEl.remove();
+                if (this.currentGenId === genId) this.currentGenId = null;
+                const grid = document.getElementById('op-history-grid');
+                if (grid && !grid.children.length) {
+                    const empty = document.getElementById('history-empty');
+                    if (empty) empty.style.display = 'flex';
+                }
+                showToast('One-pager deleted.', 'success');
+            } else {
+                showToast('Could not delete. Try again.', 'error');
+            }
+        } catch (error) {
+            AppLogger.error('Failed to delete one-pager generation', error);
+            showToast('Failed to delete.', 'error');
+        }
     }
 }

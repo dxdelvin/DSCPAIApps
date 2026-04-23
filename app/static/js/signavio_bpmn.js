@@ -19,6 +19,7 @@ let lastGeneratedFilename = null;
 // History state
 const bpmnUserId = typeof window.__BPMN_USER_ID__ !== 'undefined' ? window.__BPMN_USER_ID__ : 'Guest';
 let currentBpmnGenId = null;
+let _restoringFromHistory = false; // suppresses fetchBrainAnalysis when restoring
 
 const BPMN_ICON_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="8.5" y="14" width="7" height="7" rx="1.5"/><line x1="6.5" y1="10" x2="6.5" y2="14" opacity="0.5"/><line x1="17.5" y1="10" x2="17.5" y2="14" opacity="0.5"/><line x1="6.5" y1="14" x2="8.5" y2="14" opacity="0.5"/><line x1="17.5" y1="14" x2="15.5" y2="14" opacity="0.5"/></svg>';
 const BPMN_GENERATE_MESSAGES = ['Analyzing process structure', 'Building BPMN elements', 'Arranging swimlanes', 'Generating diagram file'];
@@ -1044,7 +1045,11 @@ function goToStep(stepNum) {
         updateGenerateButtonState();
     }
     if (currentStep === totalSteps) {
-        fetchBrainAnalysis();
+        if (_restoringFromHistory) {
+            _restoringFromHistory = false;
+        } else {
+            fetchBrainAnalysis();
+        }
     }
     document.querySelector('.form-container')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -1406,6 +1411,7 @@ async function generateBPMN() {
         _persistBpmnToHistory('form', {
             mode: 'form',
             formData: { ...formData },
+            analysis: document.getElementById('analysisContent')?.innerText || '',
             xml: result.xml,
             filename: result.filename,
             chatHistoryId: chatHistoryId,
@@ -1826,10 +1832,27 @@ function _restoreFormMode(content) {
         loadLanesData();
     }
 
-    // Unlock all steps and jump to step 6
+    // Unlock all steps and jump to step 6, suppressing auto-analysis
     maxAccessibleStep = 6;
+    _restoringFromHistory = true;
     goToStep(6);
     updateProgressBar();
+
+    // Restore analysis panel without re-running AI
+    const statusEl = document.getElementById('analysisStatus');
+    const contentEl = document.getElementById('analysisContent');
+    if (statusEl) statusEl.textContent = 'Complete';
+    if (contentEl && content.analysis) {
+        contentEl.innerHTML = formatAnalysisResponse(content.analysis);
+    }
+    updateGenerateButtonState();
+
+    // Restore BPMN viewer if XML was saved
+    if (content.xml) {
+        lastGeneratedXml = content.xml;
+        lastGeneratedFilename = content.filename;
+        showBpmnViewer(content.xml);
+    }
 }
 
 function _restoreUploadMode(content) {

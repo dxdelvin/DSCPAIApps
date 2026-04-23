@@ -27,6 +27,7 @@ APP_LABELS: dict[str, str] = {
     "spec-builder":       "Spec Builder",
     "docupedia":          "Docupedia Publisher",
     "signavio-learning":  "Learn Signavio Modeling",
+    "one-pager":          "One Pager Creator",
 }
 
 # Users allowed to access /dscpadmin (lowercase)

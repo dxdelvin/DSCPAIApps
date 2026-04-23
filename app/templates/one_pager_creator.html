@@ -26,6 +26,26 @@
             </div>
         </div>
 
+        <!-- Tab Navigation -->
+        <div class="dg-tab-nav">
+            <button class="dg-tab-btn active" data-tab="create">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M2 4C2 2.9 2.9 2 4 2h8c1.1 0 2 .9 2 2v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V4z" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                    <path d="M5 6h6M5 9h4" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+                </svg>
+                Create
+            </button>
+            <button class="dg-tab-btn" data-tab="history">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2" fill="none"/>
+                    <path d="M8 5v3l2.5 1.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                My History
+            </button>
+        </div>
+
+        <!-- Create Tab -->
+        <div data-tab-panel="create">
         <div class="op-content">
             <div class="builder-left">
                 <div class="form-container">
@@ -197,6 +217,40 @@
                 </div>
             </div>
         </div>
+        </div><!-- /data-tab-panel="create" -->
+
+        <!-- History Tab -->
+        <div class="op-history-panel" data-tab-panel="history" style="display:none">
+            <div class="history-panel">
+                <div class="history-header">
+                    <div>
+                        <p class="eyebrow">Saved One-Pagers</p>
+                        <h2 class="builder-title">My Generation History</h2>
+                        <p class="history-subtitle">All your generated one-pagers are saved here. Load any to continue refining or re-download as PDF.</p>
+                    </div>
+                    <button class="btn btn-ghost-text" id="refresh-history-btn" title="Refresh">Refresh</button>
+                </div>
+
+                <div id="history-loading" class="history-loading" style="display:none">
+                    <div class="history-spinner"></div>
+                    <span>Loading history…</span>
+                </div>
+
+                <div id="history-empty" class="history-empty" style="display:none">
+                    <span class="history-empty-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" />
+                        </svg>
+                    </span>
+                    <h4>No saved one-pagers yet</h4>
+                    <p>Generate a one-pager — it will appear here automatically.</p>
+                    <button class="btn btn-primary btn-sm" id="history-go-create-btn">Go to Create</button>
+                </div>
+
+                <div id="op-history-grid" class="history-grid"></div>
+            </div>
+        </div>
+
     </div>
 </div>
 

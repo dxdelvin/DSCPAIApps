@@ -48,7 +48,7 @@ from app.services.ppt_creator_service import (
     refine_ppt_content,
     generate_pptx_file,
 )
-from app.services.History import ppt_history_service, diagram_history_service, bpmn_history_service
+from app.services.History import ppt_history_service, diagram_history_service, bpmn_history_service, one_pager_history_service
 from app.services.auth_service import get_current_user
 from app.services.History.analytics_service import track_generation
 from app.services.diagram_generator_service import (
@@ -1800,6 +1800,125 @@ async def one_pager_refine(data: OnePagerRefineRequest):
         "html": result.get("html"),
         "chatHistoryId": result.get("chatHistoryId"),
     }
+
+
+# ── One Pager History ──
+
+
+class OnePagerHistorySaveRequest(BaseModel):
+    title: str = Field(default="Untitled", max_length=300)
+    html: str = Field(max_length=500000)
+    templateStyle: str = Field(default="executive_summary", max_length=50)
+    orientation: str = Field(default="portrait", max_length=20)
+    chatHistoryId: str = Field(default="", max_length=200)
+
+
+class OnePagerHistoryUpdateRequest(BaseModel):
+    html: str = Field(max_length=500000)
+    chatHistoryId: str = Field(default="", max_length=200)
+    title: Optional[str] = Field(default=None, max_length=300)
+
+
+@router.get("/one-pager/history")
+async def one_pager_history_list(request: Request):
+    """Return the current user's one-pager generation history (newest first)."""
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        history = await one_pager_history_service.get_history(user_id)
+        return {"status": "success", "history": history}
+    except Exception:
+        logger.exception("Failed to fetch one-pager history")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load history."})
+
+
+@router.get("/one-pager/history/{gen_id}")
+async def one_pager_history_get(gen_id: str, request: Request):
+    """Fetch stored one-pager content for a specific generation."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        content = await one_pager_history_service.get_generation_content(user_id, gen_id)
+        if content is None:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success", "content": content}
+    except Exception:
+        logger.exception("Failed to load one-pager generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not load generation."})
+
+
+@router.post("/one-pager/history")
+async def one_pager_history_save(data: OnePagerHistorySaveRequest, request: Request):
+    """Save a new one-pager generation to the user's history."""
+    safe_orientation = data.orientation if data.orientation in ("portrait", "landscape") else "portrait"
+    _ALLOWED_STYLES = {
+        "executive_summary", "project_brief", "status_update",
+        "technical_overview", "business_case", "cheatsheet", "flyer", "infographic",
+    }
+    safe_style = data.templateStyle if data.templateStyle in _ALLOWED_STYLES else "executive_summary"
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        gen_id = await one_pager_history_service.save_generation(
+            user_id=user_id,
+            title=data.title,
+            html=data.html,
+            template_style=safe_style,
+            orientation=safe_orientation,
+            chat_history_id=data.chatHistoryId,
+        )
+        if gen_id is None:
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+        return {"status": "success", "genId": gen_id}
+    except Exception:
+        logger.exception("Failed to save one-pager generation")
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save generation."})
+
+
+@router.put("/one-pager/history/{gen_id}")
+async def one_pager_history_update(gen_id: str, data: OnePagerHistoryUpdateRequest, request: Request):
+    """Update an existing one-pager generation's HTML after a refinement."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await one_pager_history_service.update_generation(
+            user_id=user_id,
+            gen_id=gen_id,
+            html=data.html,
+            chat_history_id=data.chatHistoryId,
+            title=data.title,
+        )
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found or storage unavailable."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to update one-pager generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not update generation."})
+
+
+@router.delete("/one-pager/history/{gen_id}")
+async def one_pager_history_delete(gen_id: str, request: Request):
+    """Delete a one-pager generation from the user's history."""
+    try:
+        _validate_gen_id(gen_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"status": "error", "message": "Invalid generation ID."})
+
+    user_id = get_current_user(request).get("user", "Guest")
+    try:
+        ok = await one_pager_history_service.delete_generation(user_id, gen_id)
+        if not ok:
+            return JSONResponse(status_code=404, content={"status": "error", "message": "Generation not found."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to delete one-pager generation gen_id=%r", gen_id)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
 
 
 # ============== Admin Analytics ==============
