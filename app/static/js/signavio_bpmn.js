@@ -843,6 +843,11 @@ function initializeCharCounters() {
         const textarea = document.getElementById(id);
         if (!textarea) return;
         textarea.setAttribute('maxlength', max);
+        // Remove any counter already injected by common.js's initCharacterCounters
+        const existingCounter = textarea.nextElementSibling;
+        if (existingCounter && existingCounter.classList.contains('char-counter')) {
+            existingCounter.remove();
+        }
         const wrap = document.createElement('div');
         wrap.className = 'char-counter-wrap';
         textarea.parentNode.insertBefore(wrap, textarea);

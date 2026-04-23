@@ -1049,7 +1049,8 @@ class DiagramGeneratorApp {
 
         // Update tab panels
         document.querySelectorAll('[data-tab-panel]').forEach(panel => {
-            panel.style.display = panel.dataset.tabPanel === tabName ? 'block' : 'none';
+            const isActive = panel.dataset.tabPanel === tabName;
+            panel.style.display = isActive ? (panel.dataset.tabPanel === 'generate' ? 'flex' : 'block') : 'none';
         });
 
         if (tabName === 'history') {
