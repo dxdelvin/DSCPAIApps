@@ -1,3 +1,4 @@
+import asyncio
 import json
 import logging
 import os
@@ -49,6 +50,7 @@ from app.services.ppt_creator_service import (
 )
 from app.services.History import ppt_history_service, diagram_history_service, bpmn_history_service
 from app.services.auth_service import get_current_user
+from app.services.History.analytics_service import track_generation
 from app.services.diagram_generator_service import (
     analyze_pdf_content as diagram_analyze_pdf,
     generate_diagrams,
@@ -505,6 +507,7 @@ async def export_functional_spec(data: FSExportRequest):
         safe_title = "".join(c if c.isalnum() or c in "_ -" else "" for c in data.title).replace(" ", "_") or "Functional_Spec"
         filename = f"{safe_title}_Functional_Specification.docx"
 
+        asyncio.create_task(track_generation("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -552,6 +555,7 @@ async def export_business_requirement(data: BRExportRequest):
         safe_name = "".join(c if c.isalnum() or c in "_ -" else "" for c in title).replace(" ", "_") or "Business_Requirement"
         filename = f"{safe_name}_Business_Requirement.docx"
 
+        asyncio.create_task(track_generation("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -617,6 +621,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
         safe_title = "".join(c if c.isalnum() or c in "_ -" else "" for c in data.description).replace(" ", "_") or "FS_Template"
         filename = f"{safe_title}_Functional_Specification.docx"
 
+        asyncio.create_task(track_generation("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -1795,4 +1800,17 @@ async def one_pager_refine(data: OnePagerRefineRequest):
         "html": result.get("html"),
         "chatHistoryId": result.get("chatHistoryId"),
     }
+
+
+# ============== Admin Analytics ==============
+
+@router.get("/admin/analytics")
+async def admin_analytics(request: Request):
+    """Return aggregated analytics data. Admin-only."""
+    from app.services.History.analytics_service import get_analytics, ADMIN_USERS
+    user_info = get_current_user(request)
+    if user_info.get("user", "").lower() not in ADMIN_USERS:
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Access denied."})
+    data = await get_analytics()
+    return data
 

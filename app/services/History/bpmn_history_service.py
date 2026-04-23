@@ -45,6 +45,8 @@ import re
 import uuid
 from datetime import datetime, timezone
 
+from app.services.History.analytics_service import track_generation
+
 from app.services.History import storage_service as store
 
 logger = logging.getLogger(__name__)
@@ -129,6 +131,7 @@ async def save_generation(
     if not index_ok:
         return None
 
+    await track_generation("bpmn")
     return gen_id
 
 

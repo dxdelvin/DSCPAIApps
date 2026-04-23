@@ -1,9 +1,15 @@
 [
-  
+  {
+    "date": "Apr 28th, 2026",
+    "version": "v4.0.0",
+    "isNew": true,
+    "changes": [
+      "New: Your Generation History will be Saved for the following apps: AI Diagram Generator, PowerPoint Creator, BPMN Builder, One Pager Creator. You can view, download, and manage your past generations in the History section."
+    ]
+  },
   {
     "date": "Apr 16th, 2026",
     "version": "v3.3.0",
-    "isNew": true,
     "changes": [
       "New App: One Pager Creator - generate polished single-page Images (cheatsheets, flyers, executive summaries, infographics) from uploaded files or topic descriptions.",
       "Fix: PDF Parsing issue resolved.",

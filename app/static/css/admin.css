@@ -1,0 +1,441 @@
+/* ===================================================
+   Admin Analytics Dashboard — admin.css
+   =================================================== */
+
+/* Page wrapper */
+.adm-page {
+    padding: 32px 24px 60px;
+    max-width: 1300px;
+    margin: 0 auto;
+    animation: adm-fadeIn 0.35s ease;
+}
+
+@keyframes adm-fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header ─────────────────────────────────────────── */
+.adm-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.adm-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.adm-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: linear-gradient(135deg, rgba(255, 104, 64, 0.15), rgba(255, 104, 64, 0.05));
+    border: 1px solid rgba(255, 104, 64, 0.3);
+    border-radius: 100px;
+    font-size: 11.5px;
+    font-weight: 700;
+    color: var(--brand-orange);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    width: fit-content;
+}
+
+.adm-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+    letter-spacing: -0.4px;
+}
+
+.adm-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.adm-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.adm-user {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: var(--surface-secondary);
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    font-weight: 600;
+}
+
+.adm-date {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+}
+
+.adm-refresh {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    padding: 8px 18px;
+    cursor: pointer;
+}
+
+.adm-refresh:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@keyframes adm-spin { to { transform: rotate(360deg); } }
+.adm-refresh.spinning svg { animation: adm-spin 0.7s linear infinite; }
+
+/* ── Loading / Error states ──────────────────────────── */
+.adm-loading, .adm-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 80px 20px;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.adm-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--brand-orange);
+    border-radius: 50%;
+    animation: adm-spin 0.8s linear infinite;
+}
+
+.adm-error svg {
+    color: var(--danger);
+    opacity: 0.7;
+}
+
+.adm-error h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.adm-error p {
+    font-size: 14px;
+}
+
+/* ── Stat Cards ──────────────────────────────────────── */
+.adm-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.adm-stat-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px 22px 20px;
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+}
+
+.adm-stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 4px;
+    height: 100%;
+    border-radius: 4px 0 0 4px;
+}
+
+.adm-stat-orange::before { background: var(--brand-orange); }
+.adm-stat-blue::before   { background: var(--info); }
+.adm-stat-green::before  { background: var(--success); }
+.adm-stat-purple::before { background: #8b5cf6; }
+
+.adm-stat-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.adm-stat-label {
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.adm-stat-value {
+    font-size: 34px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: -1px;
+}
+
+.adm-stat-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.adm-stat-orange .adm-stat-icon { background: rgba(255,104,64,.1); color: var(--brand-orange); }
+.adm-stat-blue .adm-stat-icon   { background: rgba(37,99,235,.1);  color: var(--info); }
+.adm-stat-green .adm-stat-icon  { background: rgba(31,157,85,.1);  color: var(--success); }
+.adm-stat-purple .adm-stat-icon { background: rgba(139,92,246,.1); color: #8b5cf6; }
+
+/* ── Cards ───────────────────────────────────────────── */
+.adm-card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-soft);
+    border: 1px solid var(--border);
+    overflow: hidden;
+    margin-bottom: 20px;
+}
+
+.adm-card-head {
+    padding: 20px 24px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.adm-card-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.adm-card-title svg {
+    color: var(--brand-orange);
+    flex-shrink: 0;
+}
+
+/* Chart legend */
+.adm-chart-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    align-items: center;
+}
+
+.adm-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.adm-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+/* Chart area */
+.adm-chart-wrap {
+    padding: 20px 24px 16px;
+    position: relative;
+}
+
+.adm-chart-wrap canvas {
+    width: 100% !important;
+}
+
+/* ── Two-column layout ───────────────────────────────── */
+.adm-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+    align-items: start;
+}
+
+/* ── Generation Bars ─────────────────────────────────── */
+.adm-gen-bars {
+    padding: 16px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.adm-gen-row {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.adm-gen-row-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adm-gen-name {
+    font-size: 13px;
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+.adm-gen-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+}
+
+.adm-gen-track {
+    height: 8px;
+    border-radius: 100px;
+    background: var(--surface-secondary);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.adm-gen-fill {
+    height: 100%;
+    border-radius: 100px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Table ───────────────────────────────────────────── */
+.adm-table-wrap {
+    overflow-x: auto;
+}
+
+.adm-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+}
+
+.adm-table thead th {
+    padding: 12px 16px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--surface-secondary);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.adm-th-num { text-align: right; }
+
+.adm-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s ease;
+}
+
+.adm-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.adm-table tbody tr:hover {
+    background: var(--surface-hover);
+}
+
+.adm-table tbody td {
+    padding: 12px 16px;
+    vertical-align: middle;
+    color: var(--text-primary);
+}
+
+.adm-table tbody td:not(:first-child) {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.adm-app-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.adm-app-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.adm-app-name {
+    font-weight: 600;
+    font-size: 13.5px;
+}
+
+.adm-num-zero {
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+/* ── Last updated ────────────────────────────────────── */
+.adm-last-updated {
+    text-align: right;
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: -4px;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .adm-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .adm-two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .adm-page { padding: 20px 16px 48px; }
+    .adm-stats-grid { grid-template-columns: 1fr 1fr; gap: 12px; }
+    .adm-stat-value { font-size: 28px; }
+    .adm-header { flex-direction: column; }
+    .adm-header-right { justify-content: flex-start; }
+    .adm-card-head { flex-direction: column; }
+}
+
+/* Dark mode adjustments */
+body.dark-mode .adm-stat-card { border-color: var(--border); }
+body.dark-mode .adm-table thead th { background: rgba(255,255,255,0.03); }
