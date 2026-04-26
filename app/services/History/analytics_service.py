@@ -31,7 +31,7 @@ APP_LABELS: dict[str, str] = {
 }
 
 # Users allowed to access /dscpadmin (lowercase)
-ADMIN_USERS: frozenset = frozenset({"dsd9di", "local-dev", "eim1di"})
+ADMIN_USERS: frozenset = frozenset({"dsd9di", "local-dev", "eim1di", "BSR1DI"})
 
 
 def _clicks_key(date_str: str) -> str:
