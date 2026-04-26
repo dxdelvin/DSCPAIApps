@@ -42,7 +42,6 @@ async def startup_event():
     print("=" * 50)
     print(f"Starting {APP_TITLE}")
     
-    # Check XSUAA config
     config = get_xsuaa_config()
     if config:
         print(f"XSUAA configured: client_id={bool(config.get('client_id'))}, auth_url={config.get('auth_url')}")
@@ -51,7 +50,7 @@ async def startup_event():
     print("=" * 50)
 
 
-# ============== Auth Middleware Class ==============
+
 class MaxBodySizeMiddleware(BaseHTTPMiddleware):
     """Reject requests whose declared Content-Length exceeds 15 MB.
 
@@ -124,13 +123,8 @@ if IS_PROD_ENV and not SESSION_SECRET:
 if not SESSION_SECRET:
     SESSION_SECRET = "fallback-dev-secret-change-in-prod"
 
-# Want: Request → MaxBodySize → Session → Auth → Route
-# Add: Auth first, Session second, MaxBodySize last
-
-# Add Auth middleware FIRST (will execute AFTER Session)
 app.add_middleware(AuthMiddleware)
 
-# Add Session middleware SECOND
 app.add_middleware(
     SessionMiddleware, 
     secret_key=SESSION_SECRET, 
@@ -139,11 +133,8 @@ app.add_middleware(
     same_site="lax"
 )
 
-# Add MaxBodySize LAST (will execute FIRST, outermost)
 app.add_middleware(MaxBodySizeMiddleware)
 
-
-# Static assets (no auth required)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -152,7 +143,6 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 @app.get("/login")
 async def login(request: Request):
     """Redirect to XSUAA login page."""
-    # If running locally, just redirect to home
     if not os.getenv("VCAP_SERVICES"):
         return RedirectResponse(url="/", status_code=302)
     
@@ -171,14 +161,12 @@ async def auth_callback(request: Request, code: str = None, error: str = None, s
         print("Auth callback: No code received")
         return RedirectResponse(url="/login", status_code=302)
     
-    # Validate OAuth state to prevent CSRF
     expected_state = request.session.pop("oauth_state", None)
     if not expected_state or not state or not secrets.compare_digest(expected_state, state):
         print("Auth callback: Invalid OAuth state")
         return RedirectResponse(url="/login?error=invalid_state", status_code=302)
     
     try:
-        # Exchange code for token
         print(f"Auth callback: Exchanging code for token")
         token_data = await exchange_code_for_token(code, request)
         
@@ -197,11 +185,9 @@ async def auth_callback(request: Request, code: str = None, error: str = None, s
             print(f"Auth callback: User {user_info.get('user')} authenticated")
         except Exception as e:
             print(f"Token validation failed in callback: {e}")
-            # If we can't validate, we can't log them in securely
             return RedirectResponse(url="/login?error=token_validation_failed", status_code=302)
         
         print("Auth callback: Session established, redirecting to home")
-        # Redirect to home page
         return RedirectResponse(url="/", status_code=302)
     except Exception as e:
         print(f"Auth callback exception: {e}")
@@ -213,7 +199,6 @@ async def logout(request: Request):
     """Clear session and redirect to XSUAA logout."""
     request.session.clear()
     
-    # If running locally, just redirect to home
     if not os.getenv("VCAP_SERVICES"):
         return RedirectResponse(url="/", status_code=302)
     
@@ -234,12 +219,10 @@ async def health_check():
     })
 
 
-# Routers
 app.include_router(pages.router)
 app.include_router(api.router, prefix="/api")
 
 
-# 404 handler
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.templating import Jinja2Templates
 

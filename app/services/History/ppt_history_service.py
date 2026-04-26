@@ -1,9 +1,9 @@
 """
-PPT generation history — CRUD operations backed by BTP Object Store.
+PPT generation history - CRUD operations backed by BTP Object Store.
 
-Storage layout (all keys inside the bound bucket):
-    ppt-history/{safe_user_id}/index.json           — list of index entries (newest first)
-    ppt-history/{safe_user_id}/{gen_id}/content.json — full AI slide-content JSON
+Storage layout:
+    ppt-history/{safe_user_id}/index.json           - list of index entries (newest first)
+    ppt-history/{safe_user_id}/{gen_id}/content.json - full AI slide-content JSON
 
 Index entry schema:
     {
@@ -21,32 +21,24 @@ Index entry schema:
 """
 import json
 import logging
-import re
 import uuid
 from datetime import datetime, timezone
 
 from app.services.History.analytics_service import track_generation
-
+from app.services.History.user_id_utils import safe_user_id
 from app.services.History import storage_service as store
 
 logger = logging.getLogger(__name__)
 
 _MAX_HISTORY_ENTRIES = 50  # per user — oldest entries are pruned automatically
-_SAFE_USER_RE = re.compile(r"[^a-zA-Z0-9._\-]")
-
-
-def _safe_user_id(user_id: str) -> str:
-    """Sanitise the user identifier so it is safe to embed in an S3 key."""
-    sanitised = _SAFE_USER_RE.sub("_", user_id or "anonymous")
-    return sanitised[:64] or "anonymous"
 
 
 def _index_key(user_id: str) -> str:
-    return f"ppt-history/{_safe_user_id(user_id)}/index.json"
+    return f"ppt-history/{safe_user_id(user_id)}/index.json"
 
 
 def _content_key(user_id: str, gen_id: str) -> str:
-    return f"ppt-history/{_safe_user_id(user_id)}/{gen_id}/content.json"
+    return f"ppt-history/{safe_user_id(user_id)}/{gen_id}/content.json"
 
 
 def _now_iso() -> str:

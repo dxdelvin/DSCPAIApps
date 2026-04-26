@@ -29,7 +29,6 @@ def _validate_magic(data: bytes, filename: str) -> bool:
     sig = _FILE_MAGIC.get(ext)
     return sig is None or data[: len(sig)] == sig
 
-# Import from organized service files
 from app.services.common_service import create_chat_history
 from app.services.signavio_service import (
     get_signavio_bpmn_xml,
@@ -70,7 +69,7 @@ from app.services.one_pager_creator_service import (
 )
 router = APIRouter()
 
-# Request models for better type safety
+
 class BPMNSessionRequest(BaseModel):
     processName: str = Field(default="", max_length=200)
     poolName: str = Field(default="", max_length=200)
@@ -143,7 +142,6 @@ async def start_bpmn_session(data: BPMNSessionRequest):
             },
         )
 
-    # Create a new chat history for this session
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
         return JSONResponse(
@@ -157,7 +155,6 @@ async def start_bpmn_session(data: BPMNSessionRequest):
 
     chat_history_id = chat_result.get("chatHistoryId")
     
-    # Get initial analysis using the signavio service
     response = await analyze_process(data.model_dump(), chat_history_id)
 
     if response.get("error"):
@@ -201,7 +198,6 @@ async def bpmn_chat(data: BPMNChatRequest):
             },
         )
 
-    # Use the signavio service to continue the chat
     response = await signavio_continue_chat(data.chatHistoryId, data.message, data.formData)
 
     if response.get("error"):
@@ -369,7 +365,6 @@ async def audit_doc_check(file: UploadFile = File(...)):
         )
     await file.seek(0)
 
-    # Use the audit service
     result = await check_audit_document(file)
     
     if result.get("error"):
@@ -396,7 +391,6 @@ async def audit_chat(
     file: Optional[UploadFile] = File(None)
 ):
     """Continue audit conversation with optional file attachment."""
-    # Use the audit service
     response = await continue_audit_chat(chatHistoryId, message, file)
 
     if response.get("error"):

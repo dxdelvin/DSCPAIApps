@@ -13,7 +13,6 @@ from app.services.common_service import (
 )
 
 
-# BPMN Checker Workflow 2version in workflow editor
 BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
 
 BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
@@ -50,11 +49,8 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
             "detail": "BPMN_CHECKER_BRAIN_ID is not configured."
         }
 
-    # File type + size validation is enforced in the API router before this
-    # function is called. Re-seek to ensure the pointer is at the start.
     await file.seek(0)
 
-    # Create a chat history
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
         return chat_result

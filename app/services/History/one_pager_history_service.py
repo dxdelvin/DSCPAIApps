@@ -1,9 +1,9 @@
 """
-One Pager generation history — CRUD operations backed by BTP Object Store.
+One Pager generation history - CRUD operations backed by BTP Object Store.
 
-Storage layout (all keys inside the bound bucket):
-    one-pager-history/{safe_user_id}/index.json              — list of index entries (newest first)
-    one-pager-history/{safe_user_id}/{gen_id}/content.json   — full HTML content
+Storage layout:
+    one-pager-history/{safe_user_id}/index.json              - list of index entries (newest first)
+    one-pager-history/{safe_user_id}/{gen_id}/content.json   - full HTML content
 
 Index entry schema:
     {
@@ -19,30 +19,24 @@ Index entry schema:
 """
 import json
 import logging
-import re
 import uuid
 from datetime import datetime, timezone
 
 from app.services.History.analytics_service import track_generation
+from app.services.History.user_id_utils import safe_user_id
 from app.services.History import storage_service as store
 
 logger = logging.getLogger(__name__)
 
 _MAX_HISTORY_ENTRIES = 30
-_SAFE_USER_RE = re.compile(r"[^a-zA-Z0-9._\-]")
-
-
-def _safe_user_id(user_id: str) -> str:
-    sanitised = _SAFE_USER_RE.sub("_", user_id or "anonymous")
-    return sanitised[:64] or "anonymous"
 
 
 def _index_key(user_id: str) -> str:
-    return f"one-pager-history/{_safe_user_id(user_id)}/index.json"
+    return f"one-pager-history/{safe_user_id(user_id)}/index.json"
 
 
 def _content_key(user_id: str, gen_id: str) -> str:
-    return f"one-pager-history/{_safe_user_id(user_id)}/{gen_id}/content.json"
+    return f"one-pager-history/{safe_user_id(user_id)}/{gen_id}/content.json"
 
 
 def _now_iso() -> str:

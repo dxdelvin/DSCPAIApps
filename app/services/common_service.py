@@ -70,7 +70,7 @@ def sanitize_filename_for_prompt(filename: str) -> str:
 
 
 def _require_env(value: str, name: str) -> str:
-    """Check if the env files are working or not! Just DEBUG in UI"""
+    """Validate required environment variable."""
     if not value:
         raise HTTPException(status_code=500, detail=f"Missing configuration: {name}")
     return value
@@ -180,7 +180,6 @@ async def upload_attachments(brain_id: str, files: List[UploadFile]) -> dict:
             )
             response.raise_for_status()
             attachment_ids = response.json()
-            # print(f"DEBUG: Files uploaded successfully, IDs: {attachment_ids}")
             return {"attachmentIds": attachment_ids}
         except httpx.HTTPStatusError as e:
             return _friendly_http_error(e, "upload_attachments")
@@ -267,7 +266,7 @@ async def call_brain_chat(
 
     token = await get_brain_access_token()
     base_url, headers = _get_base_url_and_headers(token)
-    _require_env(base_url, "BRA                         IN_API_BASE_URL")
+    _require_env(base_url, "BRAIN_API_BASE_URL")
 
     url = f"{base_url}/chat/retrieval-augmented"
     payload = {
