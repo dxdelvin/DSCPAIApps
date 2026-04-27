@@ -1077,7 +1077,9 @@ class DiagramGeneratorApp {
             const response = await Utils.apiRequest('/api/diagram/history', { method: 'GET' });
             if (loading) loading.style.display = 'none';
             if (response.status === 'success') {
-                this.renderHistoryGrid(response.history || []);
+                this._rawHistory = response.history || [];
+                this._bindHistoryControls();
+                this._filterAndSort();
             }
         } catch (error) {
             if (loading) loading.style.display = 'none';
@@ -1089,23 +1091,71 @@ class DiagramGeneratorApp {
         }
     }
 
-    renderHistoryGrid(historyEntries) {
-        const grid = document.getElementById('history-grid');
-        const empty = document.getElementById('history-empty');
+    _bindHistoryControls() {
+        const searchEl = document.getElementById('history-search');
+        const sortEl   = document.getElementById('history-sort');
+        if (searchEl && !searchEl._dgBound) {
+            searchEl.addEventListener('input', () => this._filterAndSort());
+            searchEl._dgBound = true;
+        }
+        if (sortEl && !sortEl._dgBound) {
+            sortEl.addEventListener('change', () => this._filterAndSort());
+            sortEl._dgBound = true;
+        }
+    }
 
-        if (!historyEntries || historyEntries.length === 0) {
-            if (grid) grid.innerHTML = '';
-            if (empty) empty.style.display = 'flex';
+    _filterAndSort() {
+        const grid    = document.getElementById('history-grid');
+        const empty   = document.getElementById('history-empty');
+        const countEl = document.getElementById('history-count');
+        const query   = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
+        const sort    = document.getElementById('history-sort')?.value || 'newest';
+
+        let entries = (this._rawHistory || []).slice();
+
+        if (query) {
+            entries = entries.filter(e => {
+                const typesStr = Array.isArray(e.diagramTypes) ? e.diagramTypes.join(' ') : '';
+                return [e.title, typesStr].join(' ').toLowerCase().includes(query);
+            });
+        }
+
+        if (sort === 'oldest') {
+            entries.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+        } else if (sort === 'az') {
+            entries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        } else {
+            entries.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        }
+
+        if (countEl) {
+            if (query) {
+                countEl.textContent = `${entries.length} result${entries.length !== 1 ? 's' : ''}`;
+                countEl.hidden = false;
+            } else {
+                countEl.hidden = true;
+            }
+        }
+
+        if (!entries.length) {
+            if (grid) grid.innerHTML = query
+                ? `<p class="history-no-results">No results for "<strong>${escapeHtml(query)}</strong>"</p>`
+                : '';
+            if (empty) empty.style.display = (!query && !(this._rawHistory || []).length) ? 'flex' : 'none';
             return;
         }
 
         if (empty) empty.style.display = 'none';
         if (grid) grid.innerHTML = '';
-
-        historyEntries.forEach(entry => {
+        entries.forEach(entry => {
             const card = this._createHistoryCard(entry);
             if (grid) grid.appendChild(card);
         });
+    }
+
+    renderHistoryGrid(historyEntries) {
+        this._rawHistory = historyEntries || [];
+        this._filterAndSort();
     }
 
     _createHistoryCard(entry) {
@@ -1211,8 +1261,11 @@ class DiagramGeneratorApp {
         try {
             const response = await Utils.apiRequest(`/api/diagram/history/${genId}`, { method: 'DELETE' });
             if (response.status === 'success') {
+                if (this._rawHistory) {
+                    this._rawHistory = this._rawHistory.filter(e => e.id !== genId);
+                }
                 showToast('Diagram deleted', 'success');
-                this.loadHistory();
+                this._filterAndSort();
             }
         } catch (error) {
             AppLogger.error('Failed to delete generation', error);

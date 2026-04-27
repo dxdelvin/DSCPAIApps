@@ -625,28 +625,82 @@ PptCreatorApp.prototype.loadHistory = async function () {
             return;
         }
 
-        const history = data.history || [];
-        if (!history.length) {
-            empty.style.display = 'flex';
-            return;
-        }
-
-        grid.innerHTML = history.map(e => this._renderCard(e)).join('');
-
-        grid.querySelectorAll('[data-action="load"]').forEach(btn => {
-            btn.addEventListener('click', () => this.loadGeneration(btn.dataset.id, btn.dataset.chatHistoryId));
-        });
-        grid.querySelectorAll('[data-action="download"]').forEach(btn => {
-            btn.addEventListener('click', () => this.downloadFromHistory(btn.dataset.id, btn.dataset.title));
-        });
-        grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
-            btn.addEventListener('click', () => this.deleteGeneration(btn.dataset.id, btn.closest('.gen-card')));
-        });
+        this._rawHistory = data.history || [];
+        this._bindHistoryControls();
+        this._filterAndSort();
     } catch (err) {
         loading.style.display = 'none';
         AppLogger.error('History load error:', err);
         grid.innerHTML = `<p class="history-error">Connection error loading history.</p>`;
     }
+};
+
+PptCreatorApp.prototype._bindHistoryControls = function () {
+    const searchEl = document.getElementById('history-search');
+    const sortEl   = document.getElementById('history-sort');
+    if (searchEl && !searchEl._pptBound) {
+        searchEl.addEventListener('input', () => this._filterAndSort());
+        searchEl._pptBound = true;
+    }
+    if (sortEl && !sortEl._pptBound) {
+        sortEl.addEventListener('change', () => this._filterAndSort());
+        sortEl._pptBound = true;
+    }
+};
+
+PptCreatorApp.prototype._filterAndSort = function () {
+    const grid     = document.getElementById('history-grid');
+    const empty    = document.getElementById('history-empty');
+    const countEl  = document.getElementById('history-count');
+    const query    = (document.getElementById('history-search')?.value || '').trim().toLowerCase();
+    const sort     = document.getElementById('history-sort')?.value || 'newest';
+
+    let entries = (this._rawHistory || []).slice();
+
+    if (query) {
+        entries = entries.filter(e => {
+            const haystack = [e.title, e.subtitle].filter(Boolean).join(' ').toLowerCase();
+            return haystack.includes(query);
+        });
+    }
+
+    if (sort === 'oldest') {
+        entries.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+    } else if (sort === 'az') {
+        entries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    } else {
+        entries.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+    }
+
+    if (countEl) {
+        if (query) {
+            countEl.textContent = `${entries.length} result${entries.length !== 1 ? 's' : ''}`;
+            countEl.hidden = false;
+        } else {
+            countEl.hidden = true;
+        }
+    }
+
+    if (!entries.length) {
+        grid.innerHTML = query
+            ? `<p class="history-no-results">No results for "<strong>${escapeHtml(query)}</strong>"</p>`
+            : '';
+        empty.style.display = !query && !(this._rawHistory || []).length ? 'flex' : 'none';
+        return;
+    }
+
+    empty.style.display = 'none';
+    grid.innerHTML = entries.map(e => this._renderCard(e)).join('');
+
+    grid.querySelectorAll('[data-action="load"]').forEach(btn => {
+        btn.addEventListener('click', () => this.loadGeneration(btn.dataset.id, btn.dataset.chatHistoryId));
+    });
+    grid.querySelectorAll('[data-action="download"]').forEach(btn => {
+        btn.addEventListener('click', () => this.downloadFromHistory(btn.dataset.id, btn.dataset.title));
+    });
+    grid.querySelectorAll('[data-action="delete"]').forEach(btn => {
+        btn.addEventListener('click', () => this.deleteGeneration(btn.dataset.id, btn.closest('.gen-card')));
+    });
 };
 
 PptCreatorApp.prototype._renderCard = function (entry) {
@@ -750,12 +804,13 @@ PptCreatorApp.prototype._doDelete = async function (genId, cardEl) {
     try {
         const res = await fetch(`/api/ppt/history/${encodeURIComponent(genId)}`, { method: 'DELETE' });
         if (res.ok) {
+            if (this._rawHistory) {
+                this._rawHistory = this._rawHistory.filter(e => e.id !== genId);
+            }
             cardEl?.remove();
-            // If grid is now empty, show empty state
             if (!document.querySelector('.gen-card')) {
                 document.getElementById('history-empty').style.display = 'flex';
             }
-            // Clear currentGenId if we just deleted the active generation
             if (this.currentGenId === genId) this.currentGenId = null;
             showToast('Generation deleted.', 'success');
         } else {

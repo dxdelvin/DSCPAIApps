@@ -733,7 +733,9 @@ window.onload = function () {
             const response = await Utils.apiRequest('/api/one-pager/history', { method: 'GET' });
             if (loading) loading.style.display = 'none';
             if (response.status === 'success') {
-                this._renderHistoryGrid(response.history || []);
+                this._rawHistory = response.history || [];
+                this._bindHistoryControls();
+                this._filterAndSort();
             }
         } catch (error) {
             if (loading) loading.style.display = 'none';
@@ -744,22 +746,70 @@ window.onload = function () {
         }
     }
 
-    _renderHistoryGrid(entries) {
-        const grid = document.getElementById('op-history-grid');
-        const empty = document.getElementById('history-empty');
+    _bindHistoryControls() {
+        const searchEl = document.getElementById('op-history-search');
+        const sortEl   = document.getElementById('op-history-sort');
+        if (searchEl && !searchEl._opBound) {
+            searchEl.addEventListener('input', () => this._filterAndSort());
+            searchEl._opBound = true;
+        }
+        if (sortEl && !sortEl._opBound) {
+            sortEl.addEventListener('change', () => this._filterAndSort());
+            sortEl._opBound = true;
+        }
+    }
 
-        if (!entries || entries.length === 0) {
-            if (grid) grid.innerHTML = '';
-            if (empty) empty.style.display = 'flex';
+    _filterAndSort() {
+        const grid    = document.getElementById('op-history-grid');
+        const empty   = document.getElementById('history-empty');
+        const countEl = document.getElementById('op-history-count');
+        const query   = (document.getElementById('op-history-search')?.value || '').trim().toLowerCase();
+        const sort    = document.getElementById('op-history-sort')?.value || 'newest';
+
+        let entries = (this._rawHistory || []).slice();
+
+        if (query) {
+            entries = entries.filter(e =>
+                [e.title, e.templateStyle].filter(Boolean).join(' ').toLowerCase().includes(query)
+            );
+        }
+
+        if (sort === 'oldest') {
+            entries.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt));
+        } else if (sort === 'az') {
+            entries.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+        } else {
+            entries.sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        }
+
+        if (countEl) {
+            if (query) {
+                countEl.textContent = `${entries.length} result${entries.length !== 1 ? 's' : ''}`;
+                countEl.hidden = false;
+            } else {
+                countEl.hidden = true;
+            }
+        }
+
+        if (!entries.length) {
+            if (grid) grid.innerHTML = query
+                ? `<p class="history-no-results">No results for "<strong>${escapeHtml(query)}</strong>"</p>`
+                : '';
+            if (empty) empty.style.display = (!query && !(this._rawHistory || []).length) ? 'flex' : 'none';
             return;
         }
+
         if (empty) empty.style.display = 'none';
         if (grid) grid.innerHTML = '';
-
         entries.forEach(entry => {
             const card = this._createHistoryCard(entry);
             if (grid) grid.appendChild(card);
         });
+    }
+
+    _renderHistoryGrid(entries) {
+        this._rawHistory = entries || [];
+        this._filterAndSort();
     }
 
     _createHistoryCard(entry) {
@@ -873,13 +923,12 @@ window.onload = function () {
         try {
             const response = await Utils.apiRequest(`/api/one-pager/history/${genId}`, { method: 'DELETE' });
             if (response.status === 'success') {
+                if (this._rawHistory) {
+                    this._rawHistory = this._rawHistory.filter(e => e.id !== genId);
+                }
                 if (cardEl) cardEl.remove();
                 if (this.currentGenId === genId) this.currentGenId = null;
-                const grid = document.getElementById('op-history-grid');
-                if (grid && !grid.children.length) {
-                    const empty = document.getElementById('history-empty');
-                    if (empty) empty.style.display = 'flex';
-                }
+                this._filterAndSort();
                 showToast('One-pager deleted.', 'success');
             } else {
                 showToast('Could not delete. Try again.', 'error');

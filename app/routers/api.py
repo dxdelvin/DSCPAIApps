@@ -48,6 +48,8 @@ from app.services.ppt_creator_service import (
     generate_pptx_file,
 )
 from app.services.History import ppt_history_service, diagram_history_service, bpmn_history_service, one_pager_history_service
+from app.services.History import favorites_service
+from app.services.History.favorites_service import ALLOWED_APP_KEYS
 from app.services.auth_service import get_current_user
 from app.services.History.analytics_service import track_generation
 from app.services.diagram_generator_service import (
@@ -1912,6 +1914,48 @@ async def one_pager_history_delete(gen_id: str, request: Request):
     except Exception:
         logger.exception("Failed to delete one-pager generation gen_id=%r", gen_id)
         return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
+
+
+# ============== User Favourites ==============
+
+@router.get("/favorites")
+async def favorites_get(request: Request):
+    """Return the authenticated user's list of starred app keys."""
+    user_id = get_current_user(request).get("user", "anonymous")
+    keys = await favorites_service.get_favorites(user_id)
+    return {"status": "success", "favorites": keys}
+
+
+@router.post("/favorites/{app_key}")
+async def favorites_add(app_key: str, request: Request):
+    """Add an app key to the user's favourites."""
+    if app_key not in ALLOWED_APP_KEYS:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid app key."})
+    user_id = get_current_user(request).get("user", "anonymous")
+    try:
+        ok = await favorites_service.add_favorite(user_id, app_key)
+        if not ok:
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save favourite."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to add favourite app_key=%r", app_key)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save favourite."})
+
+
+@router.delete("/favorites/{app_key}")
+async def favorites_remove(app_key: str, request: Request):
+    """Remove an app key from the user's favourites."""
+    if app_key not in ALLOWED_APP_KEYS:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid app key."})
+    user_id = get_current_user(request).get("user", "anonymous")
+    try:
+        ok = await favorites_service.remove_favorite(user_id, app_key)
+        if not ok:
+            return JSONResponse(status_code=500, content={"status": "error", "message": "Could not remove favourite."})
+        return {"status": "success"}
+    except Exception:
+        logger.exception("Failed to remove favourite app_key=%r", app_key)
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not remove favourite."})
 
 
 # ============== Admin Analytics ==============

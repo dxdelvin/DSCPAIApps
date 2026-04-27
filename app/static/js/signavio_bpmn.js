@@ -1692,24 +1692,81 @@ async function loadBpmnHistory() {
 
         if (!response.ok) throw new Error(result.message || 'Failed to load history');
 
-        const history = result.history || [];
         if (loadingEl) loadingEl.style.display = 'none';
 
-        if (history.length === 0) {
-            if (emptyEl) emptyEl.style.display = 'flex';
-            return;
-        }
-
-        history.forEach(entry => {
-            const card = _renderBpmnHistoryCard(entry);
-            gridEl.appendChild(card);
-        });
+        window._bpmnRawHistory = result.history || [];
+        _bindBpmnHistoryControls();
+        _filterAndSortBpmn();
 
     } catch (err) {
         AppLogger.error('Load BPMN history error:', err);
         if (loadingEl) loadingEl.style.display = 'none';
         gridEl.innerHTML = '<div class="history-error">Failed to load history. Please try again.</div>';
     }
+}
+
+function _bindBpmnHistoryControls() {
+    const searchEl = document.getElementById('bpmn-history-search');
+    const sortEl   = document.getElementById('bpmn-history-sort');
+    if (searchEl && !searchEl._bpmnBound) {
+        searchEl.addEventListener('input', _filterAndSortBpmn);
+        searchEl._bpmnBound = true;
+    }
+    if (sortEl && !sortEl._bpmnBound) {
+        sortEl.addEventListener('change', _filterAndSortBpmn);
+        sortEl._bpmnBound = true;
+    }
+}
+
+function _filterAndSortBpmn() {
+    const gridEl   = document.getElementById('bpmn-history-grid');
+    const emptyEl  = document.getElementById('bpmn-history-empty');
+    const countEl  = document.getElementById('bpmn-history-count');
+    const query    = (document.getElementById('bpmn-history-search')?.value || '').trim().toLowerCase();
+    const sort     = document.getElementById('bpmn-history-sort')?.value || 'newest';
+
+    let entries = (window._bpmnRawHistory || []).slice();
+
+    if (query) {
+        entries = entries.filter(e =>
+            [e.processName, e.filename].filter(Boolean).join(' ').toLowerCase().includes(query)
+        );
+    }
+
+    if (sort === 'oldest') {
+        entries.sort((a, b) => new Date(a.updatedAt || a.createdAt) - new Date(b.updatedAt || b.createdAt));
+    } else if (sort === 'az') {
+        entries.sort((a, b) => (a.processName || '').localeCompare(b.processName || ''));
+    } else {
+        entries.sort((a, b) => new Date(b.updatedAt || b.createdAt) - new Date(a.updatedAt || a.createdAt));
+    }
+
+    if (countEl) {
+        if (query) {
+            countEl.textContent = `${entries.length} result${entries.length !== 1 ? 's' : ''}`;
+            countEl.hidden = false;
+        } else {
+            countEl.hidden = true;
+        }
+    }
+
+    if (!gridEl) return;
+    gridEl.innerHTML = '';
+
+    if (!entries.length) {
+        if (query) {
+            gridEl.innerHTML = `<p class="history-no-results">No results for "<strong>${escapeHtml(query)}</strong>"</p>`;
+        } else if (emptyEl) {
+            emptyEl.style.display = 'flex';
+        }
+        return;
+    }
+
+    if (emptyEl) emptyEl.style.display = 'none';
+    entries.forEach(entry => {
+        const card = _renderBpmnHistoryCard(entry);
+        gridEl.appendChild(card);
+    });
 }
 
 function _renderBpmnHistoryCard(entry) {
@@ -1888,12 +1945,11 @@ async function deleteBpmnGeneration(genId, cardEl) {
     try {
         const response = await fetch(`/api/bpmn/history/${encodeURIComponent(genId)}`, { method: 'DELETE' });
         if (response.ok) {
-            cardEl.remove();
-            const gridEl = document.getElementById('bpmn-history-grid');
-            if (gridEl && gridEl.children.length === 0) {
-                const emptyEl = document.getElementById('bpmn-history-empty');
-                if (emptyEl) emptyEl.style.display = 'flex';
+            if (window._bpmnRawHistory) {
+                window._bpmnRawHistory = window._bpmnRawHistory.filter(e => e.id !== genId);
             }
+            cardEl.remove();
+            _filterAndSortBpmn();
         } else {
             cardEl.style.opacity = '';
             showToast('Failed to delete generation.', 'error');
