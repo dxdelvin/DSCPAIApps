@@ -1048,7 +1048,13 @@ class DiagramGeneratorApp {
 
         // Update tab panels
         document.querySelectorAll('[data-tab-panel]').forEach(panel => {
-            panel.style.display = panel.dataset.tabPanel === tabName ? 'block' : 'none';
+            const isActive = panel.dataset.tabPanel === tabName;
+            if (isActive) {
+                // .dg-content uses flexbox for the two-panel layout
+                panel.style.display = panel.classList.contains('dg-content') ? 'flex' : 'block';
+            } else {
+                panel.style.display = 'none';
+            }
         });
 
         if (tabName === 'history') {

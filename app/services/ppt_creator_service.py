@@ -129,7 +129,10 @@ EXTRACT_BEHAVIOUR = (
     "8. For two_columns / three_columns / four_quadrants, provide content "
     "in the 'columns' array.\n"
     "9. For smart_art, you can optionally specify custom 'colors' array with hex values "
-    "(e.g., ['#FF5F00', '#228BE6']). If not specified, default palette is used.\n\n"
+    "(e.g., ['#FF5F00', '#228BE6']). If not specified, default palette is used.\n"
+    "10. Never use the same 'layout' value for two or more consecutive slides. If you would "
+    "repeat a 'content' slide back-to-back, switch to 'two_columns', 'smart_art', or a "
+    "column variant instead. Visual variety is mandatory — reviewers notice monotony.\n\n"
     "Return your response as a valid JSON object with this EXACT structure:\n"
     "{\n"
     '  "title": "Presentation Title",\n'
@@ -212,35 +215,49 @@ def _create_placeholder_image(
     width_px: int = 800,
     height_px: int = 600,
 ) -> io.BytesIO:
-    """Create a simple grey placeholder image with BSH branding."""
-    img = Image.new("RGB", (width_px, height_px), (200, 200, 200))
+    """Create a clean light-grey placeholder image with centred description text."""
+    img = Image.new("RGB", (width_px, height_px), (210, 210, 210))
     draw = ImageDraw.Draw(img)
 
-    # Simple grey box
-    draw.rectangle([0, 0, width_px, height_px], fill=(220, 220, 220), outline=(180, 180, 180), width=2)
+    # Subtle darker-grey border
+    draw.rectangle([0, 0, width_px - 1, height_px - 1], outline=(160, 160, 160), width=2)
 
-    # BSH text
+    # Small camera/image icon hint — a thin inner rect to suggest a picture frame
+    pad = width_px // 14
+    draw.rectangle(
+        [pad, pad, width_px - pad, height_px - pad],
+        outline=(170, 170, 170), width=1,
+    )
+
+    # Description text — centred, dark grey
     try:
-        bsh_font = ImageFont.truetype("arial.ttf", max(36, min(width_px, height_px) // 15))
+        font = ImageFont.truetype("arial.ttf", max(16, min(width_px, height_px) // 18))
     except (OSError, IOError):
-        bsh_font = ImageFont.load_default()
+        font = ImageFont.load_default()
 
-    bsh_text = "BSH"
-    bsh_bbox = draw.textbbox((0, 0), bsh_text, font=bsh_font)
-    bsh_w = bsh_bbox[2] - bsh_bbox[0]
-    bsh_h = bsh_bbox[3] - bsh_bbox[1]
-    draw.text(((width_px - bsh_w) // 2, height_px // 2 - bsh_h - 10), bsh_text, fill=(100, 100, 100), font=bsh_font)
+    label = f"Photo: {description}"
+    words = label.split()
+    lines, current = [], ""
+    for word in words:
+        if len(current) + len(word) + 1 > 38:
+            lines.append(current.strip())
+            current = word + " "
+        else:
+            current += word + " "
+    if current.strip():
+        lines.append(current.strip())
 
-    # Placeholder Image text
-    try:
-        label_font = ImageFont.truetype("arial.ttf", max(14, min(width_px, height_px) // 30))
-    except (OSError, IOError):
-        label_font = ImageFont.load_default()
-
-    label = "Placeholder Image"
-    label_bbox = draw.textbbox((0, 0), label, font=label_font)
-    label_w = label_bbox[2] - label_bbox[0]
-    draw.text(((width_px - label_w) // 2, height_px // 2 + 20), label, fill=(120, 120, 120), font=label_font)
+    line_h = max(22, min(width_px, height_px) // 16)
+    total_text_h = len(lines) * line_h
+    text_y = (height_px - total_text_h) // 2
+    for line in lines:
+        try:
+            lbbox = draw.textbbox((0, 0), line, font=font)
+            lw = lbbox[2] - lbbox[0]
+        except Exception:
+            lw = len(line) * 8
+        draw.text(((width_px - lw) // 2, text_y), line, fill=(90, 90, 90), font=font)
+        text_y += line_h
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -296,13 +313,13 @@ def _draw_process_smart_art(slide, items, custom_colors=None):
     area_w = Inches(10.8)
     area_h = Inches(4.0)
 
-    arrow_w = Inches(0.25)
+    arrow_w = Inches(0.28)
     gap = Inches(0.1)
 
     total_arrow_space = max(0, n - 1) * (arrow_w + gap * 2)
     box_w = min(int((area_w - total_arrow_space) / n), Inches(2.5))
-    box_h = Inches(1.2)
-    fs = Pt(12) if box_w > Inches(1.8) else Pt(10) if box_w > Inches(1.2) else Pt(9)
+    box_h = Inches(1.6)
+    fs = Pt(12) if box_w > Inches(1.8) else Pt(11) if box_w > Inches(1.2) else Pt(10)
 
     total_w = n * box_w + max(0, n - 1) * (arrow_w + gap * 2)
     start_x = area_left + (area_w - total_w) // 2
@@ -310,21 +327,41 @@ def _draw_process_smart_art(slide, items, custom_colors=None):
 
     x = start_x
     for i, item in enumerate(items):
+        color = _get_sa_color(i, custom_colors)
         _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             int(x), int(y), int(box_w), int(box_h),
-            item, _get_sa_color(i, custom_colors), BSH_WHITE, fs, True,
+            item, color, BSH_WHITE, fs, True,
         )
+        # Step number badge
+        badge_r = Inches(0.22)
+        badge = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(x + Inches(0.08)), int(y + Inches(0.08)),
+            int(badge_r * 2), int(badge_r * 2),
+        )
+        badge.fill.solid()
+        badge.fill.fore_color.rgb = BSH_WHITE
+        badge.line.color.rgb = color
+        badge.line.width = Pt(1)
+        tf_b = badge.text_frame
+        p_b = tf_b.paragraphs[0]
+        p_b.text = str(i + 1)
+        p_b.alignment = PP_ALIGN.CENTER
+        for run in p_b.runs:
+            run.font.size = Pt(8)
+            run.font.color.rgb = color
+            run.font.bold = True
         x += box_w
         if i < n - 1:
             x += gap
             arrow = slide.shapes.add_shape(
                 MSO_SHAPE.RIGHT_ARROW,
-                int(x), int(y + box_h // 2 - Inches(0.15)),
-                int(arrow_w), int(Inches(0.3)),
+                int(x), int(y + box_h // 2 - Inches(0.18)),
+                int(arrow_w), int(Inches(0.36)),
             )
             arrow.fill.solid()
-            arrow.fill.fore_color.rgb = BSH_GREY
+            arrow.fill.fore_color.rgb = BSH_ORANGE
             arrow.line.fill.background()
             x += arrow_w + gap
 
@@ -341,10 +378,12 @@ def _draw_list_blocks_smart_art(slide, items, custom_colors=None):
     area_h = Inches(4.5)
 
     gap = Inches(0.15)
-    block_h = min(int((area_h - (n - 1) * gap) / n), Inches(0.9))
-    accent_w = Inches(0.12)
+    block_h = min(int((area_h - (n - 1) * gap) / n), Inches(1.1))
+    accent_w = Inches(0.55)
     total_h = n * block_h + (n - 1) * gap
     y = area_top + (area_h - total_h) // 2
+    fs_lb = Pt(16) if n <= 3 else Pt(14) if n <= 5 else Pt(12)
+    badge_d = min(int(block_h * 0.55), int(Inches(0.45)))
 
     for i, item in enumerate(items):
         color = _get_sa_color(i, custom_colors)
@@ -357,6 +396,25 @@ def _draw_list_blocks_smart_art(slide, items, custom_colors=None):
         accent.fill.solid()
         accent.fill.fore_color.rgb = color
         accent.line.fill.background()
+
+        # Number badge centred on the accent bar
+        badge = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(area_left + (accent_w - badge_d) // 2),
+            int(y + (block_h - badge_d) // 2),
+            int(badge_d), int(badge_d),
+        )
+        badge.fill.solid()
+        badge.fill.fore_color.rgb = BSH_WHITE
+        badge.line.fill.background()
+        tf_badge = badge.text_frame
+        p_badge = tf_badge.paragraphs[0]
+        p_badge.text = str(i + 1)
+        p_badge.alignment = PP_ALIGN.CENTER
+        for run in p_badge.runs:
+            run.font.size = Pt(10)
+            run.font.color.rgb = color
+            run.font.bold = True
 
         # Content block
         blk = slide.shapes.add_shape(
@@ -377,7 +435,7 @@ def _draw_list_blocks_smart_art(slide, items, custom_colors=None):
         p.text = item
         p.alignment = PP_ALIGN.LEFT
         run = p.runs[0]
-        run.font.size = Pt(13)
+        run.font.size = fs_lb
         run.font.color.rgb = BSH_NAVY
         run.font.bold = True
 
@@ -439,11 +497,26 @@ def _draw_matrix_smart_art(slide, items, custom_colors=None):
     for i, (item, (x, y)) in enumerate(zip(padded, positions)):
         if not item:
             continue
-        _add_shape_with_text(
+        color = _get_sa_color(i, custom_colors)
+        shape = _add_shape_with_text(
             slide, MSO_SHAPE.ROUNDED_RECTANGLE,
             int(x), int(y), cell_w, cell_h,
-            item, _get_sa_color(i, custom_colors), BSH_WHITE, Pt(14), True,
+            item, color, BSH_WHITE, Pt(14), True,
         )
+        shape.text_frame.margin_top = Inches(0.45)
+        # Darker header strip at top of each cell
+        darker = RGBColor(
+            max(0, color[0] - 40),
+            max(0, color[1] - 40),
+            max(0, color[2] - 40),
+        )
+        hdr = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(x), int(y), cell_w, int(Inches(0.38)),
+        )
+        hdr.fill.solid()
+        hdr.fill.fore_color.rgb = darker
+        hdr.line.fill.background()
 
 
 def _draw_cycle_smart_art(slide, items, custom_colors=None):
@@ -475,6 +548,17 @@ def _draw_cycle_smart_art(slide, items, custom_colors=None):
     circle.line.color.rgb = RGBColor(0xCB, 0xD5, 0xE1)
     circle.line.width = Pt(1.5)
 
+    # Center anchor circle
+    anchor_r = Inches(0.35)
+    anchor = slide.shapes.add_shape(
+        MSO_SHAPE.OVAL,
+        int(cx - anchor_r), int(cy - anchor_r),
+        int(anchor_r * 2), int(anchor_r * 2),
+    )
+    anchor.fill.solid()
+    anchor.fill.fore_color.rgb = BSH_ORANGE
+    anchor.line.fill.background()
+
     for i, item in enumerate(items):
         angle = 2 * math.pi * i / n - math.pi / 2
         x = cx + radius_x * math.cos(angle) - node_w // 2
@@ -494,8 +578,8 @@ def _draw_timeline_smart_art(slide, items, custom_colors=None):
         return
 
     area_left = Inches(1)
-    area_top = Inches(2.5)
-    area_w = Inches(10)
+    area_top = Inches(2.3)
+    area_w = Inches(9)
     line_y = area_top + Inches(1)
 
     # Timeline line
@@ -509,11 +593,14 @@ def _draw_timeline_smart_art(slide, items, custom_colors=None):
     line.line.fill.background()
 
     gap = area_w / max(n - 1, 1) if n > 1 else 0
-    marker_r = Inches(0.15)
+    marker_r = Inches(0.22)
+    box_w_tl = Inches(1.6)
+    box_h_tl = Inches(0.6)
 
     for i, item in enumerate(items):
         x = area_left + (gap * i if n > 1 else area_w // 2)
-        
+        color = _get_sa_color(i, custom_colors)
+
         # Marker circle
         marker = slide.shapes.add_shape(
             MSO_SHAPE.OVAL,
@@ -521,12 +608,44 @@ def _draw_timeline_smart_art(slide, items, custom_colors=None):
             int(marker_r * 2), int(marker_r * 2),
         )
         marker.fill.solid()
-        marker.fill.fore_color.rgb = _get_sa_color(i, custom_colors)
+        marker.fill.fore_color.rgb = color
         marker.line.fill.background()
 
-        # Label (alternating above/below)
-        label_y = line_y - Inches(0.8) if i % 2 == 0 else line_y + Inches(0.4)
-        _add_textbox(slide, item, int(x - Inches(0.8)), int(label_y), int(Inches(1.6)), int(Inches(0.4)), Pt(11), True, BSH_NAVY)
+        # Label box with border, alternating above/below
+        box_y = int(line_y - Inches(1.05)) if i % 2 == 0 else int(line_y + Inches(0.5))
+        conn_top = int(box_y + box_h_tl) if i % 2 == 0 else int(line_y + marker_r)
+        conn_bot = int(line_y - marker_r) if i % 2 == 0 else int(box_y)
+        conn_h = abs(conn_bot - conn_top)
+        if conn_h > 0:
+            conn = slide.shapes.add_shape(
+                MSO_SHAPE.RECTANGLE,
+                int(x - Inches(0.015)), int(min(conn_top, conn_bot)),
+                int(Inches(0.03)), conn_h,
+            )
+            conn.fill.solid()
+            conn.fill.fore_color.rgb = color
+            conn.line.fill.background()
+
+        lbox = slide.shapes.add_shape(
+            MSO_SHAPE.ROUNDED_RECTANGLE,
+            int(x - box_w_tl // 2), box_y,
+            int(box_w_tl), int(box_h_tl),
+        )
+        lbox.fill.solid()
+        lbox.fill.fore_color.rgb = BSH_WHITE
+        lbox.line.color.rgb = color
+        lbox.line.width = Pt(1.5)
+        tf_l = lbox.text_frame
+        tf_l.word_wrap = True
+        tf_l.margin_left = Inches(0.08)
+        tf_l.margin_top = Inches(0.06)
+        p_l = tf_l.paragraphs[0]
+        p_l.text = item
+        p_l.alignment = PP_ALIGN.CENTER
+        for run in p_l.runs:
+            run.font.size = Pt(10)
+            run.font.color.rgb = BSH_NAVY
+            run.font.bold = True
 
 
 def _draw_venn_smart_art(slide, items, custom_colors=None):
@@ -591,21 +710,23 @@ def _draw_funnel_smart_art(slide, items, custom_colors=None):
 
     y = area_top
     for i, item in enumerate(items):
-        # Calculate width - narrow from top to bottom
-        frac = 1 - (i / max(n, 1)) * 0.6  # 100% to 40% width
+        # Calculate width - narrow from top to bottom (wider bottom)
+        frac = 1 - (i / max(n, 1)) * 0.35  # 100% to 65% width
         w = int(area_w * frac)
         x = int(area_left + (area_w - w) // 2)
 
+        color = _get_sa_color(i, custom_colors)
         shape = slide.shapes.add_shape(
             MSO_SHAPE.ROUNDED_RECTANGLE,
             x, int(y), w, int(stage_h),
         )
         shape.fill.solid()
-        shape.fill.fore_color.rgb = _get_sa_color(i, custom_colors)
+        shape.fill.fore_color.rgb = color
         shape.line.fill.background()
 
         tf = shape.text_frame
         tf.word_wrap = True
+        tf.margin_left = Inches(0.6)
         p = tf.paragraphs[0]
         p.alignment = PP_ALIGN.CENTER
         p.text = item
@@ -613,6 +734,25 @@ def _draw_funnel_smart_art(slide, items, custom_colors=None):
         run.font.size = Pt(13)
         run.font.color.rgb = BSH_WHITE
         run.font.bold = True
+
+        # Number badge on the left edge of each stage
+        badge_d = int(min(stage_h * 0.6, Inches(0.5)))
+        badge = slide.shapes.add_shape(
+            MSO_SHAPE.OVAL,
+            int(x + Inches(0.1)), int(y + (stage_h - badge_d) // 2),
+            int(badge_d), int(badge_d),
+        )
+        badge.fill.solid()
+        badge.fill.fore_color.rgb = BSH_WHITE
+        badge.line.fill.background()
+        tf_badge = badge.text_frame
+        p_badge = tf_badge.paragraphs[0]
+        p_badge.text = str(i + 1)
+        p_badge.alignment = PP_ALIGN.CENTER
+        for run in p_badge.runs:
+            run.font.size = Pt(10)
+            run.font.color.rgb = color
+            run.font.bold = True
 
         y += stage_h + gap
 
@@ -911,10 +1051,9 @@ def _draw_agenda_smart_art(slide, items, custom_colors=None):
     area_left = Inches(0.8)
     area_top = Inches(1.6)
     area_w = Inches(10.5)
-    row_h = Inches(0.85)
+    row_h = Inches(0.85) if n <= 4 else Inches(0.75) if n == 5 else Inches(0.65)
     gap = Inches(0.08)
     num_w = Inches(0.6)
-    total_h = n * row_h + (n - 1) * gap
     y = area_top
 
     for i, raw_item in enumerate(items):
@@ -1026,27 +1165,71 @@ def _load_template() -> Presentation:
 
 # ─── Slide builders ──────────────────────────────────────
 
+_EMOJI_RE = re.compile(
+    r'[\U00010000-\U0010FFFF'     # Supplementary planes (most emoji)
+    r'\u2600-\u26FF'              # Misc symbols
+    r'\u2700-\u27BF'              # Dingbats
+    r'\uFE00-\uFE0F'              # Variation selectors
+    r'\u20D0-\u20FF]',            # Combining diacritical marks for symbols
+    re.UNICODE,
+)
+
+_ADML_NS = 'http://schemas.openxmlformats.org/drawingml/2006/main'
+_RPR_TAGS = frozenset([
+    f'{{{_ADML_NS}}}rPr',
+    f'{{{_ADML_NS}}}defRPr',
+    f'{{{_ADML_NS}}}endParaRPr',
+])
+
+
+def _force_no_strike(tf):
+    """Force strike='noStrike' on every run/paragraph property element in a text frame.
+
+    Some BSH template placeholders have strikethrough baked into the placeholder XML at
+    the paragraph or body level. python-pptx's run.font.strike only sets it on the run
+    element; iterating the raw XML ensures no level in the inheritance chain has strike.
+    """
+    for elem in tf._txBody.iter():
+        if elem.tag in _RPR_TAGS:
+            elem.set('strike', 'noStrike')
+
+
+def _clean_text(s: str) -> str:
+    """Strip emoji and markdown formatting markers from text before inserting into slides."""
+    if not s:
+        return s
+    s = re.sub(r'~~(.*?)~~', r'\1', s)          # ~~strikethrough~~ -> text
+    s = re.sub(r'\*\*(.*?)\*\*', r'\1', s)     # **bold** -> text
+    s = re.sub(r'\*(.*?)\*', r'\1', s)          # *italic* -> text
+    s = _EMOJI_RE.sub('', s)
+    return s.strip()
+
+
 def _set_placeholder_text(slide, ph_idx: int, text: str):
     """Safely set text on a placeholder by index."""
     try:
-        slide.placeholders[ph_idx].text = text
+        slide.placeholders[ph_idx].text = _clean_text(text)
     except (KeyError, IndexError):
         pass
 
 
 def _fill_bullets(placeholder, bullets: list[str]):
-    """Fill a content placeholder with bullet points."""
+    """Fill a content placeholder with bullet points, auto-scaling font by count."""
     try:
+        n = len(bullets)
+        fs = Pt(18) if n <= 3 else Pt(16) if n <= 5 else Pt(14)
         tf = placeholder.text_frame
         tf.clear()
         for j, bullet in enumerate(bullets):
+            text = _clean_text(bullet)
             if j == 0:
-                tf.paragraphs[0].text = bullet
-                _style_para(tf.paragraphs[0], Pt(16), BSH_NAVY)
+                tf.paragraphs[0].text = text
+                _style_para(tf.paragraphs[0], fs, BSH_NAVY)
             else:
                 p = tf.add_paragraph()
-                p.text = bullet
-                _style_para(p, Pt(16), BSH_NAVY)
+                p.text = text
+                _style_para(p, fs, BSH_NAVY)
+        _force_no_strike(tf)
     except Exception:
         pass
 
@@ -1077,9 +1260,40 @@ def _style_para(para, size, color, bold=False):
         run.font.size = size
         run.font.color.rgb = color
         run.font.bold = bold
+        run.font.strike = False
 
 
-def _build_title_slide(prs, slide_data, layout):
+def _add_title_accent(slide):
+    """Draw a short orange underline beneath the slide title."""
+    try:
+        bar = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            Inches(0.87), Inches(1.43),
+            Inches(2.5), Inches(0.045),
+        )
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = BSH_ORANGE
+        bar.line.fill.background()
+    except Exception:
+        pass
+
+
+def _add_chapter_accent(slide):
+    """Draw an orange vertical accent bar on the left of a chapter slide."""
+    try:
+        bar = slide.shapes.add_shape(
+            MSO_SHAPE.RECTANGLE,
+            Inches(0.3), Inches(1.8),
+            Inches(0.15), Inches(3.5),
+        )
+        bar.fill.solid()
+        bar.fill.fore_color.rgb = BSH_ORANGE
+        bar.line.fill.background()
+    except Exception:
+        pass
+
+
+def _build_title_slide(prs, slide_data, layout, is_chapter: bool = False):
     """Build a title / chapter / end slide."""
     slide = prs.slides.add_slide(layout)
     _set_placeholder_text(slide, 0, slide_data.get("title", ""))
@@ -1102,6 +1316,7 @@ def _build_content_slide(prs, slide_data, layout):
             for b in bullets:
                 _add_textbox(slide, f"• {b}", Inches(1), y, Inches(11), Inches(0.5), Pt(16), False, BSH_NAVY)
                 y += Inches(0.55)
+    _add_title_accent(slide)
     return slide
 
 
@@ -1117,6 +1332,7 @@ def _build_content_with_image_slide(prs, slide_data, layout):
             pass
     desc = slide_data.get("image_description", "Relevant visual")
     _insert_placeholder_image(slide, 2, desc)
+    _add_title_accent(slide)
     return slide
 
 
@@ -1132,6 +1348,7 @@ def _build_image_with_content_slide(prs, slide_data, layout):
             pass
     desc = slide_data.get("image_description", "Relevant visual")
     _insert_placeholder_image(slide, 1, desc)
+    _add_title_accent(slide)
     return slide
 
 
@@ -1141,6 +1358,7 @@ def _build_full_image_slide(prs, slide_data, layout):
     _set_placeholder_text(slide, 0, slide_data.get("title", ""))
     desc = slide_data.get("image_description", "Full-width visual")
     _insert_placeholder_image(slide, 1, desc)
+    _add_title_accent(slide)
     return slide
 
 
@@ -1159,8 +1377,8 @@ def _build_multi_column_slide(prs, slide_data, layout, num_cols: int):
             col_bullets = col_data.get("bullets", [])
             all_text = []
             if heading:
-                all_text.append(heading)
-            all_text.extend(col_bullets)
+                all_text.append(_clean_text(heading))
+            all_text.extend([_clean_text(b) for b in col_bullets])
             if all_text:
                 try:
                     tf = slide.placeholders[ph_idx].text_frame
@@ -1171,7 +1389,7 @@ def _build_multi_column_slide(prs, slide_data, layout, num_cols: int):
                             _style_para(
                                 tf.paragraphs[0],
                                 Pt(16) if j == 0 and heading else Pt(14),
-                                BSH_NAVY,
+                                BSH_ORANGE if bool(heading) else BSH_NAVY,
                                 j == 0 and bool(heading),
                             )
                         else:
@@ -1198,7 +1416,7 @@ def _build_smart_art_slide(prs, slide_data, layout, force_orange_theme: bool = F
 
     sa = slide_data.get("smart_art", {})
     sa_type = sa.get("type", "list_blocks")
-    sa_items = sa.get("items", [])
+    sa_items = [_clean_text(item) for item in sa.get("items", [])]
     sa_colors = sa.get("colors", None)
 
     # If orange theme is forced and AI didn't provide explicit colors, apply orange palette.
@@ -1263,7 +1481,7 @@ def generate_pptx_file(
         layout = prs.slide_layouts[layout_idx]
 
         if layout_name in ("title_slide", "chapter", "end_slide"):
-            slide = _build_title_slide(prs, slide_data, layout)
+            slide = _build_title_slide(prs, slide_data, layout, is_chapter=(layout_name == "chapter"))
 
         elif layout_name == "title_slide_with_image":
             slide = _build_title_slide(prs, slide_data, layout)

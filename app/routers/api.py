@@ -1716,8 +1716,7 @@ async def one_pager_extract(
 
     safe_orientation = orientation if orientation in ("portrait", "landscape") else "portrait"
     _ALLOWED_STYLES = {
-        "executive_summary", "project_brief", "status_update",
-        "technical_overview", "business_case",
+        "cheatsheet", "flyer", "executive_summary", "infographic"
     }
     safe_style = templateStyle if templateStyle in _ALLOWED_STYLES else "executive_summary"
 

@@ -47,26 +47,47 @@ Return ONLY raw HTML starting with <!DOCTYPE html> and ending with </html>. No m
 All CSS in a single <style> tag inside <head>.
 
 PAGE LAYOUT RULES:
-- Each printed page is {page_w_px}px wide by {page_h_px}px tall.
-- Wrap each page in <div class="page"> with: width:{page_w}; min-height:{page_h}; box-sizing:border-box;
-- Do NOT set overflow:hidden on .page, html, or body — let content flow naturally.
-- If all the content fits in one page, use a single <div class="page">. If there is too much content for one page, add a second <div class="page"> that is also fully designed — never leave a page half-empty.
-- Use break-after:page on each .page div EXCEPT the last one. Never use break-before on .page — it creates blank first pages.
-- Do NOT squash text tiny to force everything onto one page. Let content breathe with proper spacing.
-- Set break-inside:avoid on cards and sections so they are not split at print boundaries.
-- On html and body: width:{page_w}; margin:0; padding:0; box-sizing:border-box; overflow-x:hidden;
+- This is a SINGLE-PAGE document. All content MUST fit on one page ({page_w_px}px × {page_h_px}px).
+- Use a single <div class="page"> wrapper with: width:{page_w}; height:{page_h}; box-sizing:border-box;
+- Set position:relative on .page to establish positioning context for all children
+- On html and body: width:{page_w}; height:auto; margin:0; padding:0; box-sizing:border-box; overflow:visible;
+- Use font sizes and padding that allow content to fit: body text 9px-11px, headings 12px-16px, padding 12px-24px
+- If content is dense, use tighter spacing, smaller fonts, and multi-column layouts to fit everything
+
+PRINT MEDIA QUERY - CRITICAL:
+Add this @media print block to preserve all styles when printing:
+@media print {{
+  * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }}
+  html, body {{ width: {page_w} !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }}
+  .page {{ width: {page_w} !important; height: {page_h} !important; page-break-after: avoid !important; page-break-inside: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
+  @page {{ size: {page_w} {page_h}; margin: 0; }}
+}}
 
 CSS RULES:
 - Premium modern design using CSS Grid, Flexbox, gradients, shadows, CSS variables, pseudo-elements.
-- STATIC only: no hover, focus, active, transition, animation, cursor, or keyframes.
+- STRICTLY STATIC: absolutely NO hover, :focus, :active, transition, animation, @keyframes, cursor, or any interactive/motion CSS. The output must work as a completely static print document.
 - No external JavaScript. Pure HTML and CSS only.
 - You may use icon fonts (FontAwesome via cdnjs) or inline SVGs.
-- Generous padding (28px-36px) on all sides. Consistent inner padding (16px-20px) in cards. Clear gutters between columns. Body text 11px-13px, headings 14px-16px.
+- IMPORTANT: Set appropriate z-index values to prevent content from hiding behind elements
+- Use overflow:hidden ONLY on specific containers that need it, never on body/html
+- For links and long text: use word-break:break-word or overflow-wrap:break-word to prevent truncation
+
+LINK / URL RULES:
+- If the source material contains URLs or links, render the full URL as visible plain text (e.g. in a <span> or <p> tag), NOT as a hyperlink anchor like <a href="...">Source Link</a>.
+- Never replace a URL with label text like "Source Link", "Reference", or "Click here". Show the actual URL string.
 
 COLOR RULES:
 - LIGHT MODE ONLY: white or very light background with dark readable text.
+- Use -webkit-print-color-adjust: exact; and print-color-adjust: exact; to preserve colors when printing
 - Visually stunning: gradient text, subtle patterns, premium card layouts, ample white space.
 - Clear visual hierarchy and intentional spacing.
+
+LAYOUT BEST PRACTICES:
+- Avoid absolute positioning unless necessary; use flexbox/grid for layout
+- If using absolute positioning, ensure proper z-index stacking
+- Keep all text readable with sufficient color contrast
+- Ensure no content is hidden behind other elements (check z-index layering)
+- Links should be displayed in full or truncated gracefully with ellipsis
 
 IMAGE RULES:
 - Use CSS gradients, border radii, and color blocks for decoration.
@@ -74,7 +95,8 @@ IMAGE RULES:
 
 CONTENT RULES:
 - Use ONLY information from the provided source material.
-- Never invent company names, people, statistics, KPIs, or dates."""
+- Never invent company names, people, statistics, KPIs, or dates.
+- Fit ALL content on ONE page by adjusting font sizes, spacing, and layout density."""
 
 
 _TEMPLATE_STYLE_PROMPTS = {
@@ -116,6 +138,8 @@ def _get_template_behaviour(template_style: str, orientation: str) -> str:
 def _get_refine_behaviour(orientation: str) -> str:
     page_w = "1123px" if orientation == "landscape" else "794px"
     page_h = "794px" if orientation == "landscape" else "1123px"
+    page_w_px = 1123 if orientation == "landscape" else 794
+    page_h_px = 794 if orientation == "landscape" else 1123
     return f"""You are an expert document designer. Modify the provided one-pager HTML document according to the user's request.
 
 RULES:
@@ -127,17 +151,34 @@ RULES:
 - Improve weak/generic sections when refining; do not return flat boilerplate design
 - Use modern gradients, shadows, and top-tier layout patterns.
 
-PAGE LAYOUT RULES:
-- Each printed page is {page_w} by {page_h}. Content is wrapped in <div class="page"> blocks.
-- Do NOT set overflow:hidden on .page, html, or body.
-- If after refinement the content needs more than one page, add a second <div class="page"> fully designed with the remaining content. Never leave a page half-empty.
-- Use break-inside:avoid on cards and sections so they are never split at print boundaries.
+PAGE LAYOUT RULES (SINGLE PAGE):
+- This is a SINGLE-PAGE document. All content MUST fit on one page ({page_w_px}px × {page_h_px}px).
+- Use a single <div class="page"> with: width:{page_w}; height:{page_h}; box-sizing:border-box; position:relative;
+- html/body: width:{page_w}; height:auto; margin:0; padding:0; overflow:visible; box-sizing:border-box;
+- Adjust font sizes and spacing to fit all content on one page: body text 9px-11px, headings 12px-16px
+- Set appropriate z-index values to prevent content overlap
+- Use word-break:break-word on links and long text to prevent truncation
+
+PRINT MEDIA QUERY - REQUIRED:
+Include this @media print block to preserve styles when printing:
+@media print {{
+  * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }}
+  html, body {{ width: {page_w} !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }}
+  .page {{ width: {page_w} !important; height: {page_h} !important; page-break-after: avoid !important; page-break-inside: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
+  @page {{ size: {page_w} {page_h}; margin: 0; }}
+}}
 
 CSS CONSTRAINTS:
 - Modern browser CSS allowed: flex, grid, CSS variables, gradients, pseudo-elements, shadows.
-- STATIC only: no hover, focus, active, transition, animation, cursor, or keyframes.
-- html/body: width:{page_w}; margin:0; padding:0; overflow-x:hidden; box-sizing:border-box;
-- Generous spacing and readable fonts. Never squash content into tiny text."""
+- STRICTLY STATIC: absolutely NO hover, :focus, :active, transition, animation, @keyframes, cursor, or any interactive/motion CSS.
+- Use -webkit-print-color-adjust: exact; and print-color-adjust: exact; to preserve colors when printing
+- Never use overflow:hidden on html/body; only on specific containers if needed
+- Proper z-index stacking to prevent content hiding behind other elements
+- Generous spacing and readable fonts. Adjust density to fit content on single page.
+
+LINK / URL RULES:
+- If the content contains URLs or links, render the full URL as visible plain text (e.g. in a <span> or <p> tag), NOT as a hyperlink like <a href="...">Source Link</a>.
+- Never replace a URL with label text like "Source Link", "Reference", or "Click here". Show the actual URL string."""
 
 
 def _strip_external_images(html: str) -> str:
@@ -151,11 +192,15 @@ def _strip_external_images(html: str) -> str:
 
 
 def _strip_interactive_css(html: str) -> str:
-    """Remove interactive CSS properties so the exported one-pager stays static."""
+    """Remove interactive CSS so the exported one-pager stays fully static."""
+    # Remove property declarations
     html = re.sub(r'\s*transition[^:]*:[^;]+;', '', html, flags=re.IGNORECASE)
     html = re.sub(r'\s*animation[^:]*:[^;]+;', '', html, flags=re.IGNORECASE)
     html = re.sub(r'\s*cursor\s*:[^;]+;', '', html, flags=re.IGNORECASE)
+    # Remove @keyframes blocks (handles nested braces)
     html = re.sub(r'@keyframes\s+[\w-]+\s*\{[^}]*(?:\{[^}]*\}[^}]*)*\}', '', html, flags=re.IGNORECASE)
+    # Remove :hover, :focus, :active, :focus-within, :focus-visible rule blocks
+    html = re.sub(r'[^{}]+:(?:hover|focus(?:-within|-visible)?|active)\s*\{[^}]*\}', '', html, flags=re.IGNORECASE)
     return html
 
 

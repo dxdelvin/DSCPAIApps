@@ -310,7 +310,10 @@ class OnePagerApp {
         const thinkingEl = document.querySelector('#chat-messages .chat-msg:last-child');
 
         try {
-            const res  = await fetch('/api/one-pager/refine', {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 minutes timeout
+
+            const res = await fetch('/api/one-pager/refine', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -320,7 +323,10 @@ class OnePagerApp {
                     templateStyle: this.templateStyle,
                     orientation:   this.orientation,
                 }),
+                signal: controller.signal
             });
+            clearTimeout(timeoutId);
+            
             const data = await res.json();
 
             if (thinkingEl) thinkingEl.remove();
@@ -335,7 +341,7 @@ class OnePagerApp {
                 this.currentHtml   = data.html;
                 this.chatHistoryId = data.chatHistoryId || this.chatHistoryId;
                 this.showPreview();
-                this.appendChat('assistant', 'One-pager updated! Check the preview on the right.');
+                this.appendChat('assistant', '✓ Updated! Check the preview.');
                 this._updateHistory();
             } else {
                 this.appendChat('assistant', 'The AI responded but did not regenerate the document. Try a more specific request.');
@@ -343,7 +349,12 @@ class OnePagerApp {
         } catch (err) {
             if (thinkingEl) thinkingEl.remove();
             AppLogger.error('One-pager chat error:', err);
-            this.appendChat('assistant', 'Unable to connect to the server. Please try again.');
+            
+            if (err.name === 'AbortError') {
+                this.appendChat('assistant', 'Request timeout. The refinement took too long. Please try a simpler change or try again.');
+            } else {
+                this.appendChat('assistant', 'Unable to connect to the server. Please try again.');
+            }
         }
     }
 
@@ -459,44 +470,76 @@ class OnePagerApp {
         if (!this.currentHtml) return;
 
         const isLandscape = this.orientation === 'landscape';
-        const pageW = isLandscape ? 1122 : 794;
-        const pageH = isLandscape ? 794  : 1122;
+        const pageW = isLandscape ? 1123 : 794;
+        const pageH = isLandscape ? 794  : 1123;
         const filename = this.buildDownloadFilename('pdf');
 
-        // Inject print-specific styles:
-        // - @page sets exact paper size with zero margins
-        // - print-color-adjust forces backgrounds/gradients to print
-        // - overflow:visible on .page so content flows to next pages naturally
-        // - break-inside:avoid prevents cards/sections being split mid-page
-        // - auto-trigger window.print() on load
         const printStyle = `
 <style>
+* {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+  color-adjust: exact !important;
+}
+
 @media print {
-  @page { size: ${pageW}px ${pageH}px; margin: 0; }
+  @page { 
+    size: ${pageW}px ${pageH}px; 
+    margin: 0; 
+  }
+  
   html, body {
     width: ${pageW}px !important;
+    height: auto !important;
     margin: 0 !important;
     padding: 0 !important;
-    height: auto !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-  .page {
-    width: ${pageW}px !important;
-    min-height: ${pageH}px !important;
     overflow: visible !important;
     box-sizing: border-box !important;
-    break-after: page !important;
-    page-break-after: always !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
-  .page:last-child {
-    break-after: auto !important;
-    page-break-after: auto !important;
-  }
-  div, section, article, aside, figure, table, tr, img, svg {
+  
+  .page {
+    width: ${pageW}px !important;
+    height: ${pageH}px !important;
+    max-height: ${pageH}px !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+    position: relative !important;
+    page-break-after: avoid !important;
+    page-break-inside: avoid !important;
     break-inside: avoid !important;
+    margin: 0 !important;
   }
-  h1, h2, h3, h4, h5, h6 { break-after: avoid !important; }
+  
+  * {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6 { 
+    break-after: avoid !important; 
+    page-break-after: avoid !important;
+  }
+}
+
+@media screen {
+  html, body {
+    width: ${pageW}px !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  
+  .page {
+    width: ${pageW}px !important;
+    height: ${pageH}px !important;
+    position: relative !important;
+    overflow: visible !important;
+    box-sizing: border-box !important;
+  }
 }
 </style>
 <script>

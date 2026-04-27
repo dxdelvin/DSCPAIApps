@@ -5,6 +5,7 @@ Contains chat history, file uploads, and API calling functions.
 import httpx
 import os
 import re
+import logging
 from typing import Optional, List, Tuple, Dict
 from fastapi import HTTPException, UploadFile
 from app.services.brain_auth import get_brain_access_token
@@ -123,6 +124,9 @@ async def create_chat_history(brain_id: str) -> dict:
     """Create an empty chat history for a given knowledgeBaseId."""
     _require_env(brain_id, "knowledgeBaseId")
     
+    logger = logging.getLogger(__name__)
+    logger.info("Creating chat history for brain_id: %s", brain_id[:8] + "...")
+    
     token = await get_brain_access_token()
     base_url, headers = _get_base_url_and_headers(token)
     _require_env(base_url, "BRAIN_API_BASE_URL")
@@ -136,10 +140,13 @@ async def create_chat_history(brain_id: str) -> dict:
             response = await client.post(url, headers=headers, timeout=30.0)
             response.raise_for_status()
             chat_history_id = response.text.strip().strip('"')
+            logger.info("Chat history created successfully: %s", chat_history_id[:16] + "...")
             return {"chatHistoryId": chat_history_id}
         except httpx.HTTPStatusError as e:
+            logger.error("Failed to create chat history: HTTP %s", e.response.status_code)
             return _friendly_http_error(e, "create_chat_history")
         except httpx.RequestError as e:
+            logger.error("Connection error creating chat history: %s", str(e))
             return {
                 "error": True,
                 "message": "Connection Error",
@@ -319,6 +326,9 @@ async def call_brain_pure_llm_chat(
     Returns dict with 'result', 'chatHistoryId', and optionally 'error' fields.
     """
     _require_env(brain_id, "knowledgeBaseId")
+    logger = logging.getLogger(__name__)
+    logger.info("Calling Brain pure LLM chat: brain_id=%s, chat_history=%s, attachments=%s, timeout=%ss", 
+               brain_id[:8] + "...", bool(chat_history_id), len(attachment_ids) if attachment_ids else 0, timeout_seconds)
 
     token = await get_brain_access_token()
     base_url, headers = _get_base_url_and_headers(token)
@@ -343,18 +353,21 @@ async def call_brain_pure_llm_chat(
             response = await client.post(url, json=payload, headers=headers, timeout=timeout_seconds)
             response.raise_for_status()
             data = response.json()
+            logger.info("Brain API call successful")
             return {
                 "result": data.get("result", ""),
                 "chatHistoryId": data.get("chatHistoryId", chat_history_id),
             }
         except httpx.TimeoutException as e:
+            logger.error("Brain API timeout after %s seconds", timeout_seconds)
             return {
                 "error": True,
                 "message": "Request Timed Out",
-                "detail": f"The AI service took too long to respond: {e}",
+                "detail": f"The AI service took too long to respond (timeout: {timeout_seconds}s). Try reducing file size or simplifying your request.",
             }
         except httpx.HTTPStatusError as e:
             status_code = e.response.status_code
+            logger.error("Brain API HTTP error: %s - %s", status_code, e.response.text[:200])
             if status_code == 504:
                 return {
                     "error": True,
@@ -375,6 +388,7 @@ async def call_brain_pure_llm_chat(
                 }
             return _friendly_http_error(e, "call_brain_pure_llm_chat")
         except httpx.RequestError as e:
+            logger.error("Brain API connection error: %s", str(e))
             return {
                 "error": True,
                 "message": "Connection Error",
