@@ -790,7 +790,14 @@ body.dark-mode .app-card .match-highlight {
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
+    position: relative;
+}
+
+/* Expand tap area to 44px without changing pill visual */
+.filter-chip::after {
+    content: '';
+    position: absolute;
+    inset: -10px -6px;
 }
 
 .filter-chip:hover {
@@ -3471,8 +3478,8 @@ body.dark-mode .history-sort-select:focus {
 
 /* Star button — inline flex item at the right end of .app-tags row */
 .fav-star-btn {
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 1.75rem;
+    height: 1.75rem;
     padding: 0;
     border-radius: 999px;
     display: inline-flex;
@@ -3486,6 +3493,9 @@ body.dark-mode .history-sort-select:focus {
     flex-shrink: 0;
     margin-left: auto;
     align-self: center;
+    /* Expand tap area without affecting layout */
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
 }
 
 .fav-star-btn:hover {

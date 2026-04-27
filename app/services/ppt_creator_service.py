@@ -25,6 +25,7 @@ from app.services.common_service import (
     call_brain_pure_llm_chat,
     upload_attachments,
     extract_pdf_text,
+    sanitize_filename_for_prompt,
 )
 
 TEMPLATE_PATH = os.path.join(
@@ -1580,9 +1581,9 @@ async def extract_pdf_content(
     for fname, fbytes in pdf_bytes_list:
         text, err = extract_pdf_text(fbytes)
         if err:
-            errors.append(f"{fname}: {err}")
+            errors.append(f"{sanitize_filename_for_prompt(fname)}: {err}")
         elif text:
-            all_text_parts.append(f"=== File: {fname} ===\n{text}")
+            all_text_parts.append(f"=== File: {sanitize_filename_for_prompt(fname)} ===\n{text}")
 
     has_text = bool(all_text_parts)
     has_images = bool(image_files)

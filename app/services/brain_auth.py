@@ -43,7 +43,7 @@ async def get_brain_access_token():
             logger.info("Successfully obtained Brain API access token")
             return token
         except httpx.HTTPStatusError as e:
-            logger.error("Brain authentication failed: HTTP %s - %s", e.response.status_code, e.response.text[:200])
+            logger.error("Brain authentication failed: HTTP %s", e.response.status_code)
             raise HTTPException(status_code=502, detail="Brain authentication failed.")
         except httpx.RequestError as e:
             logger.error("Could not reach authentication service: %s", str(e))

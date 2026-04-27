@@ -13,8 +13,8 @@ from app.services.common_service import (
 )
 
 
-# Audit-specific constants 
-AUDIT_WORKFLOW_ID = "tTyekWiuJ28g"
+# Audit-specific constants
+AUDIT_WORKFLOW_ID = os.getenv("AUDIT_WORKFLOW_ID", "tTyekWiuJ28g")
 
 AUDIT_NO_FOLLOWUPS_BEHAVIOUR = (
     "Evaluate only the uploaded document. "

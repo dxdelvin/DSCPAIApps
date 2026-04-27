@@ -16,6 +16,8 @@ class DiagramGeneratorApp {
         this.diagrams = [];          // { name, type, xml }
         this.generationId = null;    // for tracking saved generation in history
         this.activeTabIndex = 0;
+        this._overWordLimit = false;
+        this._cooldownUntil = 0;
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB total
         this.MAX_IMAGES = 3;
         this.init();
@@ -115,7 +117,7 @@ class DiagramGeneratorApp {
             const isImg = !f.name.toLowerCase().endsWith('.pdf') && f.type !== 'application/pdf';
             return `
             <div class="file-item">
-                <span class="file-icon">${isImg ? '🖼️' : '📄'}</span>
+                <span class="file-icon">${isImg ? '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 15-4-4-5 5-2-2-4 4"/></svg>' : '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/></svg>'}</span>
                 <span class="file-name">${escapeHtml(f.name)}</span>
                 <span class="file-size">${formatFileSize(f.size)}</span>
                 <button class="btn btn-ghost btn-sm file-remove" data-index="${i}">✕</button>
@@ -123,7 +125,7 @@ class DiagramGeneratorApp {
         `;
         }).join('') + `
             <div class="file-item total-size">
-                <span class="file-icon">📊</span>
+                <span class="file-icon"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19h16"/><path d="M7 16v-5"/><path d="M12 16V8"/><path d="M17 16v-3"/></svg></span>
                 <span class="file-name"><strong>Total Size</strong></span>
                 <span class="file-size"><strong>${totalSizeStr} / ${limitStr}</strong></span>
                 <span style="width: 24px;"></span>
@@ -217,7 +219,9 @@ class DiagramGeneratorApp {
             const text = textarea.value.trim();
             const words = text ? text.split(/\s+/).length : 0;
             counter.textContent = `${words} / ${MAX_WORDS} words`;
-            if (words > MAX_WORDS) {
+            const over = words > MAX_WORDS;
+            this._overWordLimit = over;
+            if (over) {
                 counter.classList.add('over-limit');
             } else {
                 counter.classList.remove('over-limit');
@@ -293,6 +297,23 @@ class DiagramGeneratorApp {
     async analyzeContent() {
         if (!this.files.length) return;
 
+        const now = Date.now();
+        if (now < this._cooldownUntil) {
+            const remaining = Math.ceil((this._cooldownUntil - now) / 1000);
+            showToast(`Please wait ${remaining} more second${remaining > 1 ? 's' : ''} before analyzing again.`, 'warning');
+            return;
+        }
+
+        if (this._overWordLimit) {
+            const contextEl = document.getElementById('additional-context');
+            const words = contextEl?.value.trim().split(/\s+/).length || 0;
+            showToast(`Additional context exceeds 1,000 words (${words} words). Please reduce it before analyzing.`, 'warning');
+            contextEl?.focus();
+            return;
+        }
+
+        this._setActionButtonsDisabled(true);
+        this._cooldownUntil = Date.now() + 5000;
         this.showLoading('Analyzing content…');
 
         const formData = new FormData();
@@ -360,17 +381,17 @@ class DiagramGeneratorApp {
         const imageFiles = this.files.filter(f => !f.name.toLowerCase().endsWith('.pdf'));
 
         if (imageFiles.length > 1) {
-            showToast('⚠️ Please upload exactly 1 image for Copy as Diagram. Multiple images are not supported in this mode.', 'warning');
+            showToast('Please upload exactly 1 image for Copy as Diagram. Multiple images are not supported in this mode.', 'warning');
             return;
         }
 
         if (hasPdfs) {
-            showToast('⚠️ Copy as Diagram only works with images. Please remove all PDF files first.', 'warning');
+            showToast('Copy as Diagram only works with images. Please remove all PDF files first.', 'warning');
             return;
         }
 
         if (imageFiles.length === 0) {
-            showToast('⚠️ Please upload an image file (.png, .jpg, .jpeg) to use Copy as Diagram.', 'warning');
+            showToast('Please upload an image file (.png, .jpg, .jpeg) to use Copy as Diagram.', 'warning');
             return;
         }
 
@@ -620,7 +641,7 @@ class DiagramGeneratorApp {
         if (resultPanel) resultPanel.style.display = 'flex';
 
         let html = '<div class="no-content-state">';
-        html += '<span class="no-content-icon">💭</span>';
+        html += '<span class="no-content-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>';
         if (docTitle) html += `<p class="no-content-doc">${escapeHtml(docTitle)}</p>`;
         html += `<h4 class="no-content-title">${escapeHtml(title)}</h4>`;
         html += `<p class="no-content-detail">${escapeHtml(detail)}</p>`;
@@ -649,11 +670,11 @@ class DiagramGeneratorApp {
         if (resultPanel) resultPanel.style.display = 'flex';
 
         let html = '<div class="no-content-state">';
-        html += '<span class="no-content-icon">🖼️</span>';
+        html += '<span class="no-content-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 15-4-4-5 5-2-2-4 4"/></svg></span>';
         html += '<h4 class="no-content-title">Not a Diagram to Copy</h4>';
         html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${escapeHtml(contentType || 'non-diagram content')}</strong> — not a structured diagram that can be reproduced in draw.io.</p>`;
         html += '<div class="no-content-tips">';
-        html += '<p class="no-content-tips-heading">💡 What you can do instead:</p>';
+        html += '<p class="no-content-tips-heading">What you can do instead:</p>';
         html += '<ul>';
         html += '<li>Use <strong>Analyze Content</strong> to let AI understand the image and suggest diagram variations</li>';
         html += '<li>Select <strong>AI Decides</strong> in the diagram type picker — it will generate the best diagram type for your content</li>';
@@ -676,7 +697,7 @@ class DiagramGeneratorApp {
         if (resultPanel) resultPanel.style.display = 'flex';
 
         let html = '<div class="result-error">';
-        html += '<span class="error-icon">⚠️</span>';
+        html += '<span class="error-icon"><svg viewBox="0 0 24 24" width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg></span>';
         html += `<h4 class="error-title">${escapeHtml(title)}</h4>`;
         html += `<p class="error-detail">${escapeHtml(detail)}</p>`;
         html += '<p class="error-hint">Try a clearer image, crop the diagram more tightly, or retry when the AI service is less busy.</p>';
@@ -730,7 +751,7 @@ class DiagramGeneratorApp {
                     <div class="dg-card-body">
                         <span class="dg-card-name">${name}</span>
                         <span class="dg-card-type">${typeLabel}</span>
-                        <span class="dg-card-status dg-status-error">⚠️ Generation failed</span>
+                        <span class="dg-card-status dg-status-error"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v5"/><path d="M12 17h.01"/></svg> Generation failed</span>
                     </div>
                 </div>`;
             }
@@ -744,10 +765,10 @@ class DiagramGeneratorApp {
                 </div>
                 <div class="dg-card-actions">
                     <button class="btn btn-secondary btn-sm dg-card-refine" data-index="${i}" title="Jump to refine panel">
-                        ✨ Refine
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg> Refine
                     </button>
                     <button class="btn btn-primary btn-sm dg-card-download" data-index="${i}" title="Download .drawio">
-                        ⬇ Download
+                        ${HistoryIcons.download} Download
                     </button>
                 </div>
             </div>`;
@@ -830,21 +851,21 @@ class DiagramGeneratorApp {
 
     getTypeIcon(type) {
         const icons = {
-            flowchart:     '🔀',
-            org_chart:     '🏢',
-            sequence:      '🔄',
-            mind_map:      '🧠',
-            er_diagram:    '🗃️',
-            network:       '🌐',
-            swimlane:      '🏊',
-            timeline:      '📅',
-            class_diagram: '📦',
-            state_diagram: '⚡',
-            block_diagram: '🧱',
-            tree:          '🌲',
-            copy:          '🖼️',
+            flowchart:     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v4"/><polygon points="8,7 16,7 12,13"/><path d="m12 13 4 4"/><path d="m12 13-4 4"/><path d="M8 17h8"/></svg>',
+            org_chart:     '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="4" rx="1"/><rect x="3" y="13" width="6" height="4" rx="1"/><rect x="15" y="13" width="6" height="4" rx="1"/><path d="M12 6v4"/><path d="M12 10H6v3"/><path d="M12 10h6v3"/></svg>',
+            sequence:      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 3v18"/><path d="M20 3v18"/><path d="M4 9h16"/><path d="M20 15H4"/></svg>',
+            mind_map:      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v6"/><path d="M12 15v6"/><path d="m4.2 6.2 4.2 4.3"/><path d="m15.6 13.5 4.2 4.3"/><path d="M3 12h6"/><path d="m15 12h6"/></svg>',
+            er_diagram:    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="8" height="12" rx="1"/><rect x="13" y="9" width="8" height="12" rx="1"/><path d="M11 9h2"/><path d="M3 7h8"/><path d="M3 11h8"/><path d="M13 13h8"/><path d="M13 17h8"/></svg>',
+            network:       '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="4" cy="19" r="2"/><circle cx="20" cy="19" r="2"/><circle cx="12" cy="14" r="2"/><path d="M12 7v5"/><path d="M5.6 17.7 10.4 15.3"/><path d="m18.4 17.7-4.8-2.4"/></svg>',
+            swimlane:      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M3 10h18"/><path d="M3 14h18"/><path d="M3 18h18"/><path d="M3 3v18"/><path d="M21 3v18"/></svg>',
+            timeline:      '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h18"/><path d="M6 8v8"/><path d="M10 9v6"/><path d="M14 8v8"/><path d="M18 9v6"/></svg>',
+            class_diagram: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18"/><path d="M3 15h18"/></svg>',
+            state_diagram: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="12" r="3"/><circle cx="17" cy="12" r="3"/><path d="M10 12h4"/><path d="m14 10 2 2-2 2"/></svg>',
+            block_diagram: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="5" rx="1"/><rect x="3" y="11" width="18" height="4" rx="1"/><rect x="3" y="17" width="18" height="4" rx="1"/></svg>',
+            tree:          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M12 8H7"/><path d="M12 13H7"/><path d="M12 18H7"/><circle cx="5" cy="8" r="2"/><circle cx="5" cy="13" r="2"/><circle cx="5" cy="18" r="2"/></svg>',
+            copy:          '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="14" height="16" rx="2"/><path d="M7 2h12a2 2 0 0 1 2 2v14"/></svg>',
         };
-        return icons[type] || '📊';
+        return icons[type] || '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6"/><path d="M9 12h6"/><path d="M9 15h4"/></svg>';
     }
 
     formatTypeLabel(type) {
@@ -875,7 +896,7 @@ class DiagramGeneratorApp {
 
         // Disable the button while downloading
         const btn = document.querySelector(`.dg-card-download[data-index="${index}"]`);
-        if (btn) { btn.disabled = true; btn.textContent = '⏳ Preparing…'; }
+        if (btn) { btn.disabled = true; btn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-9-9"/></svg> Preparing…'; }
 
         try {
             const res = await fetch('/api/diagram/download', {
@@ -905,7 +926,7 @@ class DiagramGeneratorApp {
             AppLogger.error('Diagram download error:', err);
             showToast('Download failed. Please try again.', 'error');
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = '⬇ Download'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = HistoryIcons.download + ' Download'; }
         }
     }
 
@@ -985,7 +1006,6 @@ class DiagramGeneratorApp {
                 'Are you sure you want to reset the uploaded file and all generated diagrams? This cannot be undone.',
                 () => this.resetAll(),
                 {
-                    icon: '⚠️',
                     confirmText: 'Clear Data',
                     cancelText: 'Cancel'
                 }
@@ -1238,6 +1258,8 @@ class DiagramGeneratorApp {
         try {
             const res = await fetch(`/api/diagram/history/${genId}/download`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'User' }),
             });
 
             if (!res.ok) {

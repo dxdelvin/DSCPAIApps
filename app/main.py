@@ -135,6 +135,19 @@ app.add_middleware(
 
 app.add_middleware(MaxBodySizeMiddleware)
 
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to every response."""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        return response
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
@@ -211,12 +224,7 @@ async def logout(request: Request):
 @app.get("/health")
 async def health_check():
     """Health check endpoint for Cloud Foundry."""
-    config = get_xsuaa_config()
-    return JSONResponse({
-        "status": "healthy",
-        "xsuaa_configured": config is not None,
-        "vcap_services": bool(os.getenv("VCAP_SERVICES")),
-    })
+    return JSONResponse({"status": "healthy"})
 
 
 app.include_router(pages.router)

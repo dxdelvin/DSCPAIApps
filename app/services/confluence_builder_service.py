@@ -20,6 +20,7 @@ from app.services.common_service import (
     create_chat_history,
     upload_attachments,
     extract_pdf_text,
+    sanitize_filename_for_prompt,
 )
 
 
@@ -562,7 +563,7 @@ async def generate_confluence_builder_draft(
             if error:
                 extraction_errors.append(f"{item['originalName']}: {error}")
             elif text:
-                pdf_blocks.append(f"=== File: {item['originalName']} ===\n{text}")
+                pdf_blocks.append(f"=== File: {sanitize_filename_for_prompt(item['originalName'])} ===\n{text}")
         elif item["isImage"]:
             image_ai_sources.append(file)
 

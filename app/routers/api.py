@@ -6,7 +6,7 @@ import re
 from typing import Any, Optional, List
 from fastapi import APIRouter, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 logger = logging.getLogger(__name__)
 
@@ -89,6 +89,18 @@ class BPMNChatRequest(BaseModel):
     message: str = Field(max_length=5000)
     formData: Optional[dict] = None
 
+    @field_validator('formData')
+    @classmethod
+    def validate_form_data_size(cls, v):
+        if v is not None:
+            try:
+                size = len(json.dumps(v))
+            except (TypeError, ValueError):
+                raise ValueError('formData must be JSON-serializable')
+            if size > 50_000:
+                raise ValueError('formData exceeds maximum allowed size (50 KB)')
+        return v
+
 
 class BPMNGenerateRequest(BaseModel):
     chatHistoryId: Optional[str] = Field(default=None, max_length=200)
@@ -128,7 +140,7 @@ async def client_log(payload: ClientLogRequest, request: Request):
     return {"status": "ok"}
 
 
-
+# ============== BPMN Chat Flow API Endpoints ==============
 
 @router.post("/bpmn/start-session")
 async def start_bpmn_session(data: BPMNSessionRequest):
@@ -223,7 +235,7 @@ async def bpmn_chat(data: BPMNChatRequest):
 async def bpmn_upload_analyze(file: UploadFile = File(...)):
     """Analyze an uploaded BPMN diagram or process image/PDF."""
     _BPMN_EXTS = (".png", ".jpg", ".jpeg", ".pdf")
-    # Validate by extension - content_type header is client-controlled
+    # Validate by extension — content_type header is client-controlled
     if not (file.filename or "").lower().endswith(_BPMN_EXTS):
         return JSONResponse(
             status_code=400,
@@ -301,10 +313,49 @@ async def generate_bpmn(data: BPMNGenerateRequest):
     return {"status": "success", "xml": result.get("result"), "filename": filename}
 
 
+# Legacy endpoint for backward compatibility
+@router.post("/make-bpmn-analysis")
+async def make_bpmn_analysis(data: dict):
+    """Ask the Signavio Brain to summarize its understanding of the provided process inputs.
+    
+    Note: This is a legacy endpoint. Use /api/bpmn/start-session for new implementations.
+    """
+    brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
+    if not brain_id:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "API Not Active",
+                "detail": "SIGNAVIO_BRAIN_ID is not configured.",
+            },
+        )
+
+    response = await analyze_process(data)
+
+    if response.get("error"):
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "message": "API Not Active",
+                "detail": response.get("detail", "Brain authentication failed."),
+            },
+        )
+
+    return {
+        "status": "success", 
+        "analysis": response.get("result"),
+        "chatHistoryId": response.get("chatHistoryId")
+    }
+
+
+# ============== Audit API Endpoints ==============
+
 @router.post("/audit-doc-check")
 async def audit_doc_check(file: UploadFile = File(...)):
     """Send an uploaded audit PDF to the Audit Brain for analysis."""
-    # Validate by extension - content_type header is client-controlled
+    # Validate by extension — content_type header is client-controlled
     if not (file.filename or "").lower().endswith(".pdf"):
         return JSONResponse(
             status_code=400,
@@ -373,7 +424,7 @@ async def audit_chat(
     }
 
 
-
+# ============== BPMN Diagram Checker API Endpoints ==============
 
 @router.post("/bpmn-diagram-check")
 async def bpmn_diagram_check(
@@ -422,7 +473,7 @@ async def bpmn_diagram_check(
     }
 
 
-
+# ============== Functional Specification Export ==============
 
 class FSExportRequest(BaseModel):
     title: str = Field(default="", max_length=200)
@@ -481,7 +532,7 @@ async def export_functional_spec(data: FSExportRequest):
         )
 
 
-
+# ============== Business Requirement Export ==============
 
 class BRExportRequest(BaseModel):
     title: str = Field(default="", max_length=200)
@@ -529,7 +580,7 @@ async def export_business_requirement(data: BRExportRequest):
         )
 
 
-
+# ============== FS Template (Variant) Export ==============
 
 class FSVariantExportRequest(BaseModel):
     description: str = Field(default="", max_length=200)
@@ -595,7 +646,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
         )
 
 
-
+# ============== PPT Creator API Endpoints ==============
 
 @router.post("/ppt/extract")
 async def ppt_extract(
@@ -604,7 +655,7 @@ async def ppt_extract(
     instructions: Optional[str] = Form(None),
     force_orange_theme: bool = Form(False),
 ):
-    """Upload PDF/image files -- AI structures content into presentation slides."""
+    """Upload PDF/image files → AI structures content into presentation slides."""
     MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total across all files
     MAX_IMAGES = 3
     _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
@@ -682,14 +733,14 @@ async def ppt_extract(
     }
 
 
-
+# ============== Diagram Generator API Endpoints ==============
 
 @router.post("/diagram/analyze")
 async def diagram_analyze(
     files: List[UploadFile] = File(...),
     instructions: Optional[str] = Form(None),
 ):
-    """Upload PDF/image files -- AI analyzes content and suggests diagram types."""
+    """Upload PDF/image files → AI analyzes content and suggests diagram types."""
     MAX_TOTAL_SIZE = 10 * 1024 * 1024  # 10MB total
     _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
     pdf_files = []
@@ -828,7 +879,7 @@ class DiagramDownloadRequest(BaseModel):
 async def diagram_copy_image(
     files: List[UploadFile] = File(...),
 ):
-    """Reproduce image-based diagram(s) as exact draw.io XML - images only, no PDFs."""
+    """Reproduce image-based diagram(s) as exact draw.io XML — images only, no PDFs."""
     _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
     MAX_TOTAL_SIZE = 10 * 1024 * 1024
     MAX_IMAGES = 3
@@ -955,7 +1006,7 @@ async def diagram_download(data: DiagramDownloadRequest):
     )
 
 
-# â”€â”€ Diagram History API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── Diagram History API ───────────────────────────────
 
 _GEN_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$", re.IGNORECASE)
 
@@ -1014,7 +1065,7 @@ async def diagram_history_save(data: DiagramHistorySaveRequest, request: Request
             user_id, data.content, data.chatHistoryId
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save diagram generation")
@@ -1059,8 +1110,12 @@ async def diagram_history_delete(gen_id: str, request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
 
 
+class DiagramHistoryDownloadRequest(BaseModel):
+    username: str = Field(default="Unknown User", max_length=200)
+
+
 @router.post("/diagram/history/{gen_id}/download")
-async def diagram_history_download(gen_id: str, request: Request):
+async def diagram_history_download(gen_id: str, data: DiagramHistoryDownloadRequest, request: Request):
     """Re-generate and stream a .drawio from a stored generation."""
     try:
         _validate_gen_id(gen_id)
@@ -1087,7 +1142,7 @@ async def diagram_history_download(gen_id: str, request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": "Could not download generation."})
 
 
-# â”€â”€ BPMN History API â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# ── BPMN History API ──────────────────────────────────────────
 
 class BpmnHistorySaveRequest(BaseModel):
     content: dict
@@ -1135,7 +1190,7 @@ async def bpmn_history_save(data: BpmnHistorySaveRequest, request: Request):
     try:
         gen_id = await bpmn_history_service.save_generation(user_id, data.content)
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save BPMN generation")
@@ -1342,7 +1397,7 @@ async def ppt_history_save(data: PptHistorySaveRequest, request: Request):
             user_id, data.content, data.chatHistoryId, data.forceOrangeTheme
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save PPT generation")
@@ -1600,7 +1655,7 @@ async def confluence_builder_publish(
     return result
 
 
-# â”€â”€ One Pager Creator â”€â”€
+# ── One Pager Creator ──
 
 
 @router.post("/one-pager/extract")
@@ -1754,7 +1809,7 @@ async def one_pager_refine(data: OnePagerRefineRequest):
     }
 
 
-# â”€â”€ One Pager History â”€â”€
+# ── One Pager History ──
 
 
 class OnePagerHistorySaveRequest(BaseModel):
@@ -1822,7 +1877,7 @@ async def one_pager_history_save(data: OnePagerHistorySaveRequest, request: Requ
             chat_history_id=data.chatHistoryId,
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save one-pager generation")
@@ -1873,7 +1928,7 @@ async def one_pager_history_delete(gen_id: str, request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": "Could not delete generation."})
 
 
-
+# ============== User Favourites ==============
 
 @router.get("/favorites")
 async def favorites_get(request: Request):
@@ -1915,7 +1970,7 @@ async def favorites_remove(app_key: str, request: Request):
         return JSONResponse(status_code=500, content={"status": "error", "message": "Could not remove favourite."})
 
 
-
+# ============== Admin Analytics ==============
 
 @router.get("/admin/analytics")
 async def admin_analytics(request: Request):
@@ -1928,7 +1983,7 @@ async def admin_analytics(request: Request):
     return data
 
 
-
+# ============== Feedback ==============
 
 class FeedbackRequest(BaseModel):
     gen_id: Optional[str] = Field(default=None, max_length=200)

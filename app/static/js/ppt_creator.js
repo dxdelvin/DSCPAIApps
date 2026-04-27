@@ -13,6 +13,7 @@ class PptCreatorApp {
         this.chatHistoryId = null;
         this.currentContent = null;
         this.currentGenId = null;     // set after first save; used to update on re-download
+        this._cooldownUntil = 0;
         this.MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
         this.MAX_IMAGES = 3;
         this.userId = (typeof window.__PPT_USER_ID__ !== 'undefined') ? window.__PPT_USER_ID__ : 'Guest';
@@ -180,6 +181,13 @@ class PptCreatorApp {
     async extractContent() {
         if (!this.files.length) return;
 
+        const now = Date.now();
+        if (now < this._cooldownUntil) {
+            const remaining = Math.ceil((this._cooldownUntil - now) / 1000);
+            showToast(`Please wait ${remaining} more second${remaining > 1 ? 's' : ''} before generating again.`, 'warning');
+            return;
+        }
+
         const userName = document.getElementById('user-name').value.trim();
         if (!userName) {
             showToast('Please enter your name before generating the presentation.', 'warning');
@@ -187,6 +195,9 @@ class PptCreatorApp {
             return;
         }
 
+        const extractBtn = document.getElementById('extract-btn');
+        if (extractBtn) extractBtn.disabled = true;
+        this._cooldownUntil = Date.now() + 5000;
         this.showLoading('Creating presentation from Your Content…');
 
         const formData = new FormData();
@@ -232,6 +243,8 @@ class PptCreatorApp {
             AppLogger.error('PPT extraction connection error:', err);
             this.hideLoading();
             this.showError('Connection Error', 'Unable to connect to the server. Please check your connection and try again.');
+        } finally {
+            this.updateExtractBtn();
         }
     }
 

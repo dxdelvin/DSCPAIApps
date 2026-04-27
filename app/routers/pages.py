@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.core.config import TEMPLATES_DIR, STATIC_DIR, CSS_VERSION, APP_ENV, CLIENT_LOGGING_ENABLED, CLIENT_LOG_LEVEL, IS_PRODUCTION
+from app.core.config import TEMPLATES_DIR, STATIC_DIR, CSS_VERSION, APP_ENV, CLIENT_LOGGING_ENABLED, CLIENT_LOG_LEVEL, IS_PRODUCTION, BRAIN_PORTAL_URL
 from app.services.auth_service import get_current_user
 from app.services.History.analytics_service import track_click, ADMIN_USERS
 
@@ -28,6 +28,7 @@ def _template_context(request: Request, extra: dict | None = None):
         "client_logging_enabled": CLIENT_LOGGING_ENABLED,
         "client_log_level": CLIENT_LOG_LEVEL,
         "changelog": _load_changelog(),
+        "brain_portal_url": BRAIN_PORTAL_URL,
     }
     if extra:
         context.update(extra)

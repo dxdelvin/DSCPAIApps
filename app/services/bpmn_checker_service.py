@@ -13,7 +13,7 @@ from app.services.common_service import (
 )
 
 
-BPMN_CHECKER_WORKFLOW_ID = "kjDTf2C4DkCN"
+BPMN_CHECKER_WORKFLOW_ID = os.getenv("BPMN_CHECKER_WORKFLOW_ID", "kjDTf2C4DkCN")
 
 BPMN_DIAGRAM_CHECK_BEHAVIOUR = (
     "You are a BPMN 2.0 Expert Validator. "

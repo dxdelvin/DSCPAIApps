@@ -15,7 +15,7 @@ from app.services.common_service import (
 
 
 # Signavio-specific constants
-SIGNAVIO_WORKFLOW_ID = "BW10nzxLhlqO"
+SIGNAVIO_WORKFLOW_ID = os.getenv("SIGNAVIO_WORKFLOW_ID", "BW10nzxLhlqO")
 
 ANALYSIS_BEHAVIOUR = (
     "Provide a structured analysis of the BPMN process. "

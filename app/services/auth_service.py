@@ -4,11 +4,14 @@ Handles OAuth2 login flow directly in FastAPI (no App Router needed)
 """
 import os
 import json
+import logging
 import secrets
 from urllib.parse import urlencode
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from app.core.config import get_ssl_context
+
+logger = logging.getLogger(__name__)
 
 # Lazy loading for SAP libraries to handle import errors gracefully
 xssec = None
@@ -24,8 +27,7 @@ def _load_sap_libs():
             xssec = _xssec
             AppEnv = _AppEnv
         except ImportError as e:
-            # Simple print instead of full error logging
-            print(f"Warning: SAP libraries not available: {e}")
+            logger.warning("SAP libraries not available: %s", e)
             return False
     return True
 
@@ -47,10 +49,10 @@ def _get_uaa_service():
         if service:
             return service
             
-        print("Warning: No XSUAA service found by name 'bsh_dscp_ai_apps' or label 'xsuaa'")
+        logger.warning("No XSUAA service found by name 'bsh_dscp_ai_apps' or label 'xsuaa'")
         return None
     except Exception as e:
-        print(f"Error getting UAA service: {e}")
+        logger.error("Error getting UAA service: %s", type(e).__name__)
         return None
 
 
@@ -58,14 +60,14 @@ def get_xsuaa_config():
     """Get XSUAA OAuth2 configuration from VCAP_SERVICES."""
     uaa_service = _get_uaa_service()
     if not uaa_service:
-        print("Warning: UAA service not available")
+        logger.warning("UAA service not available")
         return None
     
     try:
         creds = uaa_service.credentials
         url = creds.get("url")
         if not url:
-            print("Warning: XSUAA URL not found in credentials")
+            logger.warning("XSUAA URL not found in credentials")
             return None
             
         return {
@@ -77,7 +79,7 @@ def get_xsuaa_config():
             "xsappname": creds.get("xsappname"),
         }
     except Exception as e:
-        print(f"Error reading XSUAA config: {e}")
+        logger.error("Error reading XSUAA config: %s", type(e).__name__)
         return None
 
 
@@ -98,7 +100,7 @@ def _get_callback_url(request: Request) -> str:
     if os.getenv("VCAP_APPLICATION") and callback_url.startswith("http://"):
         callback_url = callback_url.replace("http://", "https://", 1)
     
-    print(f"Callback URL: {callback_url}")
+    logger.debug("Callback URL resolved for OAuth flow")
     return callback_url
 
 
@@ -125,7 +127,7 @@ def get_login_url(request: Request) -> str:
     }
     
     login_url = f"{config['auth_url']}?{urlencode(params)}"
-    print(f"Login URL: {login_url}")
+    logger.debug("Login URL generated")
     return login_url
 
 
@@ -150,22 +152,21 @@ async def exchange_code_for_token(code: str, request: Request) -> dict:
     
     try:
         async with httpx.AsyncClient(verify=get_ssl_context(), timeout=30.0) as client:
-            print(f"Token exchange request to: {config['token_url']}")
+            logger.debug("Initiating token exchange with XSUAA")
             response = await client.post(config["token_url"], data=data)
             
             if response.status_code != 200:
-                error_detail = response.text
-                print(f"Token exchange failed: {response.status_code} - {error_detail}")
+                logger.warning("Token exchange failed: HTTP %s", response.status_code)
                 raise HTTPException(
                     status_code=401, 
                     detail=f"Failed to exchange code for token: {response.status_code}"
                 )
             
             token_data = response.json()
-            print(f"Token exchange successful, got access_token: {bool(token_data.get('access_token'))}")
+            logger.info("Token exchange successful")
             return token_data
     except httpx.RequestError as e:
-        print(f"Token exchange request error: {e}")
+        logger.error("Token exchange request error: %s", type(e).__name__)
         raise HTTPException(status_code=500, detail="Token exchange request failed")
 
 
@@ -206,8 +207,7 @@ def validate_token(token: str) -> dict:
         elif hasattr(security_context, 'scopes'):
             scopes = security_context.scopes
         else:
-            # Scopes not critical, just log and continue
-            print("Note: Could not retrieve scopes from security context")
+            logger.warning("Could not retrieve scopes from security context")
         
         return {
             "user": user or "Unknown",
@@ -215,7 +215,7 @@ def validate_token(token: str) -> dict:
             "scopes": scopes or [],
         }
     except Exception as e:
-        print(f"Token validation error: {e}")
+        logger.warning("Token validation error")
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
 
