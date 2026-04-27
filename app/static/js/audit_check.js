@@ -508,6 +508,7 @@ class AuditCheckApp {
 
             statusBadge.className = 'status-badge success';
             statusBadge.textContent = 'Complete';
+            FeedbackWidget.show(document.getElementById('results-panel-creator'), 'audit', () => null);
         } catch (error) {
             AppLogger.error('Error sending PDF to Audit Brain:', error);
             statusBadge.className = 'status-badge error';
@@ -714,6 +715,7 @@ class AuditCheckApp {
 
         statusBadge.className = 'status-badge success';
         statusBadge.textContent = 'Complete';
+        FeedbackWidget.show(document.getElementById('results-panel-checker'), 'audit', () => null);
     }
 
     displayCheckError(message) {

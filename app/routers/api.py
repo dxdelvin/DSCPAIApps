@@ -1970,3 +1970,40 @@ async def admin_analytics(request: Request):
     data = await get_analytics()
     return data
 
+
+# ============== Feedback ==============
+
+class FeedbackRequest(BaseModel):
+    gen_id: Optional[str] = Field(default=None, max_length=200)
+    rating: int = Field(ge=1, le=4)
+
+
+@router.post("/feedback/{app_key}")
+async def submit_feedback(app_key: str, payload: FeedbackRequest, request: Request):
+    """Accept a post-generation quality rating from any authenticated user."""
+    from app.services.History.analytics_service import APP_LABELS
+    from app.services.History.feedback_service import save_feedback
+    if app_key not in APP_LABELS:
+        return JSONResponse(status_code=400, content={"status": "error", "message": "Unknown app key."})
+    gen_id = None
+    if payload.gen_id:
+        if not _GEN_ID_RE.match(payload.gen_id):
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid gen_id format."})
+        gen_id = payload.gen_id
+    ok = await save_feedback(app_key, gen_id, payload.rating)
+    if not ok:
+        return JSONResponse(status_code=500, content={"status": "error", "message": "Could not save feedback."})
+    return {"status": "success"}
+
+
+@router.get("/admin/feedback")
+async def admin_feedback(request: Request):
+    """Return per-app feedback aggregates. Admin-only."""
+    from app.services.History.analytics_service import ADMIN_USERS, APP_LABELS
+    from app.services.History.feedback_service import get_all_feedback_aggregates
+    user_info = get_current_user(request)
+    if user_info.get("user", "").lower() not in ADMIN_USERS:
+        return JSONResponse(status_code=403, content={"status": "error", "message": "Access denied."})
+    aggregates = await get_all_feedback_aggregates()
+    return {"aggregates": aggregates, "app_labels": APP_LABELS}
+

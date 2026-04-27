@@ -223,6 +223,7 @@ class PptCreatorApp {
 
             this.hideLoading();
             this.showResult();
+            FeedbackWidget.show(document.getElementById('result-panel'), 'ppt', () => this.currentGenId);
             const chatContainer = document.getElementById('chat-container');
             if (chatContainer) chatContainer.style.display = 'block';
             showToast('Presentation generated successfully!', 'success');

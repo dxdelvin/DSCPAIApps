@@ -523,8 +523,8 @@ body.dark-mode .review-value {
         transition: transform 0.2s ease;
         line-height: 1;
         opacity: 0.9;
-        width: 32px;
-        height: 32px;
+        width: 44px;
+        height: 44px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -584,8 +584,8 @@ body.dark-mode .review-value {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     cursor: grab;
     color: var(--slate-400);
     border-radius: 6px;
@@ -607,8 +607,8 @@ body.dark-mode .review-value {
 }
 
 .sublane-drag-handle {
-    width: 24px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
 }
 
 body.dark-mode .lane-drag-handle,
@@ -650,7 +650,7 @@ body.dark-mode .drag-clone {
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 1rem;
     background: var(--card);
     color: var(--text-primary);
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -738,7 +738,7 @@ body.dark-mode .lane-input, body.dark-mode .sublane-input {
 }
 
 .sublane-input {
-    font-size: 13px;
+    font-size: 1rem;
 }
 
 /* Hidden Elements - Default State */
@@ -770,7 +770,7 @@ body.dark-mode .lane-input, body.dark-mode .sublane-input {
     padding: 10px 12px;
     border: 1px solid var(--border);
     border-radius: 10px;
-    font-size: 14px;
+    font-size: 1rem;
     color: var(--text-primary);
     background: var(--card);
     resize: vertical;

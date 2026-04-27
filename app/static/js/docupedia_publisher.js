@@ -552,6 +552,7 @@ class DocupediaPublisherApp {
             this.loadDraft(data);
             this.hideLoading();
             this.goTo('review');
+            FeedbackWidget.show(document.getElementById('dp-chat-history'), 'docupedia', () => null);
             this.appendChatMessage('assistant', isRegeneration ? 'Draft regenerated. Review the updated content.' : 'Draft ready. Edit anything below, or refine with AI.');
             showToast('Confluence draft generated.', 'success');
         } catch (error) {

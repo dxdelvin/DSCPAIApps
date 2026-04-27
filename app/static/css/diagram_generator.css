@@ -94,7 +94,7 @@
     padding: 0.6rem 0.8rem;
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    font-size: 0.88rem;
+    font-size: 1rem;
     resize: vertical;
     background: var(--bg, #f8fafc);
     color: var(--text-primary, #0f172a);
@@ -190,6 +190,11 @@
     padding: 0.15rem 0.4rem !important;
     font-size: 0.85rem !important;
     color: var(--text-muted, #94a3b8) !important;
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
 }
 
 /* ── Total Size Row ────────────────────────────────────────── */
@@ -307,6 +312,7 @@
     cursor: pointer;
     transition: all 0.2s;
     white-space: nowrap;
+    min-height: 44px;
 }
 
 .type-chip:hover {
@@ -543,7 +549,7 @@ body.dark-mode .type-chip.active {
     padding: 0.5rem 0.7rem;
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 1rem;
     resize: none;
     background: var(--bg, #f8fafc);
     color: var(--text-primary, #0f172a);

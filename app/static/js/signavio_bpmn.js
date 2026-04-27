@@ -468,6 +468,7 @@ async function generateUploadBPMN() {
         lastGeneratedXml = result.xml;
         lastGeneratedFilename = result.filename;
         await showBpmnViewer(result.xml);
+        FeedbackWidget.show(document.getElementById('bpmnViewerPanel'), 'bpmn', () => null);
         showToast('BPMN generated successfully! Preview your diagram below.', 'success');
         _persistBpmnToHistory('upload', {
             mode: 'upload',
@@ -1407,6 +1408,7 @@ async function generateBPMN() {
         lastGeneratedXml = result.xml;
         lastGeneratedFilename = result.filename;
         await showBpmnViewer(result.xml);
+        FeedbackWidget.show(document.getElementById('bpmnViewerPanel'), 'bpmn', () => null);
         showToast('BPMN generated successfully! Preview your diagram below.', 'success');
         _persistBpmnToHistory('form', {
             mode: 'form',

@@ -50,6 +50,52 @@
         return res.json();
     }
 
+    async function fetchFeedback() {
+        const res = await fetch('/api/admin/feedback');
+        if (res.status === 403) return null;  // non-admin: silently skip
+        if (!res.ok) return null;
+        return res.json();
+    }
+
+    function renderFeedbackSection(data) {
+        if (!data || !data.aggregates) return;
+        const { aggregates, app_labels } = data;
+        const scoresGrid = $('feedbackScoresGrid');
+        const scoresCard = $('feedbackScoresCard');
+        if (!scoresGrid || !scoresCard) return;
+
+        scoresGrid.innerHTML = '';
+        let hasAny = false;
+
+        for (const [appKey, agg] of Object.entries(aggregates)) {
+            if (!agg || !agg.total_count) continue;
+            hasAny = true;
+            const avg = agg.total_count > 0 ? (agg.score_sum / agg.total_count).toFixed(1) : '—';
+            const scores = agg.scores || {};
+            const total = agg.total_count || 1;
+            const label = (app_labels && app_labels[appKey]) || appKey;
+            const color = APP_COLORS[appKey] || '#64748b';
+
+            // 4-segment mini bar: rating 4 (best) to 1 (worst)
+            const segments = [4, 3, 2, 1].map(r => {
+                const pct = ((scores[String(r)] || 0) / total * 100).toFixed(1);
+                const segColor = r === 4 ? '#16a34a' : r === 3 ? '#2563eb' : r === 2 ? '#f59e0b' : '#dc2626';
+                return `<div style="flex:${pct};background:${segColor};min-width:${pct > 0 ? '3px' : '0'}" title="Rating ${r}: ${scores[String(r)] || 0}"></div>`;
+            }).join('');
+
+            const card = document.createElement('div');
+            card.className = 'adm-feedback-score-card';
+            card.innerHTML = `
+                <div class="adm-feedback-score-label" style="color:${color}">${escapeHtml(label)}</div>
+                <div class="adm-feedback-score-avg">${avg}<span class="adm-feedback-score-max">/4</span></div>
+                <div class="adm-feedback-score-count">${agg.total_count} reaction${agg.total_count !== 1 ? 's' : ''}</div>
+                <div class="adm-feedback-mini-bar">${segments}</div>`;
+            scoresGrid.appendChild(card);
+        }
+
+        if (hasAny) scoresCard.hidden = false;
+    }
+
     // ── Stat cards ───────────────────────────────────────────
     function renderStatCards(data) {
         const { daily_clicks, daily_unique_users, generations, app_labels } = data;
@@ -316,9 +362,10 @@
         if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
 
         try {
-            const data = await fetchAnalytics();
+            const [data, feedbackData] = await Promise.all([fetchAnalytics(), fetchFeedback()]);
             window._admData = data;
             render(data);
+            renderFeedbackSection(feedbackData);
             $('admContent').hidden = false;
         } catch (err) {
             $('admErrorMsg').textContent = err.message || 'Could not load analytics.';

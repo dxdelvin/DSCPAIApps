@@ -167,6 +167,8 @@ body.dark-mode .brand-logo {
     display: flex;
     align-items: center;
     justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
 }
 
 .changelog-bell:hover,
@@ -248,7 +250,7 @@ body.dark-mode .beta-banner {
 
 /* Footer */
 .footer { border-top: 1px solid var(--border); padding: 32px 0; background: var(--card); }
-.footer-shell { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; justify-content: space-between; color: var(--slate-500); font-size: 14px; gap: 16px; }
+.footer-shell { max-width: 1200px; margin: 0 auto; padding: 0 24px; display: flex; flex-wrap: wrap; justify-content: space-between; color: var(--slate-500); font-size: 14px; gap: 16px; }
 .footer-links { display: flex; gap: 12px; }
 
 /* Buttons */
@@ -321,7 +323,7 @@ input, textarea, select {
     border-radius: 6px;
     padding: 0.75rem;
     font-family: inherit;
-    font-size: 0.95rem;
+    font-size: 1rem; /* 16px min prevents iOS auto-zoom on focus */
 }
 
 input::placeholder, textarea::placeholder {
@@ -680,15 +682,15 @@ body.dark-mode .sc-element {
 
 .search-clear {
     position: absolute;
-    right: 12px;
+    right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     border: none;
-    border-radius: 6px;
-    background: var(--slate-100);
+    border-radius: 8px;
+    background: transparent;
     color: var(--slate-500);
     cursor: pointer;
     transition: all 0.15s ease;
@@ -786,6 +788,9 @@ body.dark-mode .app-card .match-highlight {
     color: var(--text-secondary, #64748b);
     cursor: pointer;
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
 }
 
 .filter-chip:hover {
@@ -1271,8 +1276,8 @@ body.dark-mode .badge-version {
     cursor: pointer;
     line-height: 1;
     padding: 0;
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
     display: grid;
     place-items: center;
     border-radius: 8px;
@@ -1595,7 +1600,8 @@ body.dark-mode .builder-title {
     white-space: nowrap;
     margin: 0;
     flex: 1;
-    min-width: 120px;
+    min-width: 100px;
+    min-height: 44px;
 }
 
 .mode-tab:hover:not(.active) {
@@ -3202,7 +3208,7 @@ body.spring-mode .spinner::after {
 
 .history-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 1.25rem;
 }
 
@@ -3305,10 +3311,10 @@ body.spring-mode .spinner::after {
 
 .gen-card-delete {
     position: absolute;
-    top: 0.55rem;
-    right: 0.55rem;
-    width: 1.9rem;
-    height: 1.9rem;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0;
     border-radius: 999px;
     display: inline-flex;
@@ -3396,7 +3402,7 @@ body.dark-mode .history-spinner {
     border-radius: var(--radius-sm, 8px);
     background: var(--bg, #f8fafc);
     color: var(--text-primary, #1e293b);
-    font-size: 0.85rem;
+    font-size: 1rem; /* 16px min prevents iOS auto-zoom */
     outline: none;
     transition: border-color 0.15s, box-shadow 0.15s;
 }
@@ -3413,7 +3419,7 @@ body.dark-mode .history-spinner {
     border-radius: var(--radius-sm, 8px);
     background: var(--bg, #f8fafc);
     color: var(--text-primary, #1e293b);
-    font-size: 0.85rem;
+    font-size: 1rem; /* 16px min prevents iOS auto-zoom */
     outline: none;
     cursor: pointer;
     appearance: none;
@@ -3465,8 +3471,8 @@ body.dark-mode .history-sort-select:focus {
 
 /* Star button — inline flex item at the right end of .app-tags row */
 .fav-star-btn {
-    width: 1.75rem;
-    height: 1.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
     padding: 0;
     border-radius: 999px;
     display: inline-flex;
@@ -3504,3 +3510,110 @@ body.dark-mode .fav-star-btn:hover,
 body.dark-mode .fav-star-btn.active {
     color: var(--brand-orange, #ff7100);
 }
+
+/* ── Responsive table wrapper ────────────────────────────────────────────────
+   Wrap tables that may overflow on mobile.  Usage: <div class="table-responsive">
+   ─────────────────────────────────────────────────────────────────────────── */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── Mobile: prevent iOS auto-zoom on focused inputs ─────────────────────────
+   iOS zooms when focused input font-size < 16px. This override ensures 16px
+   minimum on all mobile viewports without changing desktop appearance. The
+   !important is intentional here — this is an accessibility override.
+   ─────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="hidden"]),
+    textarea,
+    select {
+        font-size: 1rem !important;
+    }
+}
+
+/* ── Feedback Widget ─────────────────────────────────────── */
+
+.feedback-widget {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: var(--card, #ffffff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius, 10px);
+    box-shadow: var(--shadow, 0 2px 8px rgba(0,0,0,.06));
+}
+
+.feedback-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.feedback-prompt {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    margin: 0;
+}
+
+.feedback-ratings {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.feedback-rating-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.4rem 0.75rem;
+    border: 1.5px solid var(--border, #e2e8f0);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text-secondary, #64748b);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.feedback-rating-btn:hover {
+    border-color: var(--brand-orange, #ff7100);
+    color: var(--brand-orange, #ff7100);
+    background: rgba(255,113,0,.06);
+}
+
+.feedback-rating-btn.selected {
+    border-color: var(--brand-orange, #ff7100);
+    color: var(--brand-orange, #ff7100);
+    background: rgba(255,113,0,.1);
+    font-weight: 600;
+}
+
+.feedback-rating-btn svg {
+    flex-shrink: 0;
+}
+
+.feedback-thanks {
+    font-size: 0.85rem;
+    color: #16a34a;
+    font-weight: 500;
+    margin: 0;
+}
+
+body.dark-mode .feedback-widget {
+    background: var(--card, #1e293b);
+    border-color: var(--border, #334155);
+}
+
+body.dark-mode .feedback-rating-btn {
+    border-color: var(--border, #334155);
+    color: var(--text-secondary, #94a3b8);
+}
+
+body.dark-mode .feedback-rating-btn:hover,
+body.dark-mode .feedback-rating-btn.selected {
+    border-color: var(--brand-orange, #ff7100);
+    color: var(--brand-orange, #ff7100);
+}
+
+

@@ -122,3 +122,29 @@ async def delete_object(key: str) -> bool:
     except Exception:
         logger.exception("Object Store delete_object failed for key=%r", key)
         return False
+
+
+async def list_objects(prefix: str) -> list[dict]:
+    """List objects under *prefix*.
+
+    Returns a list of dicts ``{"key": str, "last_modified": datetime}`` (UTC).
+    Returns an empty list when storage is unavailable.
+    """
+    _validate_key(prefix)
+
+    def _list():
+        client, bucket = _make_client()
+        if client is None:
+            return []
+        results = []
+        paginator = client.get_paginator("list_objects_v2")
+        for page in paginator.paginate(Bucket=bucket, Prefix=prefix):
+            for obj in page.get("Contents", []):
+                results.append({"key": obj["Key"], "last_modified": obj["LastModified"]})
+        return results
+
+    try:
+        return await asyncio.to_thread(_list)
+    except Exception:
+        logger.exception("Object Store list_objects failed for prefix=%r", prefix)
+        return []

@@ -229,6 +229,7 @@ class BPMNCheckerApp {
             this.updateScoreDisplay(score);
             this.renderAnalysis(analysis || '');
         }
+        FeedbackWidget.show(document.getElementById('results-content'), 'bpmn-checker', () => null);
     }
 
     showNonBPMNError(message) {

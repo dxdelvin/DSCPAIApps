@@ -284,8 +284,8 @@
     color: white;
     border: none;
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1022,7 +1022,7 @@ body.dark-mode .result-table tr:nth-child(even) {
     padding: 10px 14px;
     border: 1px solid var(--border);
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 1rem;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 

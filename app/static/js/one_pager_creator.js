@@ -285,6 +285,7 @@ class OnePagerApp {
 
             this.hideLoading();
             this.showPreview();
+            FeedbackWidget.show(document.getElementById('result-panel'), 'one-pager', () => this.currentGenId);
             document.getElementById('chat-container').style.display = 'block';
             showToast('One-pager generated! Preview is ready.', 'success');
 

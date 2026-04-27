@@ -518,6 +518,7 @@ class DiagramGeneratorApp {
 
             this.hideLoading();
             this.showResult();
+            FeedbackWidget.show(document.getElementById('result-panel'), 'diagram', () => this.generationId);
             this.showChatPanel();
             showToast(`${this.diagrams.length} diagram${this.diagrams.length > 1 ? 's' : ''} generated!`, 'success');
             await this._saveToHistory();
