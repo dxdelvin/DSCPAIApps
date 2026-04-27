@@ -11,6 +11,10 @@ from fastapi import HTTPException, UploadFile
 from app.services.brain_auth import get_brain_access_token
 from app.core.config import BRAIN_API_BASE_URL, get_ssl_context
 
+logger = logging.getLogger(__name__)
+
+logger = logging.getLogger(__name__)
+
 _SAFE_FILENAME_RE = re.compile(r'[^a-zA-Z0-9._\- ]')
 
 _MAX_PDF_CHARS = 90000
@@ -78,14 +82,8 @@ def _require_env(value: str, name: str) -> str:
 
 
 def _friendly_http_error(e: "httpx.HTTPStatusError", context: str = "AI service") -> dict:
-    """Return a user-friendly error dict for an HTTP status error.
-
-    Never exposes raw response bodies (which may contain HTML / internal details).
-    Logs the real status + body server-side only.
-    """
-    import logging
     status_code = e.response.status_code
-    logger = logging.getLogger(__name__)
+    logger.error("%s returned HTTP %s", context, status_code)
     logger.error("%s returned HTTP %s", context, status_code)
 
     messages = {
@@ -107,10 +105,7 @@ def _friendly_http_error(e: "httpx.HTTPStatusError", context: str = "AI service"
 
 
 def _get_base_url_and_headers(token: str) -> Tuple[str, dict]:
-    """Get base URL and headers."""
     base_url = BRAIN_API_BASE_URL
-    
-    # Build headers
     headers = {
         "Authorization": f"Bearer {token}",
         "User-Agent": "PostmanRuntime/7.37.3",
@@ -123,8 +118,6 @@ def _get_base_url_and_headers(token: str) -> Tuple[str, dict]:
 async def create_chat_history(brain_id: str) -> dict:
     """Create an empty chat history for a given knowledgeBaseId."""
     _require_env(brain_id, "knowledgeBaseId")
-    
-    logger = logging.getLogger(__name__)
     logger.info("Creating chat history for brain_id: %s", brain_id[:8] + "...")
     
     token = await get_brain_access_token()
@@ -228,7 +221,7 @@ async def call_brain_workflow_chat(
     }
     if chat_history_id:
         payload["chatHistoryId"] = chat_history_id
-    if attachment_ids and len(attachment_ids) > 0:
+    if attachment_ids:
         payload["attachmentIds"] = attachment_ids
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour
@@ -256,59 +249,6 @@ async def call_brain_workflow_chat(
             }
 
 
-async def call_brain_chat(
-    brain_id: str, 
-    prompt: str, 
-    *, 
-    use_gpt_knowledge: bool = True, 
-    chat_history_id: Optional[str] = None,
-    attachment_ids: Optional[List[str]] = None,
-    custom_behaviour: Optional[str] = None
-) -> dict:
-    """Call DIA Brain retrieval-augmented chat with the provided Brain (knowledgeBaseId).
-    
-    Returns dict with 'result', 'chatHistoryId', and optionally 'error' fields.
-    """
-    _require_env(brain_id, "knowledgeBaseId")
-
-    token = await get_brain_access_token()
-    base_url, headers = _get_base_url_and_headers(token)
-    _require_env(base_url, "BRAIN_API_BASE_URL")
-
-    url = f"{base_url}/chat/retrieval-augmented"
-    payload = {
-        "prompt": prompt,
-        "knowledgeBaseId": brain_id,
-        "useGptKnowledge": use_gpt_knowledge,
-    }
-    if chat_history_id:
-        payload["chatHistoryId"] = chat_history_id
-    if attachment_ids and len(attachment_ids) > 0:
-        payload["attachmentIds"] = attachment_ids
-    if custom_behaviour:
-        payload["customMessageBehaviour"] = custom_behaviour
-
-    client_kwargs = {"verify": get_ssl_context(), "trust_env": True}
-
-    async with httpx.AsyncClient(**client_kwargs) as client:
-        try:
-            response = await client.post(url, json=payload, headers=headers, timeout=120.0)
-            response.raise_for_status()
-            data = response.json()
-            return {
-                "result": data.get("result", ""),
-                "chatHistoryId": data.get("chatHistoryId", chat_history_id)
-            }
-        except httpx.HTTPStatusError as e:
-            return _friendly_http_error(e, "call_brain_chat")
-        except httpx.RequestError as e:
-            return {
-                "error": True,
-                "message": "Connection Error",
-                "detail": "Could not connect to the AI service. Please check your network and try again.",
-            }
-
-
 async def call_brain_pure_llm_chat(
     brain_id: str,
     prompt: str,
@@ -326,8 +266,7 @@ async def call_brain_pure_llm_chat(
     Returns dict with 'result', 'chatHistoryId', and optionally 'error' fields.
     """
     _require_env(brain_id, "knowledgeBaseId")
-    logger = logging.getLogger(__name__)
-    logger.info("Calling Brain pure LLM chat: brain_id=%s, chat_history=%s, attachments=%s, timeout=%ss", 
+    logger.info("Calling Brain pure LLM chat: brain_id=%s, chat_history=%s, attachments=%s, timeout=%ss",
                brain_id[:8] + "...", bool(chat_history_id), len(attachment_ids) if attachment_ids else 0, timeout_seconds)
 
     token = await get_brain_access_token()
@@ -341,7 +280,7 @@ async def call_brain_pure_llm_chat(
     }
     if chat_history_id:
         payload["chatHistoryId"] = chat_history_id
-    if attachment_ids and len(attachment_ids) > 0:
+    if attachment_ids:
         payload["attachmentIds"] = attachment_ids
     if custom_behaviour:
         payload["customMessageBehaviour"] = custom_behaviour

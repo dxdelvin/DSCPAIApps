@@ -1,4 +1,4 @@
-
+﻿
 import io
 import os
 from typing import List, Optional
@@ -10,7 +10,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 
-# ─── Paths & constants ────────────────────────────────────
+# â”€â”€â”€ Paths & constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "static", "docs",
@@ -33,7 +33,7 @@ W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml"
 BSH_GREY = RGBColor(0x64, 0x74, 0x8B)
 
 
-# ─── Low-level helpers ────────────────────────────────────
+# â”€â”€â”€ Low-level helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _set_para_text(para, text: str):
     """Replace a paragraph's text, preserving the first run's formatting."""
@@ -110,7 +110,7 @@ def _clear_section_set_text(doc, heading_para, text: str):
     """
     content_paras = _get_content_paras_between_headings(doc, heading_para)
     if not content_paras:
-        # No content paras — insert one
+        # No content paras â€” insert one
         if text:
             new_p = OxmlElement("w:p")
             new_r = OxmlElement("w:r")
@@ -161,7 +161,7 @@ def _fill_table(table, data_rows, num_cols, header_rows=1):
                 _set_table_cell(table, row_idx, col_idx, val)
 
 
-# ─── Functional Specification generator ───────────────────
+# â”€â”€â”€ Functional Specification generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 def generate_functional_spec_docx(data: dict) -> io.BytesIO:
@@ -191,7 +191,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
         3.4 Data structures              -> P111
         3.5 Data maintenance             -> P115
         3.6 Interfaces                   -> P119
-        3.7 Authorization – user roles   -> P123
+        3.7 Authorization â€“ user roles   -> P123
         3.8 Information security         -> (after P130)
         3.10 Architecture and technology -> P161
         5.  Risks                        -> P175
@@ -203,9 +203,9 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     doc = Document(TEMPLATE_PATH)
     tables = doc.tables
 
-    # ================================================================
-    # 1. PAGE HEADER — Title, Date, Version, Author
-    # ================================================================
+
+    # 1. PAGE HEADER â€” Title, Date, Version, Author
+
     title = data.get("title", "").strip()
     date_val = data.get("date", "").strip()
     version = data.get("version", "").strip()
@@ -231,9 +231,9 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
                 for r in para.runs[1:]:
                     r.text = ""
 
-    # ================================================================
+
     # 2. RESPONSIBILITIES TABLE (Table 0)
-    # ================================================================
+
     resp_table = tables[0]
     responsibilities = data.get("responsibilities", {})
 
@@ -253,9 +253,9 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
         if date_str:
             _set_table_cell(resp_table, row_idx, 2, date_str)
 
-    # ================================================================
-    # 3. SECTION CONTENT — Replace placeholder text after headings
-    # ================================================================
+
+    # 3. SECTION CONTENT â€” Replace placeholder text after headings
+
 
     # Sections that need ALL content paragraphs cleared (multi-paragraph boilerplate)
     # These sections have boilerplate text that must be fully replaced by user input.
@@ -273,7 +273,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
             continue
         _clear_section_set_text(doc, heading_para, user_text)
 
-    # ── Solution definition intro (Report / Transaction / Source System) ──
+    # â”€â”€ Solution definition intro (Report / Transaction / Source System) â”€â”€
     # P66-70: "For detailed analysis..." + Report + Transaction + Source system
     # Clear boilerplate, replace with user's report/transaction/sourceSystem
     sol_def_heading = _find_heading_para(doc, "Solution definition")
@@ -284,7 +284,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
 
         content_paras = _get_content_paras_between_headings(doc, sol_def_heading)
         if content_paras:
-            # First para (P66): "For detailed analysis..." → set Report value
+            # First para (P66): "For detailed analysis..." â†’ set Report value
             if report:
                 _set_para_text(content_paras[0], f"Report:\t\t{report}")
             else:
@@ -346,30 +346,30 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
             new_p.append(new_r)
             heading_para._p.addnext(new_p)
 
-    # ================================================================
+
     # 4. PREVIOUS STEPS TABLE (Table 1)
-    # ================================================================
+
     prev_steps = data.get("previousSteps", [])
     if prev_steps:
         _fill_table(tables[1], prev_steps, 4)
 
-    # ================================================================
+
     # 5. GLOSSARY TABLE (Table 2)
-    # ================================================================
+
     glossary = data.get("glossary", [])
     if glossary:
         _fill_table(tables[2], glossary, 2)
 
-    # ================================================================
+
     # 6. DOCUMENT HISTORY TABLE (Table 3)
-    # ================================================================
+
     doc_history = data.get("docHistory", [])
     if doc_history:
         _fill_table(tables[3], doc_history, 5)
 
-    # ================================================================
-    # 7. FOOTER — update title in footer
-    # ================================================================
+
+    # 7. FOOTER â€” update title in footer
+
     if title:
         footer = doc.sections[0].footer
         if footer and not footer.is_linked_to_previous:
@@ -384,7 +384,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     return buffer
 
 
-# ─── Business Requirement generator ───────────────────────
+# â”€â”€â”€ Business Requirement generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def _set_table_cell(table, row_idx, col_idx, text: str):
     """Set text in a specific table cell, preserving first run formatting."""
@@ -432,7 +432,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         [ 6] Heading 2 "What is the initial situation?"
         [ 7] Heading 2 "What is the required situation?"
         [ 8] Heading 2 "Who is involved in the function/process (departments)?"
-        [ 9] Heading 2 "Which IT-components are used …?"
+        [ 9] Heading 2 "Which IT-components are used â€¦?"
         [10] Heading 2 "What data is used or affected?"
         [11] Heading 2 "What is your proposal for solution?"
         [13] Heading 1 "Benefits for the Business"
@@ -448,12 +448,12 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     paras = doc.paragraphs
     tables = doc.tables
 
-    # ================================================================
+
     # 1. HEADER TABLE (Table 0)
-    # ================================================================
+
     header_table = tables[0]
 
-    # Row 0: Requirement Title (merged across all 4 cols → set col 0)
+    # Row 0: Requirement Title (merged across all 4 cols â†’ set col 0)
     title = data.get("title", "").strip()
     if title:
         # The title row cells are merged; set the first cell
@@ -483,9 +483,9 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     if requestor_company:
         _set_table_cell(header_table, 3, 3, requestor_company)
 
-    # ================================================================
-    # DOCUMENT HEADER (page header) – Create Date & Created By
-    # ================================================================
+
+    # DOCUMENT HEADER (page header) â€“ Create Date & Created By
+
     create_date = data.get("createDate", "").strip()
     created_by = data.get("createdBy", "").strip()
     if create_date or created_by:
@@ -498,9 +498,9 @@ def generate_br_docx(data: dict) -> io.BytesIO:
             runs[0].text = f"Create Date: {create_date}"
             runs[1].text = f"\nCreated by: {created_by}"
 
-    # ================================================================
+
     # 2. RESPONSIBLES TABLE (Table 2)
-    # ================================================================
+
     resp_table = tables[2]
     responsibles = data.get("responsibles", {})
 
@@ -525,9 +525,9 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         if dept:
             _set_table_cell(resp_table, row_idx, 3, dept)
 
-    # ================================================================
+
     # 3. BUSINESS REQUIREMENT DESCRIPTION (paras 6-11)
-    # ================================================================
+
     description = data.get("description", {})
 
     field_map = {
@@ -544,9 +544,9 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         if text:
             _append_text_after_heading(doc, paras[para_idx], text)
 
-    # ================================================================
+
     # 4. BENEFITS (paras 14-16)
-    # ================================================================
+
     benefits = data.get("benefits", {})
 
     benefits_map = {
@@ -560,12 +560,12 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         if text:
             _append_text_after_heading(doc, paras[para_idx], text)
 
-    # ================================================================
+
     # 5. SIGN OFF / AGREEMENT (Table 3)
     #    Row 0: header (Agreement, Name, Department, Date, Signature)
     #    Row 1: Global Business Process Owner
     #    Row 2: GDS Product Owner / Manager
-    # ================================================================
+
     sign_off = data.get("signOff", {})
     signoff_table = tables[3]
 
@@ -585,9 +585,9 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     if gds.get("date", "").strip():
         _set_table_cell(signoff_table, 2, 3, gds["date"].strip())
 
-    # ================================================================
+
     # 6. COST ESTIMATION & DECISION
-    # ================================================================
+
     decision = data.get("decision", {})
 
     # Table 5: Evaluation (single-cell table)
@@ -608,7 +608,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         existing = cell.text.strip()
         cell.paragraphs[0].text = f"{existing} {decision_date}"
 
-    # Table 7: Decision type — custom bigger checkboxes in column 0
+    # Table 7: Decision type â€” custom bigger checkboxes in column 0
     decision_type = decision.get("decisionType", "").strip()
     accepted_sub = decision.get("acceptedSubOptions", [])
 
@@ -619,7 +619,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
     #   Row 3: only local         (sub-option of accepted)
     #   Row 4: accepted w/ restr  (main option)
     #
-    # For all 5 rows: put custom checkbox in col 0 (☐ or ☒)
+    # For all 5 rows: put custom checkbox in col 0 (â˜ or â˜’)
     decision_table = tables[7]
     decision_check_map = {
         0: decision_type == "rejected",
@@ -659,12 +659,12 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         existing = cell.text.strip()
         cell.paragraphs[0].text = f"{existing} {impl_target_date}"
 
-    # ================================================================
+
     # 7. COSTS / SAVINGS / CHARGING (Table 12)
     #    Row 0: headers
     #    Rows 1-3: data rows
     #    Row 4: totals
-    # ================================================================
+
     costs = data.get("costs", {})
     cost_rows = costs.get("rows", [])
     cost_table = tables[12]
@@ -740,7 +740,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
 def _set_custom_checkbox(table, row_idx, col_idx, checked: bool):
     """
     Replace the content of a cell with a large custom checkbox character.
-    ☒ (checked) or ☐ (unchecked), rendered at 16pt for visibility.
+    â˜’ (checked) or â˜ (unchecked), rendered at 16pt for visibility.
     Clears any existing content/borders in the cell first.
     """
     char = "\u2612" if checked else "\u2610"
@@ -767,7 +767,7 @@ def _set_custom_checkbox(table, row_idx, col_idx, checked: bool):
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 
-# ─── FS Template (Variant) generator ──────────────────────
+# â”€â”€â”€ FS Template (Variant) generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     """
@@ -780,12 +780,12 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
         [10] Written By:
         [11] Date:
       Table 0 (6x8): Revision History
-      §1  Purpose (para 55) + Type / Latency / Frequency / System / Impacted System
-      §2  Detail Processing Logic (after heading at para 66)
+      Â§1  Purpose (para 55) + Type / Latency / Frequency / System / Impacted System
+      Â§2  Detail Processing Logic (after heading at para 66)
           Prerequisites/Assumptions (para 68)
-      §3  Program Inputs
-        3.1 Selection Screen  — Table 1 (3 rows x 6 cols)
-        3.2 Report Characteristic — Table 2 (5 rows x 3 cols)
+      Â§3  Program Inputs
+        3.1 Selection Screen  â€” Table 1 (3 rows x 6 cols)
+        3.2 Report Characteristic â€” Table 2 (5 rows x 3 cols)
         3.3 Report Delivery (para 84-85)
         3.4 Report/Form Layout (after heading at para 86)
         3.5 Report Attributes (para 89)
@@ -797,16 +797,16 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
         3.10 Dependencies (para 107)
         3.12 Scheduling Requirements (para 109)
         3.13 Role/Authorization (para 111)
-        3.14 Test Specification — Table 5 (5x4), Table 6 (2x2)
-      §4  Change History — Table 7 (7x4)
+        3.14 Test Specification â€” Table 5 (5x4), Table 6 (2x2)
+      Â§4  Change History â€” Table 7 (7x4)
     """
     doc = Document(FS_VARIANT_TEMPLATE_PATH)
     paras = doc.paragraphs
     tables = doc.tables
 
-    # ================================================================
-    # 1. COVER PAGE — Description, Written By, Date
-    # ================================================================
+
+    # 1. COVER PAGE â€” Description, Written By, Date
+
     description_text = data.get("description", "").strip()
     written_by = data.get("writtenBy", "").strip()
     date_val = data.get("date", "").strip()
@@ -818,7 +818,7 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     if date_val and len(paras) > 11:
         _set_para_text(paras[11], f"Date: {date_val}")
 
-    # Footer — "Updated By : …" and "Version : …"
+    # Footer â€” "Updated By : â€¦" and "Version : â€¦"
     updated_by = data.get("updatedBy", "").strip()
     version_val = data.get("version", "").strip()
     if updated_by or version_val:
@@ -832,18 +832,18 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
                         if version_val:
                             _set_table_cell(ft, 0, 2, f"Version : {version_val}")
 
-    # ================================================================
+
     # 2. REVISION HISTORY TABLE (Table 0)
     #    Cols: Version, Effective Date, Brief Description, Reference,
     #          Affected Sections, Prepared By, Reviewed By, Approved By
-    # ================================================================
+
     revision_history = data.get("revisionHistory", [])
     if revision_history:
         _fill_table(tables[0], revision_history, 8)
 
-    # ================================================================
+
     # 3. PURPOSE SECTION
-    # ================================================================
+
     purpose = data.get("purpose", "").strip()
     if purpose and len(paras) > 55:
         _set_para_text(paras[55], purpose)
@@ -875,9 +875,9 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     if impacted_system and len(paras) > 65:
         _set_para_text(paras[65], f"Impacted System:\t{impacted_system}")
 
-    # ================================================================
+
     # 4. DETAIL PROCESSING LOGIC
-    # ================================================================
+
     processing_logic = data.get("processingLogic", "").strip()
     if processing_logic:
         heading = _find_heading_para(doc, "2. Detail Processing Logic")
@@ -896,20 +896,20 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
             # It's a normal paragraph, find para 68 and add content after
             _set_para_text(paras[69], prerequisites)
 
-    # ================================================================
+
     # 5. SELECTION SCREEN TABLE (Table 1)
     #    Cols: Screen Label, Referenced Field, Range of Value,
     #          Attributes/Defaults, Validations, Comments
-    # ================================================================
+
     selection_screen = data.get("selectionScreen", [])
     if selection_screen:
         _fill_table(tables[1], selection_screen, 6)
 
-    # ================================================================
+
     # 6. REPORT CHARACTERISTICS (Table 2)
     #    Rows: Standard, Interactive, Drill-Down, ALV, Other
     #    Cols: Type, Yes/No, Comments
-    # ================================================================
+
     report_chars = data.get("reportCharacteristics", {})
     char_table = tables[2]
     char_map = {
@@ -928,18 +928,18 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
         if comment:
             _set_table_cell(char_table, row_idx, 2, comment)
 
-    # ================================================================
+
     # 7. REPORT DELIVERY (para 84-85)
-    # ================================================================
+
     report_delivery = data.get("reportDelivery", "").strip()
     if report_delivery and len(paras) > 84:
         _set_para_text(paras[84], report_delivery)
         if len(paras) > 85:
             _set_para_text(paras[85], "")
 
-    # ================================================================
-    # 8. SIMPLE SECTIONS (heading → content para replacement)
-    # ================================================================
+
+    # 8. SIMPLE SECTIONS (heading â†’ content para replacement)
+
     simple_sections = [
         ("Report/Form Layout", "reportLayout"),
         ("Report Attributes", "reportAttributes"),
@@ -973,10 +973,10 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     if output_file_remarks and len(paras) > 100:
         _set_para_text(paras[100], f"Additional Output File Location Remarks: {output_file_remarks}")
 
-    # ================================================================
+
     # 9. TEST SPECIFICATION
-    # ================================================================
-    # Table 5 (5x4): Test scenarios — ID, Test Scenario, Expected Results, Comments
+
+    # Table 5 (5x4): Test scenarios â€” ID, Test Scenario, Expected Results, Comments
     test_scenarios = data.get("testScenarios", [])
     if test_scenarios:
         _fill_table(tables[5], test_scenarios, 4)
@@ -999,10 +999,10 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     if test_client:
         _set_table_cell(env_table, 1, 1, test_client)
 
-    # ================================================================
+
     # 10. CHANGE HISTORY TABLE (Table 7)
     #     Cols: Date, Author, Version, Change brief
-    # ================================================================
+
     change_history = data.get("changeHistory", [])
     if change_history:
         _fill_table(tables[7], change_history, 4)

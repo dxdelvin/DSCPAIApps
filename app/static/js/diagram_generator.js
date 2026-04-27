@@ -1238,8 +1238,6 @@ class DiagramGeneratorApp {
         try {
             const res = await fetch(`/api/diagram/history/${genId}/download`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: 'User' }),
             });
 
             if (!res.ok) {

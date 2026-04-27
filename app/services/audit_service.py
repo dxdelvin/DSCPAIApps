@@ -33,7 +33,6 @@ async def check_audit_document(file: UploadFile) -> dict:
             "detail": "AUDIT_CHECK_BRAIN_ID is not configured."
         }
 
-    # Create a chat history first
     chat_result = await create_chat_history(brain_id)
     if chat_result.get("error"):
         return chat_result
@@ -47,21 +46,19 @@ async def check_audit_document(file: UploadFile) -> dict:
             "detail": "Chat history ID is empty or null."
         }
 
-    # Upload the file as an attachment
     upload_result = await upload_attachments(brain_id, [file])
     if upload_result.get("error"):
         return upload_result
 
     attachment_ids = upload_result.get("attachmentIds", [])
     
-    if not attachment_ids or len(attachment_ids) == 0:
+    if not attachment_ids:
         return {
             "error": True,
             "message": "Attachment upload failed",
             "detail": "No attachment IDs returned from upload."
         }
 
-    # Simple prompt - Brain agent handles the audit workflow
     prompt = f"Please check and analyze this audit document: {sanitize_filename_for_prompt(file.filename)}"
 
     response = await call_brain_workflow_chat(
@@ -99,13 +96,12 @@ async def continue_audit_chat(
 
     attachment_ids = None
     
-    # Upload new file if provided
     if file and file.filename:
         upload_result = await upload_attachments(brain_id, [file])
         if upload_result.get("error"):
             return upload_result
         attachment_ids = upload_result.get("attachmentIds", [])
-        if not attachment_ids or len(attachment_ids) == 0:
+        if not attachment_ids:
             attachment_ids = None
 
     response = await call_brain_workflow_chat(

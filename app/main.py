@@ -1,4 +1,4 @@
-import os
+﻿import os
 from dotenv import load_dotenv
 
 # Load env early (repo root, then app/.env)
@@ -6,7 +6,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(ROOT_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-# Strip proxy env vars in production — .env may set them for local VPN but
+# Strip proxy env vars in production â€” .env may set them for local VPN but
 # they would break DNS resolution on SAP BTP.
 if os.getenv("ENVIRONMENT", "dev").lower() == "prod":
     for _key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
@@ -109,10 +109,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-# ============== Middleware Stack ==============
+
 # IMPORTANT: Middleware is added in REVERSE order of execution
 # Last added = First to execute
-# We want: Request → Session → Auth → Route
+# We want: Request â†’ Session â†’ Auth â†’ Route
 # So we add: Auth first, then Session
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "")
@@ -138,7 +138,7 @@ app.add_middleware(MaxBodySizeMiddleware)
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 
-# ============== Auth Routes ==============
+
 
 @app.get("/login")
 async def login(request: Request):
@@ -206,7 +206,7 @@ async def logout(request: Request):
     return RedirectResponse(url=logout_url, status_code=302)
 
 
-# ============== Health & Debug Endpoints ==============
+
 
 @app.get("/health")
 async def health_check():

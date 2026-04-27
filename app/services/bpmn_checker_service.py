@@ -71,17 +71,15 @@ async def check_bpmn_diagram(file: UploadFile, context: Optional[str] = None) ->
 
     attachment_ids = upload_result.get("attachmentIds", [])
     
-    if not attachment_ids or len(attachment_ids) == 0:
+    if not attachment_ids:
         return {
             "error": True,
             "message": "Attachment upload failed",
             "detail": "No attachment IDs returned from upload."
         }
 
-    # Build the analysis prompt
     prompt = build_checker_prompt(file.filename, context)
 
-    # Call the Brain API
     response = await call_brain_workflow_chat(
         brain_id,
         prompt,
