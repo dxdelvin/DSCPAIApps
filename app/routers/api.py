@@ -298,7 +298,6 @@ async def generate_bpmn(data: BPMNGenerateRequest):
     )
 
     if result.get("error"):
-        asyncio.create_task(track_generation_failed("bpmn"))
         return JSONResponse(
             status_code=500,
             content={
@@ -383,7 +382,6 @@ async def audit_doc_check(file: UploadFile = File(...)):
     result = await check_audit_document(file)
 
     if result.get("error"):
-        asyncio.create_task(track_generation_failed("audit"))
         return JSONResponse(
             status_code=500,
             content={
@@ -457,7 +455,6 @@ async def bpmn_diagram_check(
     result = await check_bpmn_diagram(file, context)
 
     if result.get("error"):
-        asyncio.create_task(track_generation_failed("bpmn-checker"))
         status_code = 400 if result.get("message") == "Invalid file type" else 500
         return JSONResponse(
             status_code=status_code,
@@ -526,7 +523,7 @@ async def export_functional_spec(data: FSExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
-        asyncio.create_task(track_generation_failed("spec-builder"))
+        logger.exception("Export functional spec failed")
         return JSONResponse(
             status_code=500,
             content={
@@ -576,7 +573,7 @@ async def export_business_requirement(data: BRExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
-        asyncio.create_task(track_generation_failed("spec-builder"))
+        logger.exception("Export business requirement failed")
         return JSONResponse(
             status_code=500,
             content={
@@ -644,7 +641,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
-        asyncio.create_task(track_generation_failed("spec-builder"))
+        logger.exception("Export FS template failed")
         return JSONResponse(
             status_code=500,
             content={

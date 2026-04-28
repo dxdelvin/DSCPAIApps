@@ -131,6 +131,10 @@
         for (const ids of Object.values(data.users_total || {})) {
             if (Array.isArray(ids)) ids.forEach(id => totalUserSet.add(id));
         }
+
+        // Update header all-time stat
+        const admAllTimeNum = $('admAllTimeNum');
+        if (admAllTimeNum) admAllTimeNum.textContent = fmt(totalUserSet.size);
         // 28d unique users for sub-label trend
         const d28Start = nDaysAgo(28);
         const userSet28 = new Set();
@@ -216,11 +220,15 @@
         const grid = $('funnelGrid');
         if (!grid) return;
 
+        // Apps that actually generate & track success/failure
+        const generationApps = new Set(['ppt', 'diagram', 'one-pager']);
+
         const sorted = Object.entries(funnels).sort((a, b) => b[1].users - a[1].users);
 
         grid.innerHTML = sorted.map(([key, f]) => {
             const color = appColor(key);
             const hasData = f.clicks > 0;
+            const hasGeneration = generationApps.has(key);
 
             if (!hasData) {
                 return `
@@ -240,14 +248,17 @@
 
             // Stage-to-stage conversion labels
             const userPct  = pct(f.users,     f.clicks);
-            const genPct   = pct(f.gens,      f.users);
-            const dlPct    = pct(f.downloads, f.gens);
+            const genPct   = hasGeneration ? pct(f.gens, f.users) : 0;
+            const dlPct    = hasGeneration ? pct(f.downloads, f.gens) : 0;
 
-            // Success rate label
-            const totalAttempts = f.gens + f.failedGens;
-            const srHtml = totalAttempts > 0
-                ? `<span class="adm-funnel-conv" style="margin-left:auto">Success: <b style="color:${f.successRate >= 90 ? '#16a34a' : f.successRate >= 70 ? '#d97706' : '#dc2626'}">${f.successRate}%</b></span>`
-                : '';
+            // Success rate label (only for generation apps)
+            let srHtml = '';
+            if (hasGeneration) {
+                const totalAttempts = f.gens + f.failedGens;
+                srHtml = totalAttempts > 0
+                    ? `<span class="adm-funnel-conv" style="margin-left:auto">Success: <b style="color:${f.successRate >= 90 ? '#16a34a' : f.successRate >= 70 ? '#d97706' : '#dc2626'}">${f.successRate}%</b></span>`
+                    : '';
+            }
 
             // Feedback rating
             const agg   = (feedbackAggregates || {})[key];
@@ -260,6 +271,21 @@
                     ${avg}/4 &nbsp;<span style="opacity:.55">(${agg.total_count})</span>
                 </span>`;
             }
+
+            // Build generation rows only for apps that track it
+            const generationRows = hasGeneration ? `
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Generated</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${genBarW}%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.gens)}</span>
+                        <span class="adm-funnel-pct ${pctClass(genPct)}">${genPct}%</span>
+                    </div>
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Downloaded</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${dlBarW}%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.downloads)}</span>
+                        <span class="adm-funnel-pct ${f.gens > 0 ? pctClass(dlPct) : 'adm-pct-base'}">${f.gens > 0 ? dlPct + '%' : '—'}</span>
+                    </div>` : '';
 
             return `
             <div class="adm-funnel-card" style="--app-color:${color}">
@@ -280,21 +306,10 @@
                         <span class="adm-funnel-n">${fmt(f.users)}</span>
                         <span class="adm-funnel-pct ${pctClass(userPct)}">${userPct}%</span>
                     </div>
-                    <div class="adm-funnel-row">
-                        <span class="adm-funnel-stage">Generated</span>
-                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${genBarW}%"></div></div>
-                        <span class="adm-funnel-n">${fmt(f.gens)}</span>
-                        <span class="adm-funnel-pct ${pctClass(genPct)}">${genPct}%</span>
-                    </div>
-                    <div class="adm-funnel-row">
-                        <span class="adm-funnel-stage">Downloaded</span>
-                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${dlBarW}%"></div></div>
-                        <span class="adm-funnel-n">${fmt(f.downloads)}</span>
-                        <span class="adm-funnel-pct ${f.gens > 0 ? pctClass(dlPct) : 'adm-pct-base'}">${f.gens > 0 ? dlPct + '%' : '—'}</span>
-                    </div>
+                    ${generationRows}
                 </div>
                 <div class="adm-funnel-foot">
-                    <span class="adm-funnel-conv">Conv: <b>${f.convRate}%</b> visits → gens</span>
+                    ${hasGeneration ? `<span class="adm-funnel-conv">Conv: <b>${f.convRate}%</b> visits → gens</span>` : ''}
                     ${srHtml}
                     ${ratingHtml}
                 </div>
@@ -303,13 +318,36 @@
     }
 
     // - Daily Generations chart (stacked bars) -------
-    function renderDailyChart(data) {
+    function renderDailyChart(data, days) {
         const canvas = $('dailyChart');
         if (!canvas) return;
 
         const { daily_generations, date_range, app_labels } = data;
-        const appKeys = Object.keys(app_labels);
-        const dates   = date_range || [];
+        const appKeys  = Object.keys(app_labels);
+        const allDates = date_range || [];
+
+        // Build per-date raw datasets
+        const rawDatasets = {};
+        appKeys.forEach(k => { rawDatasets[k] = []; });
+        allDates.forEach(d => {
+            const dayData = (daily_generations || {})[d] || {};
+            appKeys.forEach(k => rawDatasets[k].push(dayData[k] || 0));
+        });
+
+        // Bucket by week or month for longer ranges
+        const bucketSize = days >= 365 ? 30 : days >= 60 ? 7 : 1;
+        let labels = [];
+        const datasets = {};
+        appKeys.forEach(k => { datasets[k] = []; });
+
+        for (let i = 0; i < allDates.length; i += bucketSize) {
+            const sliceDates = allDates.slice(i, i + bucketSize);
+            labels.push(shortDate(sliceDates[0]));
+            appKeys.forEach(k => {
+                const sum = rawDatasets[k].slice(i, i + bucketSize).reduce((s, v) => s + v, 0);
+                datasets[k].push(sum);
+            });
+        }
 
         const legendEl = $('chartLegend');
         legendEl.innerHTML = '';
@@ -320,14 +358,15 @@
             legendEl.appendChild(item);
         });
 
-        const datasets = {};
-        appKeys.forEach(k => { datasets[k] = []; });
-        dates.forEach(d => {
-            const dayData = (daily_generations || {})[d] || {};
-            appKeys.forEach(k => datasets[k].push(dayData[k] || 0));
-        });
+        // Chart title suffix
+        const chartTitleEl = $('chartCardTitle');
+        if (chartTitleEl) {
+            const suffix = bucketSize === 30 ? ' (monthly)' : bucketSize === 7 ? ' (weekly)' : '';
+            const rangeLabel = days <= 7 ? '7 days' : days <= 28 ? '28 days' : days <= 90 ? '3 months' : days <= 180 ? '6 months' : '1 year';
+            chartTitleEl.textContent = `Daily Generations — ${rangeLabel}${suffix}`;
+        }
 
-        const dpr     = window.devicePixelRatio || 1;
+        const dpr  = window.devicePixelRatio || 1;
         const padL = 36, padB = 28, padT = 14, padR = 16;
         const W    = canvas.parentElement.clientWidth || 900;
         const H    = 260;
@@ -344,12 +383,13 @@
         const chartW = W - padL - padR;
         const chartH = H - padT - padB;
 
-        const dayTotals = dates.map((_, i) => appKeys.reduce((s, k) => s + datasets[k][i], 0));
-        const maxVal = Math.max(...dayTotals, 1);
-        const yStep  = niceStep(maxVal);
-        const yMax   = Math.ceil(maxVal / yStep) * yStep;
+        const n         = labels.length;
+        const totals    = labels.map((_, i) => appKeys.reduce((s, k) => s + datasets[k][i], 0));
+        const maxVal    = Math.max(...totals, 1);
+        const yStep     = niceStep(maxVal);
+        const yMax      = Math.ceil(maxVal / yStep) * yStep;
 
-        const isDark = document.body.classList.contains('dark-mode');
+        const isDark    = document.body.classList.contains('dark-mode');
         const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.06)';
         const textColor = isDark ? '#8a9db2' : '#6b7280';
         const labelFont = `11px 'Noto Sans', Verdana, sans-serif`;
@@ -368,26 +408,29 @@
             ctx.fillText(v.toString(), padL - 5, y + 4);
         }
 
-        const n    = dates.length;
-        const barW = Math.max(8, (chartW / n) * 0.55);
+        const barW = Math.max(6, (chartW / n) * 0.55);
         const barG = chartW / n;
 
         ctx.textAlign = 'center';
-        dates.forEach((d, i) => {
+        labels.forEach((lbl, i) => {
             const x = padL + i * barG + barG / 2;
             let baseY = padT + chartH;
             appKeys.forEach(k => {
                 const val = datasets[k][i];
                 if (val <= 0) return;
-                const bh  = (val / yMax) * chartH;
+                const bh = (val / yMax) * chartH;
                 ctx.fillStyle = appColor(k);
                 roundedRectTop(ctx, x - barW / 2, baseY - bh, barW, bh, 3);
                 ctx.fill();
                 baseY -= bh;
             });
-            ctx.fillStyle = textColor;
-            ctx.font = labelFont;
-            ctx.fillText(shortDate(d), x, padT + chartH + 18);
+            // Skip some x-labels when dense
+            const step = n > 52 ? 4 : n > 26 ? 2 : 1;
+            if (i % step === 0) {
+                ctx.fillStyle = textColor;
+                ctx.font = labelFont;
+                ctx.fillText(lbl, x, padT + chartH + 18);
+            }
         });
 
         ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)';
@@ -510,7 +553,7 @@
 
         renderHero(data, funnels, days);
         renderFunnelCards(funnels, fbAgg);
-        renderDailyChart(data);
+        renderDailyChart(data, days);
         renderRankings(funnels, fbAgg, _currentSort);
         renderFeedbackSection(feedbackData);
         $('admLastUpdated').textContent = new Date().toLocaleTimeString();
@@ -605,7 +648,7 @@
             clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
                 if (window._admData && !$('admContent').hidden) {
-                    renderDailyChart(window._admData);
+                    renderDailyChart(window._admData, window._admDays || 28);
                 }
             }, 200);
         });

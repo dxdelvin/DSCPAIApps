@@ -205,6 +205,34 @@
 .adm-hero-delta.down { color: var(--danger);  background: rgba(239,68,68,.1); }
 .adm-hero-delta.flat { color: var(--text-secondary); background: var(--surface-secondary); }
 
+/* ── All-time users pill (header) ───────────────────── */
+.adm-alltime-stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    background: var(--surface-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    font-size: 12.5px;
+    white-space: nowrap;
+    cursor: default;
+}
+
+.adm-alltime-num {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--brand-orange);
+    letter-spacing: -0.5px;
+}
+
+.adm-alltime-label {
+    font-weight: 500;
+    font-size: 11.5px;
+    opacity: .75;
+}
+
 /* ── Range selector ─────────────────────────────────── */
 .adm-range-bar {
     display: flex;
