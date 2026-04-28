@@ -110,7 +110,7 @@ def _clear_section_set_text(doc, heading_para, text: str):
     """
     content_paras = _get_content_paras_between_headings(doc, heading_para)
     if not content_paras:
-        # No content paras â€” insert one
+        # No content paras -” insert one
         if text:
             new_p = OxmlElement("w:p")
             new_r = OxmlElement("w:r")
@@ -191,7 +191,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
         3.4 Data structures              -> P111
         3.5 Data maintenance             -> P115
         3.6 Interfaces                   -> P119
-        3.7 Authorization â€“ user roles   -> P123
+        3.7 Authorization -“ user roles   -> P123
         3.8 Information security         -> (after P130)
         3.10 Architecture and technology -> P161
         5.  Risks                        -> P175
@@ -204,7 +204,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     tables = doc.tables
 
 
-    # 1. PAGE HEADER â€” Title, Date, Version, Author
+    # 1. PAGE HEADER -” Title, Date, Version, Author
 
     title = data.get("title", "").strip()
     date_val = data.get("date", "").strip()
@@ -254,7 +254,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
             _set_table_cell(resp_table, row_idx, 2, date_str)
 
 
-    # 3. SECTION CONTENT â€” Replace placeholder text after headings
+    # 3. SECTION CONTENT -” Replace placeholder text after headings
 
 
     # Sections that need ALL content paragraphs cleared (multi-paragraph boilerplate)
@@ -284,7 +284,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
 
         content_paras = _get_content_paras_between_headings(doc, sol_def_heading)
         if content_paras:
-            # First para (P66): "For detailed analysis..." â†’ set Report value
+            # First para (P66): "For detailed analysis..." --> set Report value
             if report:
                 _set_para_text(content_paras[0], f"Report:\t\t{report}")
             else:
@@ -368,7 +368,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
         _fill_table(tables[3], doc_history, 5)
 
 
-    # 7. FOOTER â€” update title in footer
+    # 7. FOOTER -” update title in footer
 
     if title:
         footer = doc.sections[0].footer
@@ -432,7 +432,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         [ 6] Heading 2 "What is the initial situation?"
         [ 7] Heading 2 "What is the required situation?"
         [ 8] Heading 2 "Who is involved in the function/process (departments)?"
-        [ 9] Heading 2 "Which IT-components are used â€¦?"
+        [ 9] Heading 2 "Which IT-components are used -¦?"
         [10] Heading 2 "What data is used or affected?"
         [11] Heading 2 "What is your proposal for solution?"
         [13] Heading 1 "Benefits for the Business"
@@ -453,7 +453,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
 
     header_table = tables[0]
 
-    # Row 0: Requirement Title (merged across all 4 cols â†’ set col 0)
+    # Row 0: Requirement Title (merged across all 4 cols --> set col 0)
     title = data.get("title", "").strip()
     if title:
         # The title row cells are merged; set the first cell
@@ -484,7 +484,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         _set_table_cell(header_table, 3, 3, requestor_company)
 
 
-    # DOCUMENT HEADER (page header) â€“ Create Date & Created By
+    # DOCUMENT HEADER (page header) -“ Create Date & Created By
 
     create_date = data.get("createDate", "").strip()
     created_by = data.get("createdBy", "").strip()
@@ -608,7 +608,7 @@ def generate_br_docx(data: dict) -> io.BytesIO:
         existing = cell.text.strip()
         cell.paragraphs[0].text = f"{existing} {decision_date}"
 
-    # Table 7: Decision type â€” custom bigger checkboxes in column 0
+    # Table 7: Decision type -” custom bigger checkboxes in column 0
     decision_type = decision.get("decisionType", "").strip()
     accepted_sub = decision.get("acceptedSubOptions", [])
 
@@ -784,8 +784,8 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
       Â§2  Detail Processing Logic (after heading at para 66)
           Prerequisites/Assumptions (para 68)
       Â§3  Program Inputs
-        3.1 Selection Screen  â€” Table 1 (3 rows x 6 cols)
-        3.2 Report Characteristic â€” Table 2 (5 rows x 3 cols)
+        3.1 Selection Screen  -” Table 1 (3 rows x 6 cols)
+        3.2 Report Characteristic -” Table 2 (5 rows x 3 cols)
         3.3 Report Delivery (para 84-85)
         3.4 Report/Form Layout (after heading at para 86)
         3.5 Report Attributes (para 89)
@@ -797,15 +797,15 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
         3.10 Dependencies (para 107)
         3.12 Scheduling Requirements (para 109)
         3.13 Role/Authorization (para 111)
-        3.14 Test Specification â€” Table 5 (5x4), Table 6 (2x2)
-      Â§4  Change History â€” Table 7 (7x4)
+        3.14 Test Specification -” Table 5 (5x4), Table 6 (2x2)
+      Â§4  Change History -” Table 7 (7x4)
     """
     doc = Document(FS_VARIANT_TEMPLATE_PATH)
     paras = doc.paragraphs
     tables = doc.tables
 
 
-    # 1. COVER PAGE â€” Description, Written By, Date
+    # 1. COVER PAGE -” Description, Written By, Date
 
     description_text = data.get("description", "").strip()
     written_by = data.get("writtenBy", "").strip()
@@ -818,7 +818,7 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     if date_val and len(paras) > 11:
         _set_para_text(paras[11], f"Date: {date_val}")
 
-    # Footer â€” "Updated By : â€¦" and "Version : â€¦"
+    # Footer -” "Updated By : -¦" and "Version : -¦"
     updated_by = data.get("updatedBy", "").strip()
     version_val = data.get("version", "").strip()
     if updated_by or version_val:
@@ -938,7 +938,7 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
             _set_para_text(paras[85], "")
 
 
-    # 8. SIMPLE SECTIONS (heading â†’ content para replacement)
+    # 8. SIMPLE SECTIONS (heading --> content para replacement)
 
     simple_sections = [
         ("Report/Form Layout", "reportLayout"),
@@ -976,7 +976,7 @@ def generate_fs_variant_docx(data: dict) -> io.BytesIO:
 
     # 9. TEST SPECIFICATION
 
-    # Table 5 (5x4): Test scenarios â€” ID, Test Scenario, Expected Results, Comments
+    # Table 5 (5x4): Test scenarios -” ID, Test Scenario, Expected Results, Comments
     test_scenarios = data.get("testScenarios", [])
     if test_scenarios:
         _fill_table(tables[5], test_scenarios, 4)

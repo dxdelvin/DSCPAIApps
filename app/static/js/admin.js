@@ -20,7 +20,7 @@
 
     function appColor(key) { return APP_COLORS[key] || '#94a3b8'; }
 
-    // - DOM helpers --------------------â”€
+    // ── DOM helpers ──────────────────────────────────
     function $(id) { return document.getElementById(id); }
     function fmt(n) { return (n ?? 0).toLocaleString(); }
 
@@ -58,9 +58,9 @@
         return 'adm-conv-low';
     }
 
-    // - Fetch data ---------------------
-    async function fetchAnalytics() {
-        const res = await fetch('/api/admin/analytics');
+    // ── Fetch data ─────────────────────────────────────
+    async function fetchAnalytics(days) {
+        const res = await fetch(`/api/admin/analytics?days=${days}`);
         if (res.status === 403) throw new Error('Access denied. Admin only.');
         if (!res.ok) throw new Error(`Server error (${res.status})`);
         return res.json();
@@ -73,16 +73,16 @@
         return res.json();
     }
 
-    // - Compute per-app funnel for a date range ------â”€
+    // ── Compute per-app funnel for a date range ─────────────
     function computeFunnels(data, rangeStart) {
         const {
             daily_clicks, daily_unique_users, daily_generations,
-            daily_downloads, value_weights, app_labels,
+            daily_gen_failed, daily_downloads, app_labels,
         } = data;
 
         const funnels = {};
         for (const appKey of Object.keys(app_labels)) {
-            let clicks = 0, gens = 0, downloads = 0;
+            let clicks = 0, gens = 0, failedGens = 0, downloads = 0;
             const userSet = new Set();
 
             for (const [d, apps] of Object.entries(daily_clicks || {})) {
@@ -96,37 +96,46 @@
             for (const [d, apps] of Object.entries(daily_generations || {})) {
                 if (d >= rangeStart) gens += apps[appKey] || 0;
             }
+            for (const [d, apps] of Object.entries(daily_gen_failed || {})) {
+                if (d >= rangeStart) failedGens += apps[appKey] || 0;
+            }
             for (const [d, apps] of Object.entries(daily_downloads || {})) {
                 if (d >= rangeStart) downloads += apps[appKey] || 0;
             }
 
-            const users    = userSet.size;
-            const weight   = (value_weights || {})[appKey] || 1;
-            const value    = downloads * weight;
-            const convRate = pct(gens, clicks);          // visits â†’ gens
-            const userRate = pct(users, clicks);          // visits â†’ users
-            const genRate  = pct(gens, users);            // users â†’ gens
-            const dlRate   = pct(downloads, gens);        // gens â†’ downloads
+            const users       = userSet.size;
+            const totalAttempts = gens + failedGens;
+            const successRate = pct(gens, totalAttempts);   // successful / total attempts
+            const convRate    = pct(gens, clicks);           // visits → gens
+            const userRate    = pct(users, clicks);          // visits → users
+            const genRate     = pct(gens, users);            // users → gens
+            const dlRate      = pct(downloads, gens);        // gens → downloads
 
             funnels[appKey] = {
                 label: app_labels[appKey],
-                clicks, users, gens, downloads,
-                value, weight, convRate, userRate, genRate, dlRate,
+                clicks, users, gens, failedGens, downloads,
+                successRate, convRate, userRate, genRate, dlRate,
             };
         }
         return funnels;
     }
 
     // - Hero KPI cards -------------------
-    function renderHero(data, funnels) {
-        const d28Start = nDaysAgo(28);
-        const d7Start  = nDaysAgo(7);
-        const d14Start = nDaysAgo(14);
+    function renderHero(data, funnels, days) {
+        const rangeStart = nDaysAgo(days);
+        const d7Start    = nDaysAgo(7);
+        const d14Start   = nDaysAgo(14);
 
-        // Unique users (all apps, 28d)
+        // ALL TIME unique users (from users_total, union across all apps)
+        const totalUserSet = new Set();
+        for (const ids of Object.values(data.users_total || {})) {
+            if (Array.isArray(ids)) ids.forEach(id => totalUserSet.add(id));
+        }
+        // 28d unique users for sub-label trend
+        const d28Start = nDaysAgo(28);
         const userSet28 = new Set();
         const userSet7  = new Set();
-        const userSetP7 = new Set(); // prior 7 days (8-14)
+        const userSetP7 = new Set();
         for (const [d, apps] of Object.entries(data.daily_unique_users || {})) {
             for (const ids of Object.values(apps)) {
                 if (!Array.isArray(ids)) continue;
@@ -136,64 +145,70 @@
             }
         }
 
-        // Gens & downloads 28d / 7d
-        let gens28 = 0, gens7 = 0, gensP7 = 0;
-        let dl28 = 0, dl7 = 0, dlP7 = 0;
-        let clicks28 = 0;
+        // Gens, failed & downloads in range / 7d / prior 7d
+        let gens = 0, gensP = 0, gens7 = 0, gensP7 = 0;
+        let failed = 0;
+        let dl = 0, dl7 = 0, dlP7 = 0;
+        let clicks = 0;
         for (const [d, apps] of Object.entries(data.daily_generations || {})) {
             const v = Object.values(apps).reduce((s, x) => s + (x || 0), 0);
-            if (d >= d28Start) gens28 += v;
-            if (d >= d7Start)  gens7  += v;
+            if (d >= rangeStart) gens += v;
+            if (d >= d7Start)    gens7  += v;
             if (d >= d14Start && d < d7Start) gensP7 += v;
+        }
+        for (const [d, apps] of Object.entries(data.daily_gen_failed || {})) {
+            if (d >= rangeStart) failed += Object.values(apps).reduce((s, x) => s + (x || 0), 0);
         }
         for (const [d, apps] of Object.entries(data.daily_downloads || {})) {
             const v = Object.values(apps).reduce((s, x) => s + (x || 0), 0);
-            if (d >= d28Start) dl28 += v;
-            if (d >= d7Start)  dl7  += v;
+            if (d >= rangeStart) dl  += v;
+            if (d >= d7Start)    dl7  += v;
             if (d >= d14Start && d < d7Start) dlP7 += v;
         }
         for (const [d, apps] of Object.entries(data.daily_clicks || {})) {
-            if (d >= d28Start) clicks28 += Object.values(apps).reduce((s, x) => s + (x || 0), 0);
+            if (d >= rangeStart) clicks += Object.values(apps).reduce((s, x) => s + (x || 0), 0);
         }
 
-        // Value score 28d
-        const weights = data.value_weights || {};
-        let value28 = 0;
-        for (const [d, apps] of Object.entries(data.daily_downloads || {})) {
-            if (d >= d28Start) {
-                for (const [k, v] of Object.entries(apps)) {
-                    value28 += (v || 0) * (weights[k] || 1);
-                }
-            }
-        }
+        // Success rate for period
+        const totalAttempts = gens + failed;
+        const successRate   = totalAttempts > 0 ? Math.round((gens / totalAttempts) * 100) : null;
 
-        // Conv rate 28d
-        const convRate28 = clicks28 > 0 ? Math.round((gens28 / clicks28) * 100) : 0;
+        // Conv rate for period
+        const convRate = clicks > 0 ? Math.round((gens / clicks) * 100) : 0;
 
-        // Trend helper
-        function trendHtml(curr, prev, unit = '') {
+        function trendHtml(curr, prev) {
             if (!prev) return '';
             const d = curr - prev;
             const p = Math.round(Math.abs(d / prev) * 100);
             if (d > 0) return `<span class="adm-hero-delta up">+${p}% vs prior 7d</span>`;
-            if (d < 0) return `<span class="adm-hero-delta down">âˆ’${p}% vs prior 7d</span>`;
+            if (d < 0) return `<span class="adm-hero-delta down">−${p}% vs prior 7d</span>`;
             return `<span class="adm-hero-delta flat">flat vs prior 7d</span>`;
         }
 
-        $('heroUniqueUsers').textContent   = fmt(userSet28.size);
-        $('heroUniqueUsersSub').innerHTML  = trendHtml(userSet7.size, userSetP7.size) || `${fmt(userSet7.size)} this week`;
+        const rangeLabel = days <= 7 ? '7 days' : days <= 28 ? '28 days' : days <= 90 ? '3 months' : days <= 180 ? '6 months' : '1 year';
 
-        $('heroGenerations').textContent   = fmt(gens28);
+        $('heroUniqueUsers').textContent  = fmt(totalUserSet.size);
+        $('heroUniqueUsersSub').innerHTML = `<span style="opacity:.7">${fmt(userSet28.size)} in last 28d</span>`;
+
+        $('heroGenerations').textContent   = fmt(gens);
         $('heroGenerationsSub').innerHTML  = trendHtml(gens7, gensP7) || `${fmt(gens7)} this week`;
 
-        $('heroDownloads').textContent     = fmt(dl28);
+        $('heroDownloads').textContent     = fmt(dl);
         $('heroDownloadsSub').innerHTML    = trendHtml(dl7, dlP7) || `${fmt(dl7)} this week`;
 
-        $('heroValue').textContent         = fmt(value28);
+        const srEl = $('heroSuccessRate');
+        if (successRate !== null) {
+            srEl.textContent = successRate + '%';
+            srEl.style.color = successRate >= 90 ? 'var(--success)' : successRate >= 70 ? '#d97706' : 'var(--danger)';
+            $('heroSuccessRateSub').innerHTML = `${fmt(failed)} failed in ${rangeLabel}`;
+        } else {
+            srEl.textContent = '—';
+            $('heroSuccessRateSub').textContent = 'no attempts tracked yet';
+        }
 
         const convEl = $('heroConvRate');
-        convEl.textContent = convRate28 + '%';
-        convEl.style.color = convRate28 >= 40 ? 'var(--success)' : convRate28 >= 20 ? '#d97706' : 'var(--danger)';
+        convEl.textContent = convRate + '%';
+        convEl.style.color = convRate >= 40 ? 'var(--success)' : convRate >= 20 ? '#d97706' : 'var(--danger)';
     }
 
     // - Funnel Cards --------------------
@@ -201,7 +216,7 @@
         const grid = $('funnelGrid');
         if (!grid) return;
 
-        const sorted = Object.entries(funnels).sort((a, b) => b[1].value - a[1].value);
+        const sorted = Object.entries(funnels).sort((a, b) => b[1].users - a[1].users);
 
         grid.innerHTML = sorted.map(([key, f]) => {
             const color = appColor(key);
@@ -228,6 +243,12 @@
             const genPct   = pct(f.gens,      f.users);
             const dlPct    = pct(f.downloads, f.gens);
 
+            // Success rate label
+            const totalAttempts = f.gens + f.failedGens;
+            const srHtml = totalAttempts > 0
+                ? `<span class="adm-funnel-conv" style="margin-left:auto">Success: <b style="color:${f.successRate >= 90 ? '#16a34a' : f.successRate >= 70 ? '#d97706' : '#dc2626'}">${f.successRate}%</b></span>`
+                : '';
+
             // Feedback rating
             const agg   = (feedbackAggregates || {})[key];
             let ratingHtml = '';
@@ -240,16 +261,11 @@
                 </span>`;
             }
 
-            const valBadge = f.value > 0
-                ? `<span class="adm-funnel-val-badge">${fmt(f.value)} pts</span>`
-                : '';
-
             return `
             <div class="adm-funnel-card" style="--app-color:${color}">
                 <div class="adm-funnel-head">
                     <span class="adm-funnel-dot"></span>
                     <span class="adm-funnel-name">${escapeHtml(f.label)}</span>
-                    ${valBadge}
                 </div>
                 <div class="adm-funnel-body">
                     <div class="adm-funnel-row">
@@ -274,11 +290,12 @@
                         <span class="adm-funnel-stage">Downloaded</span>
                         <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${dlBarW}%"></div></div>
                         <span class="adm-funnel-n">${fmt(f.downloads)}</span>
-                        <span class="adm-funnel-pct ${f.gens > 0 ? pctClass(dlPct) : 'adm-pct-base'}">${f.gens > 0 ? dlPct + '%' : 'â€”'}</span>
+                        <span class="adm-funnel-pct ${f.gens > 0 ? pctClass(dlPct) : 'adm-pct-base'}">${f.gens > 0 ? dlPct + '%' : '—'}</span>
                     </div>
                 </div>
                 <div class="adm-funnel-foot">
-                    <span class="adm-funnel-conv">Conv: <b>${f.convRate}%</b> visitsâ†’gens</span>
+                    <span class="adm-funnel-conv">Conv: <b>${f.convRate}%</b> visits → gens</span>
+                    ${srHtml}
                     ${ratingHtml}
                 </div>
             </div>`;
@@ -384,7 +401,7 @@
     // - Rankings Table -------------------
     let _rankFunnels = null;
     let _rankFeedback = null;
-    let _currentSort = 'value';
+    let _currentSort = 'users';
 
     function renderRankings(funnels, feedbackAggregates, sortBy) {
         _rankFunnels  = funnels;
@@ -403,19 +420,25 @@
         });
 
         const sortMap = {
-            value: (a, b) => b.value - a.value,
-            conv:  (a, b) => b.convRate - a.convRate,
-            gens:  (a, b) => b.gens - a.gens,
-            users: (a, b) => b.users - a.users,
+            users:   (a, b) => b.users       - a.users,
+            gens:    (a, b) => b.gens        - a.gens,
+            conv:    (a, b) => b.convRate    - a.convRate,
+            success: (a, b) => b.successRate - a.successRate,
         };
-        rows.sort(sortMap[_currentSort] || sortMap.value);
+        rows.sort(sortMap[_currentSort] || sortMap.users);
 
         tbody.innerHTML = rows.map((r, i) => {
-            const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
-            const convHtml = `<span class="adm-conv-pill ${convClass(r.convRate)}">${r.convRate}%</span>`;
+            const rankCls    = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+            const convHtml   = r.clicks > 0
+                ? `<span class="adm-conv-pill ${convClass(r.convRate)}">${r.convRate}%</span>`
+                : `<span class="adm-num-zero">—</span>`;
+            const totalAttempts = r.gens + r.failedGens;
+            const srHtml = totalAttempts > 0
+                ? `<span class="adm-conv-pill ${r.successRate >= 90 ? 'adm-conv-good' : r.successRate >= 70 ? 'adm-conv-warn' : 'adm-conv-low'}">${r.successRate}%</span>`
+                : `<span class="adm-num-zero">—</span>`;
             const ratingHtml = r.rating
                 ? `<span style="color:#f59e0b;font-weight:700">${r.rating}</span><span style="color:var(--text-secondary);font-size:11px">/4</span>`
-                : `<span class="adm-num-zero">â€”</span>`;
+                : `<span class="adm-num-zero">—</span>`;
             const color = appColor(r.key);
             return `<tr>
                 <td class="adm-rank-num ${rankCls}">${i + 1}</td>
@@ -428,9 +451,9 @@
                 <td class="${r.clicks === 0 ? 'adm-num-zero' : ''}">${fmt(r.clicks)}</td>
                 <td class="${r.users === 0 ? 'adm-num-zero' : ''}">${fmt(r.users)}</td>
                 <td class="${r.gens === 0 ? 'adm-num-zero' : ''}">${fmt(r.gens)}</td>
-                <td class="${r.downloads === 0 ? 'adm-num-zero' : ''}">${fmt(r.downloads)}</td>
-                <td>${r.clicks > 0 ? convHtml : '<span class="adm-num-zero">â€”</span>'}</td>
-                <td><span class="adm-value-score">${r.value > 0 ? fmt(r.value) + ' pts' : '<span class="adm-num-zero">â€”</span>'}</span></td>
+                <td class="${r.failedGens === 0 ? 'adm-num-zero' : ''}"><span style="${r.failedGens > 0 ? 'color:var(--danger)' : ''}">${fmt(r.failedGens)}</span></td>
+                <td>${srHtml}</td>
+                <td>${convHtml}</td>
                 <td>${ratingHtml}</td>
             </tr>`;
         }).join('');
@@ -474,42 +497,50 @@
         if (hasAny) card.hidden = false;
     }
 
-    // - Full render --------------------â”€
-    function render(data, feedbackData) {
-        const d28Start = nDaysAgo(28);
-        const funnels = computeFunnels(data, d28Start);
-        const fbAgg   = feedbackData && feedbackData.aggregates ? feedbackData.aggregates : null;
+    // ── Full render ──────────────────────────────────
+    function render(data, feedbackData, days) {
+        const rangeStart = nDaysAgo(days);
+        const funnels    = computeFunnels(data, rangeStart);
+        const fbAgg      = feedbackData && feedbackData.aggregates ? feedbackData.aggregates : null;
 
-        renderHero(data, funnels);
+        // Update dynamic labels
+        const rangeLabel = days <= 7 ? '7 days' : days <= 28 ? '28 days' : days <= 90 ? '3 months' : days <= 180 ? '6 months' : '1 year';
+        const periodNote = $('funnelPeriodNote');
+        if (periodNote) periodNote.textContent = `${rangeLabel} · percentages show stage-to-stage conversion`;
+
+        renderHero(data, funnels, days);
         renderFunnelCards(funnels, fbAgg);
         renderDailyChart(data);
-        renderRankings(funnels, fbAgg, 'value');
+        renderRankings(funnels, fbAgg, _currentSort);
         renderFeedbackSection(feedbackData);
         $('admLastUpdated').textContent = new Date().toLocaleTimeString();
 
         // Sort button handlers
         document.querySelectorAll('.adm-sort-btn').forEach(btn => {
             btn.classList.toggle('adm-sort-active', btn.dataset.sort === _currentSort);
-            btn.addEventListener('click', () => {
+            btn.onclick = () => {
                 document.querySelectorAll('.adm-sort-btn').forEach(b => b.classList.remove('adm-sort-active'));
                 btn.classList.add('adm-sort-active');
                 renderRankings(_rankFunnels, _rankFeedback, btn.dataset.sort);
-            });
+            };
         });
     }
 
     // - Load ------------------------
-    async function load(btn) {
+    async function load(btn, days) {
+        days = days || window._admDays || 28;
+        window._admDays = days;
+
         $('admLoading').hidden = false;
         $('admContent').hidden = true;
         $('admError').hidden   = true;
         if (btn) { btn.disabled = true; btn.classList.add('spinning'); }
 
         try {
-            const [data, feedbackData] = await Promise.all([fetchAnalytics(), fetchFeedback()]);
+            const [data, feedbackData] = await Promise.all([fetchAnalytics(days), fetchFeedback()]);
             window._admData    = data;
             window._admFeedback = feedbackData;
-            render(data, feedbackData);
+            render(data, feedbackData, days);
             $('admContent').hidden = false;
         } catch (err) {
             $('admErrorMsg').textContent = err.message || 'Could not load analytics.';
@@ -558,7 +589,16 @@
         }
 
         const refreshBtn = $('admRefresh');
-        if (refreshBtn) refreshBtn.addEventListener('click', () => load(refreshBtn));
+        if (refreshBtn) refreshBtn.addEventListener('click', () => load(refreshBtn, window._admDays));
+
+        // Time range selector
+        document.querySelectorAll('.adm-range-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.adm-range-btn').forEach(b => b.classList.remove('adm-range-active'));
+                btn.classList.add('adm-range-active');
+                load(null, parseInt(btn.dataset.days, 10));
+            });
+        });
 
         let resizeTimer;
         window.addEventListener('resize', () => {
@@ -570,7 +610,7 @@
             }, 200);
         });
 
-        load(null);
+        load(null, 28);
     });
 
 })();

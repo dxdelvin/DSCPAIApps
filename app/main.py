@@ -6,7 +6,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv(dotenv_path=os.path.join(ROOT_DIR, ".env"))
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-# Strip proxy env vars in production â€” .env may set them for local VPN but
+# Strip proxy env vars in production -” .env may set them for local VPN but
 # they would break DNS resolution on SAP BTP.
 if os.getenv("ENVIRONMENT", "dev").lower() == "prod":
     for _key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
@@ -112,7 +112,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 # IMPORTANT: Middleware is added in REVERSE order of execution
 # Last added = First to execute
-# We want: Request â†’ Session â†’ Auth â†’ Route
+# We want: Request --> Session --> Auth --> Route
 # So we add: Auth first, then Session
 
 SESSION_SECRET = os.getenv("SESSION_SECRET", "")

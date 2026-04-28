@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from typing import Any, Optional, List
-from fastapi import APIRouter, UploadFile, File, Form, Request
+from fastapi import APIRouter, Query, UploadFile, File, Form, Request
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel, Field, field_validator
 
@@ -51,7 +51,7 @@ from app.services.History import ppt_history_service, diagram_history_service, b
 from app.services.History import favorites_service
 from app.services.History.favorites_service import ALLOWED_APP_KEYS
 from app.services.auth_service import get_current_user
-from app.services.History.analytics_service import track_generation, track_download
+from app.services.History.analytics_service import track_generation, track_generation_failed, track_download
 from app.services.diagram_generator_service import (
     analyze_pdf_content as diagram_analyze_pdf,
     generate_diagrams,
@@ -298,6 +298,7 @@ async def generate_bpmn(data: BPMNGenerateRequest):
     )
 
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("bpmn"))
         return JSONResponse(
             status_code=500,
             content={
@@ -380,8 +381,9 @@ async def audit_doc_check(file: UploadFile = File(...)):
     await file.seek(0)
 
     result = await check_audit_document(file)
-    
+
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("audit"))
         return JSONResponse(
             status_code=500,
             content={
@@ -453,8 +455,9 @@ async def bpmn_diagram_check(
     await file.seek(0)
 
     result = await check_bpmn_diagram(file, context)
-    
+
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("bpmn-checker"))
         status_code = 400 if result.get("message") == "Invalid file type" else 500
         return JSONResponse(
             status_code=status_code,
@@ -523,6 +526,7 @@ async def export_functional_spec(data: FSExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
+        asyncio.create_task(track_generation_failed("spec-builder"))
         return JSONResponse(
             status_code=500,
             content={
@@ -572,6 +576,7 @@ async def export_business_requirement(data: BRExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
+        asyncio.create_task(track_generation_failed("spec-builder"))
         return JSONResponse(
             status_code=500,
             content={
@@ -639,6 +644,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
     except Exception as e:
+        asyncio.create_task(track_generation_failed("spec-builder"))
         return JSONResponse(
             status_code=500,
             content={
@@ -720,6 +726,7 @@ async def ppt_extract(
     )
 
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("ppt"))
         return JSONResponse(
             status_code=500,
             content={
@@ -824,6 +831,7 @@ async def diagram_generate(data: DiagramGenerateRequest):
     )
 
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("diagram"))
         return JSONResponse(
             status_code=500,
             content={
@@ -1754,6 +1762,7 @@ async def one_pager_extract(
     )
 
     if result.get("error"):
+        asyncio.create_task(track_generation_failed("one-pager"))
         status_code = 500
         msg = result.get("message", "")
         if msg in {"Request Timed Out", "Gateway Timeout"}:
@@ -1981,13 +1990,13 @@ async def favorites_remove(app_key: str, request: Request):
 # ============== Admin Analytics ==============
 
 @router.get("/admin/analytics")
-async def admin_analytics(request: Request):
-    """Return aggregated analytics data. Admin-only."""
+async def admin_analytics(request: Request, days: int = Query(28, ge=7, le=365)):
+    """Return aggregated analytics data for the given day range. Admin-only."""
     from app.services.History.analytics_service import get_analytics, ADMIN_USERS
     user_info = get_current_user(request)
     if user_info.get("user", "").lower() not in ADMIN_USERS:
         return JSONResponse(status_code=403, content={"status": "error", "message": "Access denied."})
-    data = await get_analytics()
+    data = await get_analytics(days=days)
     return data
 
 
