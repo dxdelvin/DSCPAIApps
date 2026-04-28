@@ -51,7 +51,7 @@ from app.services.History import ppt_history_service, diagram_history_service, b
 from app.services.History import favorites_service
 from app.services.History.favorites_service import ALLOWED_APP_KEYS
 from app.services.auth_service import get_current_user
-from app.services.History.analytics_service import track_generation
+from app.services.History.analytics_service import track_generation, track_download
 from app.services.diagram_generator_service import (
     analyze_pdf_content as diagram_analyze_pdf,
     generate_diagrams,
@@ -516,6 +516,7 @@ async def export_functional_spec(data: FSExportRequest):
         filename = f"{safe_title}_Functional_Specification.docx"
 
         asyncio.create_task(track_generation("spec-builder"))
+        asyncio.create_task(track_download("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -564,6 +565,7 @@ async def export_business_requirement(data: BRExportRequest):
         filename = f"{safe_name}_Business_Requirement.docx"
 
         asyncio.create_task(track_generation("spec-builder"))
+        asyncio.create_task(track_download("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -630,6 +632,7 @@ async def export_fs_variant(data: FSVariantExportRequest):
         filename = f"{safe_title}_Functional_Specification.docx"
 
         asyncio.create_task(track_generation("spec-builder"))
+        asyncio.create_task(track_download("spec-builder"))
         return StreamingResponse(
             buffer,
             media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -998,6 +1001,7 @@ async def diagram_download(data: DiagramDownloadRequest):
         )
 
     drawio_content = build_drawio_download(data.diagrams)
+    asyncio.create_task(track_download("diagram"))
 
     return Response(
         content=drawio_content,
@@ -1131,6 +1135,7 @@ async def diagram_history_download(gen_id: str, data: DiagramHistoryDownloadRequ
         drawio_content = build_drawio_download(content.get("diagrams", []))
         title = content.get("title", "Diagrams").replace(" ", "_")
         safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Diagrams"
+        asyncio.create_task(track_download("diagram"))
 
         return Response(
             content=drawio_content,
@@ -1256,6 +1261,7 @@ async def bpmn_history_download(gen_id: str, request: Request):
         filename = content.get("filename") or "diagram.bpmn"
         safe = "".join(c if c.isalnum() or c in "_-." else "_" for c in filename) or "diagram.bpmn"
 
+        asyncio.create_task(track_download("bpmn"))
         return Response(
             content=xml.encode("utf-8"),
             media_type="application/xml",
@@ -1330,6 +1336,7 @@ async def ppt_download(data: PptDownloadRequest):
         title = content.get("title", "Presentation").replace(" ", "_")
         safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
         filename = f"{safe}.pptx"
+        asyncio.create_task(track_download("ppt"))
 
         return StreamingResponse(
             buf,
@@ -1466,6 +1473,7 @@ async def ppt_history_download(gen_id: str, data: PptHistoryDownloadRequest, req
         buf = generate_pptx_file(content, data.username, force_orange_theme=data.forceOrangeTheme)
         title = content.get("title", "Presentation").replace(" ", "_")
         safe = "".join(c if c.isalnum() or c in "_-" else "" for c in title) or "Presentation"
+        asyncio.create_task(track_download("ppt"))
 
         return StreamingResponse(
             buf,

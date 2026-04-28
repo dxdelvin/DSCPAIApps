@@ -10,7 +10,7 @@ from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
 
-# â”€â”€â”€ Paths & constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -â”€ Paths & constants ------------------
 
 TEMPLATE_PATH = os.path.join(
     os.path.dirname(__file__), "..", "static", "docs",
@@ -33,7 +33,7 @@ W14_NS = "http://schemas.microsoft.com/office/word/2010/wordml"
 BSH_GREY = RGBColor(0x64, 0x74, 0x8B)
 
 
-# â”€â”€â”€ Low-level helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -â”€ Low-level helpers ------------------
 
 def _set_para_text(para, text: str):
     """Replace a paragraph's text, preserving the first run's formatting."""
@@ -161,7 +161,7 @@ def _fill_table(table, data_rows, num_cols, header_rows=1):
                 _set_table_cell(table, row_idx, col_idx, val)
 
 
-# â”€â”€â”€ Functional Specification generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -â”€ Functional Specification generator ---------â”€
 
 
 def generate_functional_spec_docx(data: dict) -> io.BytesIO:
@@ -273,7 +273,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
             continue
         _clear_section_set_text(doc, heading_para, user_text)
 
-    # â”€â”€ Solution definition intro (Report / Transaction / Source System) â”€â”€
+    # - Solution definition intro (Report / Transaction / Source System) -
     # P66-70: "For detailed analysis..." + Report + Transaction + Source system
     # Clear boilerplate, replace with user's report/transaction/sourceSystem
     sol_def_heading = _find_heading_para(doc, "Solution definition")
@@ -384,7 +384,7 @@ def generate_functional_spec_docx(data: dict) -> io.BytesIO:
     return buffer
 
 
-# â”€â”€â”€ Business Requirement generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -â”€ Business Requirement generator -----------â”€
 
 def _set_table_cell(table, row_idx, col_idx, text: str):
     """Set text in a specific table cell, preserving first run formatting."""
@@ -767,7 +767,7 @@ def _set_custom_checkbox(table, row_idx, col_idx, checked: bool):
     para.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 
-# â”€â”€â”€ FS Template (Variant) generator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+# -â”€ FS Template (Variant) generator -----------
 
 def generate_fs_variant_docx(data: dict) -> io.BytesIO:
     """

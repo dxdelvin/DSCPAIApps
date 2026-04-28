@@ -6,6 +6,8 @@ Storage layout:
     analytics/users/{YYYY-MM-DD}.json       - per-app sets of unique user IDs for that day
     analytics/gen_daily/{YYYY-MM-DD}.json   - per-app generation counts for that calendar day
     analytics/generations.json              - all-time total generation count per app
+    analytics/downloads/{YYYY-MM-DD}.json   - per-app file download counts for that calendar day
+    analytics/downloads_total.json          - all-time total download count per app
 """
 
 import asyncio
@@ -30,6 +32,20 @@ APP_LABELS: dict[str, str] = {
     "one-pager":          "One Pager Creator",
 }
 
+# Value weight per download — reflects output complexity/size.
+# Higher = more valuable output delivered to the user.
+VALUE_WEIGHTS: dict[str, int] = {
+    "ppt":               5,   # full PowerPoint presentation
+    "spec-builder":      4,   # detailed Word document
+    "bpmn":              4,   # BPMN process XML + visual
+    "diagram":           3,   # draw.io diagram file
+    "one-pager":         3,   # formatted one-pager document
+    "docupedia":         2,   # published Confluence page
+    "audit":             2,   # audit analysis report
+    "bpmn-checker":      1,   # inline checker analysis
+    "signavio-learning": 1,   # learning content
+}
+
 # Users allowed to access /dscpadmin (lowercase)
 ADMIN_USERS: frozenset = frozenset({"dsd9di", "local-dev", "eim1di", "bsr1di"})
 
@@ -48,6 +64,14 @@ def _generations_key() -> str:
 
 def _gen_daily_key(date_str: str) -> str:
     return f"analytics/gen_daily/{date_str}.json"
+
+
+def _downloads_key(date_str: str) -> str:
+    return f"analytics/downloads/{date_str}.json"
+
+
+def _downloads_total_key() -> str:
+    return "analytics/downloads_total.json"
 
 
 async def track_click(app_key: str, user_id: str = "anonymous") -> None:
@@ -130,6 +154,43 @@ async def track_generation(app_key: str) -> None:
         logger.exception("analytics track_generation failed for app=%r", app_key)
 
 
+async def track_download(app_key: str) -> None:
+    """Increment daily and all-time download counters for app_key. Best-effort - never raises."""
+    try:
+        today_str = date.today().isoformat()
+        daily_key = _downloads_key(today_str)
+        total_key = _downloads_total_key()
+
+        daily_raw, total_raw = await asyncio.gather(
+            store.get_object(daily_key),
+            store.get_object(total_key),
+            return_exceptions=True,
+        )
+
+        daily: dict = {}
+        if daily_raw and not isinstance(daily_raw, Exception):
+            try:
+                daily = json.loads(daily_raw.decode("utf-8"))
+            except Exception:
+                pass
+        daily[app_key] = daily.get(app_key, 0) + 1
+
+        total: dict = {}
+        if total_raw and not isinstance(total_raw, Exception):
+            try:
+                total = json.loads(total_raw.decode("utf-8"))
+            except Exception:
+                pass
+        total[app_key] = total.get(app_key, 0) + 1
+
+        await asyncio.gather(
+            store.put_object(daily_key, json.dumps(daily).encode(), "application/json"),
+            store.put_object(total_key, json.dumps(total).encode(), "application/json"),
+        )
+    except Exception:
+        logger.exception("analytics track_download failed for app=%r", app_key)
+
+
 async def get_analytics(days: int = 28) -> dict:
     """
     Fetch analytics data for the admin dashboard.
@@ -139,7 +200,10 @@ async def get_analytics(days: int = 28) -> dict:
             "daily_clicks":       {"2026-04-23": {"ppt": 3, ...}, ...},  # oldest → newest
             "daily_unique_users": {"2026-04-23": {"ppt": ["user1", ...], ...}, ...},
             "daily_generations":  {"2026-04-23": {"ppt": 2, ...}, ...},
+            "daily_downloads":    {"2026-04-23": {"ppt": 1, ...}, ...},
             "generations":        {"ppt": 10, ...},
+            "downloads":          {"ppt": 6, ...},
+            "value_weights":      {"ppt": 5, ...},
             "app_labels":         {...},
             "date_range":         ["2026-03-26", ..., "2026-04-23"],
         }
@@ -150,50 +214,41 @@ async def get_analytics(days: int = 28) -> dict:
         for i in range(days - 1, -1, -1)
     ]
 
-    # Fetch click files, user files, daily generation files, and all-time totals in parallel
+    # Fetch all daily files + all-time totals in one parallel call
     all_raws = await asyncio.gather(
         *[store.get_object(_clicks_key(d))    for d in date_range],
         *[store.get_object(_users_key(d))     for d in date_range],
         *[store.get_object(_gen_daily_key(d)) for d in date_range],
+        *[store.get_object(_downloads_key(d)) for d in date_range],
         store.get_object(_generations_key()),
+        store.get_object(_downloads_total_key()),
         return_exceptions=True,
     )
 
-    n          = len(date_range)
-    click_raws = all_raws[:n]
-    users_raws = all_raws[n : 2 * n]
+    n              = len(date_range)
+    click_raws     = all_raws[:n]
+    users_raws     = all_raws[n     : 2 * n]
     gen_daily_raws = all_raws[2 * n : 3 * n]
-    gen_raw    = all_raws[3 * n]
+    dl_daily_raws  = all_raws[3 * n : 4 * n]
+    gen_raw        = all_raws[4 * n]
+    dl_raw         = all_raws[4 * n + 1]
 
-    daily_clicks: dict[str, dict] = {}
-    for d, raw in zip(date_range, click_raws):
-        if isinstance(raw, Exception) or raw is None:
-            daily_clicks[d] = {}
-            continue
-        try:
-            daily_clicks[d] = json.loads(raw.decode("utf-8"))
-        except Exception:
-            daily_clicks[d] = {}
+    def _parse_daily(date_iter, raws):
+        result: dict[str, dict] = {}
+        for d, raw in zip(date_iter, raws):
+            if isinstance(raw, Exception) or raw is None:
+                result[d] = {}
+                continue
+            try:
+                result[d] = json.loads(raw.decode("utf-8"))
+            except Exception:
+                result[d] = {}
+        return result
 
-    daily_unique_users: dict[str, dict] = {}
-    for d, raw in zip(date_range, users_raws):
-        if isinstance(raw, Exception) or raw is None:
-            daily_unique_users[d] = {}
-            continue
-        try:
-            daily_unique_users[d] = json.loads(raw.decode("utf-8"))
-        except Exception:
-            daily_unique_users[d] = {}
-
-    daily_generations: dict[str, dict] = {}
-    for d, raw in zip(date_range, gen_daily_raws):
-        if isinstance(raw, Exception) or raw is None:
-            daily_generations[d] = {}
-            continue
-        try:
-            daily_generations[d] = json.loads(raw.decode("utf-8"))
-        except Exception:
-            daily_generations[d] = {}
+    daily_clicks        = _parse_daily(date_range, click_raws)
+    daily_unique_users  = _parse_daily(date_range, users_raws)
+    daily_generations   = _parse_daily(date_range, gen_daily_raws)
+    daily_downloads     = _parse_daily(date_range, dl_daily_raws)
 
     generations: dict = {}
     if gen_raw and not isinstance(gen_raw, Exception):
@@ -202,11 +257,21 @@ async def get_analytics(days: int = 28) -> dict:
         except Exception:
             pass
 
+    downloads: dict = {}
+    if dl_raw and not isinstance(dl_raw, Exception):
+        try:
+            downloads = json.loads(dl_raw.decode("utf-8"))
+        except Exception:
+            pass
+
     return {
         "daily_clicks":       daily_clicks,
         "daily_unique_users": daily_unique_users,
         "daily_generations":  daily_generations,
+        "daily_downloads":    daily_downloads,
         "generations":        generations,
+        "downloads":          downloads,
+        "value_weights":      VALUE_WEIGHTS,
         "app_labels":         APP_LABELS,
         "date_range":         date_range,
     }

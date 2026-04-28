@@ -1,11 +1,11 @@
-/* ===================================================
+﻿/* ===================================================
    Admin Analytics Dashboard - admin.js
    =================================================== */
 
 (function () {
     'use strict';
 
-    // ── App colour palette ──────────────────────────────────
+    // - App colour palette -----------------
     const APP_COLORS = {
         'ppt':                '#FF6840',
         'diagram':            '#2563eb',
@@ -18,17 +18,14 @@
         'signavio-learning':  '#14b8a6',
     };
 
-    function appColor(key) {
-        return APP_COLORS[key] || '#94a3b8';
-    }
+    function appColor(key) { return APP_COLORS[key] || '#94a3b8'; }
 
-    // ── Helpers ─────────────────────────────────────────────
+    // - DOM helpers --------------------â”€
     function $(id) { return document.getElementById(id); }
     function fmt(n) { return (n ?? 0).toLocaleString(); }
 
     function today() {
-        const d = new Date();
-        return d.toISOString().slice(0, 10);
+        return new Date().toISOString().slice(0, 10);
     }
 
     function nDaysAgo(n) {
@@ -42,7 +39,26 @@
         return `${parseInt(m)}/${parseInt(d)}`;
     }
 
-    // ── Fetch analytics data ─────────────────────────────────
+    function pct(num, denom) {
+        if (!denom) return 0;
+        return Math.round((num / denom) * 100);
+    }
+
+    function pctClass(p) {
+        if (p >= 60) return 'adm-pct-good';
+        if (p >= 35) return 'adm-pct-ok';
+        if (p >= 15) return 'adm-pct-warn';
+        return 'adm-pct-low';
+    }
+
+    function convClass(p) {
+        if (p >= 60) return 'adm-conv-good';
+        if (p >= 35) return 'adm-conv-ok';
+        if (p >= 15) return 'adm-conv-warn';
+        return 'adm-conv-low';
+    }
+
+    // - Fetch data ---------------------
     async function fetchAnalytics() {
         const res = await fetch('/api/admin/analytics');
         if (res.status === 403) throw new Error('Access denied. Admin only.');
@@ -52,120 +68,252 @@
 
     async function fetchFeedback() {
         const res = await fetch('/api/admin/feedback');
-        if (res.status === 403) return null;  // non-admin: silently skip
+        if (res.status === 403) return null;
         if (!res.ok) return null;
         return res.json();
     }
 
-    function renderFeedbackSection(data) {
-        if (!data || !data.aggregates) return;
-        const { aggregates, app_labels } = data;
-        const scoresGrid = $('feedbackScoresGrid');
-        const scoresCard = $('feedbackScoresCard');
-        if (!scoresGrid || !scoresCard) return;
+    // - Compute per-app funnel for a date range ------â”€
+    function computeFunnels(data, rangeStart) {
+        const {
+            daily_clicks, daily_unique_users, daily_generations,
+            daily_downloads, value_weights, app_labels,
+        } = data;
 
-        scoresGrid.innerHTML = '';
-        let hasAny = false;
+        const funnels = {};
+        for (const appKey of Object.keys(app_labels)) {
+            let clicks = 0, gens = 0, downloads = 0;
+            const userSet = new Set();
 
-        for (const [appKey, agg] of Object.entries(aggregates)) {
-            if (!agg || !agg.total_count) continue;
-            hasAny = true;
-            const avg = agg.total_count > 0 ? (agg.score_sum / agg.total_count).toFixed(1) : '-';
-            const scores = agg.scores || {};
-            const total = agg.total_count || 1;
-            const label = (app_labels && app_labels[appKey]) || appKey;
-            const color = APP_COLORS[appKey] || '#64748b';
+            for (const [d, apps] of Object.entries(daily_clicks || {})) {
+                if (d >= rangeStart) clicks += apps[appKey] || 0;
+            }
+            for (const [d, apps] of Object.entries(daily_unique_users || {})) {
+                if (d >= rangeStart && Array.isArray(apps[appKey])) {
+                    apps[appKey].forEach(id => userSet.add(id));
+                }
+            }
+            for (const [d, apps] of Object.entries(daily_generations || {})) {
+                if (d >= rangeStart) gens += apps[appKey] || 0;
+            }
+            for (const [d, apps] of Object.entries(daily_downloads || {})) {
+                if (d >= rangeStart) downloads += apps[appKey] || 0;
+            }
 
-            // 4-segment mini bar: rating 4 (best) to 1 (worst)
-            const segments = [4, 3, 2, 1].map(r => {
-                const pct = ((scores[String(r)] || 0) / total * 100).toFixed(1);
-                const segColor = r === 4 ? '#16a34a' : r === 3 ? '#2563eb' : r === 2 ? '#f59e0b' : '#dc2626';
-                return `<div style="flex:${pct};background:${segColor};min-width:${pct > 0 ? '3px' : '0'}" title="Rating ${r}: ${scores[String(r)] || 0}"></div>`;
-            }).join('');
+            const users    = userSet.size;
+            const weight   = (value_weights || {})[appKey] || 1;
+            const value    = downloads * weight;
+            const convRate = pct(gens, clicks);          // visits â†’ gens
+            const userRate = pct(users, clicks);          // visits â†’ users
+            const genRate  = pct(gens, users);            // users â†’ gens
+            const dlRate   = pct(downloads, gens);        // gens â†’ downloads
 
-            const card = document.createElement('div');
-            card.className = 'adm-feedback-score-card';
-            card.innerHTML = `
-                <div class="adm-feedback-score-label" style="color:${color}">${escapeHtml(label)}</div>
-                <div class="adm-feedback-score-avg">${avg}<span class="adm-feedback-score-max">/4</span></div>
-                <div class="adm-feedback-score-count">${agg.total_count} reaction${agg.total_count !== 1 ? 's' : ''}</div>
-                <div class="adm-feedback-mini-bar">${segments}</div>`;
-            scoresGrid.appendChild(card);
+            funnels[appKey] = {
+                label: app_labels[appKey],
+                clicks, users, gens, downloads,
+                value, weight, convRate, userRate, genRate, dlRate,
+            };
         }
-
-        if (hasAny) scoresCard.hidden = false;
+        return funnels;
     }
 
-    // ── Stat cards ───────────────────────────────────────────
-    function renderStatCards(data) {
-        const { daily_clicks, daily_unique_users, generations, app_labels } = data;
+    // - Hero KPI cards -------------------
+    function renderHero(data, funnels) {
+        const d28Start = nDaysAgo(28);
+        const d7Start  = nDaysAgo(7);
+        const d14Start = nDaysAgo(14);
 
-        const todayKey  = today();
-        const weekStart = nDaysAgo(7);
-
-        let todayTotal = 0;
-        let weekTotal  = 0;
-        let totalGens  = 0;
-
-        for (const [dateStr, apps] of Object.entries(daily_clicks)) {
-            for (const count of Object.values(apps)) {
-                const c = count || 0;
-                if (dateStr === todayKey) todayTotal += c;
-                if (dateStr >= weekStart) weekTotal  += c;
+        // Unique users (all apps, 28d)
+        const userSet28 = new Set();
+        const userSet7  = new Set();
+        const userSetP7 = new Set(); // prior 7 days (8-14)
+        for (const [d, apps] of Object.entries(data.daily_unique_users || {})) {
+            for (const ids of Object.values(apps)) {
+                if (!Array.isArray(ids)) continue;
+                if (d >= d28Start) ids.forEach(id => userSet28.add(id));
+                if (d >= d7Start)  ids.forEach(id => userSet7.add(id));
+                if (d >= d14Start && d < d7Start) ids.forEach(id => userSetP7.add(id));
             }
         }
 
-        for (const v of Object.values(generations)) totalGens += (v || 0);
+        // Gens & downloads 28d / 7d
+        let gens28 = 0, gens7 = 0, gensP7 = 0;
+        let dl28 = 0, dl7 = 0, dlP7 = 0;
+        let clicks28 = 0;
+        for (const [d, apps] of Object.entries(data.daily_generations || {})) {
+            const v = Object.values(apps).reduce((s, x) => s + (x || 0), 0);
+            if (d >= d28Start) gens28 += v;
+            if (d >= d7Start)  gens7  += v;
+            if (d >= d14Start && d < d7Start) gensP7 += v;
+        }
+        for (const [d, apps] of Object.entries(data.daily_downloads || {})) {
+            const v = Object.values(apps).reduce((s, x) => s + (x || 0), 0);
+            if (d >= d28Start) dl28 += v;
+            if (d >= d7Start)  dl7  += v;
+            if (d >= d14Start && d < d7Start) dlP7 += v;
+        }
+        for (const [d, apps] of Object.entries(data.daily_clicks || {})) {
+            if (d >= d28Start) clicks28 += Object.values(apps).reduce((s, x) => s + (x || 0), 0);
+        }
 
-        // All-time unique users: union across every date in daily_unique_users
-        const allTimeUniqueUsers = new Set();
-        for (const dayUsers of Object.values(daily_unique_users || {})) {
-            for (const ids of Object.values(dayUsers)) {
-                if (Array.isArray(ids)) ids.forEach(id => allTimeUniqueUsers.add(id));
+        // Value score 28d
+        const weights = data.value_weights || {};
+        let value28 = 0;
+        for (const [d, apps] of Object.entries(data.daily_downloads || {})) {
+            if (d >= d28Start) {
+                for (const [k, v] of Object.entries(apps)) {
+                    value28 += (v || 0) * (weights[k] || 1);
+                }
             }
         }
 
-        $('statToday').textContent       = fmt(todayTotal);
-        $('statWeek').textContent        = fmt(weekTotal);
-        $('statGenerations').textContent = fmt(totalGens);
-        $('statUniqueUsers').textContent = fmt(allTimeUniqueUsers.size);
+        // Conv rate 28d
+        const convRate28 = clicks28 > 0 ? Math.round((gens28 / clicks28) * 100) : 0;
+
+        // Trend helper
+        function trendHtml(curr, prev, unit = '') {
+            if (!prev) return '';
+            const d = curr - prev;
+            const p = Math.round(Math.abs(d / prev) * 100);
+            if (d > 0) return `<span class="adm-hero-delta up">+${p}% vs prior 7d</span>`;
+            if (d < 0) return `<span class="adm-hero-delta down">âˆ’${p}% vs prior 7d</span>`;
+            return `<span class="adm-hero-delta flat">flat vs prior 7d</span>`;
+        }
+
+        $('heroUniqueUsers').textContent   = fmt(userSet28.size);
+        $('heroUniqueUsersSub').innerHTML  = trendHtml(userSet7.size, userSetP7.size) || `${fmt(userSet7.size)} this week`;
+
+        $('heroGenerations').textContent   = fmt(gens28);
+        $('heroGenerationsSub').innerHTML  = trendHtml(gens7, gensP7) || `${fmt(gens7)} this week`;
+
+        $('heroDownloads').textContent     = fmt(dl28);
+        $('heroDownloadsSub').innerHTML    = trendHtml(dl7, dlP7) || `${fmt(dl7)} this week`;
+
+        $('heroValue').textContent         = fmt(value28);
+
+        const convEl = $('heroConvRate');
+        convEl.textContent = convRate28 + '%';
+        convEl.style.color = convRate28 >= 40 ? 'var(--success)' : convRate28 >= 20 ? '#d97706' : 'var(--danger)';
     }
 
-    // ── Daily clicks canvas chart ─────────────────────────────
+    // - Funnel Cards --------------------
+    function renderFunnelCards(funnels, feedbackAggregates) {
+        const grid = $('funnelGrid');
+        if (!grid) return;
+
+        const sorted = Object.entries(funnels).sort((a, b) => b[1].value - a[1].value);
+
+        grid.innerHTML = sorted.map(([key, f]) => {
+            const color = appColor(key);
+            const hasData = f.clicks > 0;
+
+            if (!hasData) {
+                return `
+                <div class="adm-funnel-card" style="--app-color:${color}">
+                    <div class="adm-funnel-head">
+                        <span class="adm-funnel-dot"></span>
+                        <span class="adm-funnel-name">${escapeHtml(f.label)}</span>
+                    </div>
+                    <div class="adm-funnel-no-data">No activity in this period</div>
+                </div>`;
+            }
+
+            // Bar widths relative to visits (visits = 100%)
+            const userBarW = f.clicks > 0   ? Math.max(4, Math.round(f.users    / f.clicks   * 100)) : 0;
+            const genBarW  = f.clicks > 0   ? Math.max(4, Math.round(f.gens     / f.clicks   * 100)) : 0;
+            const dlBarW   = f.clicks > 0   ? Math.max(4, Math.round(f.downloads/ f.clicks   * 100)) : 0;
+
+            // Stage-to-stage conversion labels
+            const userPct  = pct(f.users,     f.clicks);
+            const genPct   = pct(f.gens,      f.users);
+            const dlPct    = pct(f.downloads, f.gens);
+
+            // Feedback rating
+            const agg   = (feedbackAggregates || {})[key];
+            let ratingHtml = '';
+            if (agg && agg.total_count > 0) {
+                const avg = (agg.score_sum / agg.total_count).toFixed(1);
+                ratingHtml = `
+                <span class="adm-funnel-rating">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="#f59e0b" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    ${avg}/4 &nbsp;<span style="opacity:.55">(${agg.total_count})</span>
+                </span>`;
+            }
+
+            const valBadge = f.value > 0
+                ? `<span class="adm-funnel-val-badge">${fmt(f.value)} pts</span>`
+                : '';
+
+            return `
+            <div class="adm-funnel-card" style="--app-color:${color}">
+                <div class="adm-funnel-head">
+                    <span class="adm-funnel-dot"></span>
+                    <span class="adm-funnel-name">${escapeHtml(f.label)}</span>
+                    ${valBadge}
+                </div>
+                <div class="adm-funnel-body">
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Visits</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:100%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.clicks)}</span>
+                        <span class="adm-funnel-pct adm-pct-base">100%</span>
+                    </div>
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Unique Users</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${userBarW}%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.users)}</span>
+                        <span class="adm-funnel-pct ${pctClass(userPct)}">${userPct}%</span>
+                    </div>
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Generated</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${genBarW}%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.gens)}</span>
+                        <span class="adm-funnel-pct ${pctClass(genPct)}">${genPct}%</span>
+                    </div>
+                    <div class="adm-funnel-row">
+                        <span class="adm-funnel-stage">Downloaded</span>
+                        <div class="adm-funnel-track"><div class="adm-funnel-fill" style="width:${dlBarW}%"></div></div>
+                        <span class="adm-funnel-n">${fmt(f.downloads)}</span>
+                        <span class="adm-funnel-pct ${f.gens > 0 ? pctClass(dlPct) : 'adm-pct-base'}">${f.gens > 0 ? dlPct + '%' : 'â€”'}</span>
+                    </div>
+                </div>
+                <div class="adm-funnel-foot">
+                    <span class="adm-funnel-conv">Conv: <b>${f.convRate}%</b> visitsâ†’gens</span>
+                    ${ratingHtml}
+                </div>
+            </div>`;
+        }).join('');
+    }
+
+    // - Daily Generations chart (stacked bars) -------
     function renderDailyChart(data) {
         const canvas = $('dailyChart');
         if (!canvas) return;
 
-        const { daily_clicks, date_range, app_labels } = data;
+        const { daily_generations, date_range, app_labels } = data;
         const appKeys = Object.keys(app_labels);
         const dates   = date_range || [];
 
-        // Build legend
         const legendEl = $('chartLegend');
         legendEl.innerHTML = '';
         appKeys.forEach(key => {
             const item = document.createElement('span');
             item.className = 'adm-legend-item';
-            item.innerHTML = `<span class="adm-legend-dot" style="background:${appColor(key)}"></span>${app_labels[key]}`;
+            item.innerHTML = `<span class="adm-legend-dot" style="background:${appColor(key)}"></span>${escapeHtml(app_labels[key])}`;
             legendEl.appendChild(item);
         });
 
-        // Build dataset: totals per day per app
         const datasets = {};
         appKeys.forEach(k => { datasets[k] = []; });
-
         dates.forEach(d => {
-            const dayData = daily_clicks[d] || {};
-            appKeys.forEach(k => {
-                datasets[k].push(dayData[k] || 0);
-            });
+            const dayData = (daily_generations || {})[d] || {};
+            appKeys.forEach(k => datasets[k].push(dayData[k] || 0));
         });
 
-        // Canvas drawing
         const dpr     = window.devicePixelRatio || 1;
-        const padLeft = 36, padBottom = 28, padTop = 14, padRight = 16;
-        const W       = canvas.parentElement.clientWidth || 900;
-        const H       = 260;
+        const padL = 36, padB = 28, padT = 14, padR = 16;
+        const W    = canvas.parentElement.clientWidth || 900;
+        const H    = 260;
 
         canvas.style.width  = W + 'px';
         canvas.style.height = H + 'px';
@@ -176,185 +324,181 @@
         ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, W, H);
 
-        const chartW = W - padLeft - padRight;
-        const chartH = H - padTop - padBottom;
+        const chartW = W - padL - padR;
+        const chartH = H - padT - padB;
 
-        // Compute stacked max
         const dayTotals = dates.map((_, i) => appKeys.reduce((s, k) => s + datasets[k][i], 0));
-        const maxVal    = Math.max(...dayTotals, 1);
-        const yStep     = niceStep(maxVal);
-        const yMax      = Math.ceil(maxVal / yStep) * yStep;
+        const maxVal = Math.max(...dayTotals, 1);
+        const yStep  = niceStep(maxVal);
+        const yMax   = Math.ceil(maxVal / yStep) * yStep;
 
         const isDark = document.body.classList.contains('dark-mode');
         const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(15,23,42,0.06)';
         const textColor = isDark ? '#8a9db2' : '#6b7280';
         const labelFont = `11px 'Noto Sans', Verdana, sans-serif`;
 
-        // Grid lines + Y labels
         ctx.font = labelFont;
         ctx.textAlign = 'right';
         ctx.fillStyle = textColor;
         for (let v = 0; v <= yMax; v += yStep) {
-            const y = padTop + chartH - (v / yMax) * chartH;
+            const y = padT + chartH - (v / yMax) * chartH;
             ctx.strokeStyle = gridColor;
-            ctx.lineWidth   = 1;
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(padLeft, y);
-            ctx.lineTo(padLeft + chartW, y);
+            ctx.moveTo(padL, y);
+            ctx.lineTo(padL + chartW, y);
             ctx.stroke();
-            ctx.fillText(v.toString(), padLeft - 5, y + 4);
+            ctx.fillText(v.toString(), padL - 5, y + 4);
         }
 
-        // Bars
-        const n       = dates.length;
-        const barW    = Math.max(8, (chartW / n) * 0.55);
-        const barGap  = chartW / n;
+        const n    = dates.length;
+        const barW = Math.max(8, (chartW / n) * 0.55);
+        const barG = chartW / n;
 
         ctx.textAlign = 'center';
         dates.forEach((d, i) => {
-            const x = padLeft + i * barGap + barGap / 2;
-            let baseY = padTop + chartH;
-
+            const x = padL + i * barG + barG / 2;
+            let baseY = padT + chartH;
             appKeys.forEach(k => {
                 const val = datasets[k][i];
                 if (val <= 0) return;
                 const bh  = (val / yMax) * chartH;
-                const col = appColor(k);
-                ctx.fillStyle = col;
+                ctx.fillStyle = appColor(k);
                 roundedRectTop(ctx, x - barW / 2, baseY - bh, barW, bh, 3);
                 ctx.fill();
                 baseY -= bh;
             });
-
-            // X label
             ctx.fillStyle = textColor;
             ctx.font = labelFont;
-            ctx.fillText(shortDate(d), x, padTop + chartH + 18);
+            ctx.fillText(shortDate(d), x, padT + chartH + 18);
         });
 
-        // X axis line
         ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(15,23,42,0.1)';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(padLeft, padTop + chartH);
-        ctx.lineTo(padLeft + chartW, padTop + chartH);
+        ctx.moveTo(padL, padT + chartH);
+        ctx.lineTo(padL + chartW, padT + chartH);
         ctx.stroke();
     }
 
-    // ── Generations horizontal bars ───────────────────────────
-    function renderGenBars(data) {
-        const { daily_generations, generations, app_labels } = data;
-        const container = $('genBars');
-        if (!container) return;
+    // - Rankings Table -------------------
+    let _rankFunnels = null;
+    let _rankFeedback = null;
+    let _currentSort = 'value';
 
-        const appKeys    = Object.keys(app_labels);
-        const todayKey   = today();
-        const week7Start = nDaysAgo(7);
-        const day28Start = nDaysAgo(28);
+    function renderRankings(funnels, feedbackAggregates, sortBy) {
+        _rankFunnels  = funnels;
+        _rankFeedback = feedbackAggregates;
+        _currentSort  = sortBy || _currentSort;
 
-        // Compute per-app generation counts for each period
-        const stats = {};
-        appKeys.forEach(k => {
-            let todayC = 0, week7C = 0, day28C = 0;
-            for (const [d, apps] of Object.entries(daily_generations || {})) {
-                const v = apps[k] || 0;
-                if (d === todayKey)   todayC += v;
-                if (d >= week7Start)  week7C += v;
-                if (d >= day28Start)  day28C += v;
-            }
-            stats[k] = { todayC, week7C, day28C, allTime: generations[k] || 0 };
-        });
-
-        // Normalise bars against the largest all-time value
-        const maxVal = Math.max(...appKeys.map(k => stats[k].allTime), 1);
-
-        const periods = [
-            { label: 'Today',    key: 'todayC' },
-            { label: '7 Days',   key: 'week7C' },
-            { label: '28 Days',  key: 'day28C' },
-            { label: 'All Time', key: 'allTime' },
-        ];
-
-        container.innerHTML = appKeys.map(k => {
-            const color = appColor(k);
-            const s     = stats[k];
-            const periodRows = periods.map(p => {
-                const val = s[p.key];
-                const pct = Math.round((val / maxVal) * 100);
-                return `
-                <div class="adm-gen-period-row">
-                    <span class="adm-gen-period-label">${p.label}</span>
-                    <div class="adm-gen-track">
-                        <div class="adm-gen-fill" style="width:${pct}%;background:${color}"></div>
-                    </div>
-                    <span class="adm-gen-count">${fmt(val)}</span>
-                </div>`;
-            }).join('');
-
-            return `
-            <div class="adm-gen-app">
-                <div class="adm-gen-app-head">
-                    <span class="adm-gen-dot" style="background:${color}"></span>
-                    <span class="adm-gen-name">${escapeHtml(app_labels[k])}</span>
-                </div>
-                ${periodRows}
-            </div>`;
-        }).join('');
-    }
-
-    // ── App breakdown table ───────────────────────────────────
-    function renderAppTable(data) {
-        const { daily_unique_users, app_labels } = data;
-        const tbody = $('appTableBody');
+        const tbody = $('rankingsBody');
         if (!tbody) return;
 
-        const todayKey   = today();
-        const week7Start = nDaysAgo(7);
-        const day28Start = nDaysAgo(28);
-        const appKeys    = Object.keys(app_labels);
-
-        const rows = appKeys.map(k => {
-            const todaySet = new Set();
-            const week7Set = new Set();
-            const day28Set = new Set();
-
-            for (const [d, apps] of Object.entries(daily_unique_users || {})) {
-                const ids = apps[k];
-                if (!Array.isArray(ids)) continue;
-                if (d === todayKey)   ids.forEach(id => todaySet.add(id));
-                if (d >= week7Start)  ids.forEach(id => week7Set.add(id));
-                if (d >= day28Start)  ids.forEach(id => day28Set.add(id));
-            }
-
-            return { key: k, label: app_labels[k], todayU: todaySet.size, week7U: week7Set.size, day28U: day28Set.size };
+        const rows = Object.entries(funnels).map(([key, f]) => {
+            const agg = (feedbackAggregates || {})[key];
+            const rating = agg && agg.total_count > 0
+                ? (agg.score_sum / agg.total_count).toFixed(1)
+                : null;
+            return { key, ...f, rating };
         });
 
-        rows.sort((a, b) => b.day28U - a.day28U);
+        const sortMap = {
+            value: (a, b) => b.value - a.value,
+            conv:  (a, b) => b.convRate - a.convRate,
+            gens:  (a, b) => b.gens - a.gens,
+            users: (a, b) => b.users - a.users,
+        };
+        rows.sort(sortMap[_currentSort] || sortMap.value);
 
-        tbody.innerHTML = rows.map(r => `
-            <tr>
+        tbody.innerHTML = rows.map((r, i) => {
+            const rankCls = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+            const convHtml = `<span class="adm-conv-pill ${convClass(r.convRate)}">${r.convRate}%</span>`;
+            const ratingHtml = r.rating
+                ? `<span style="color:#f59e0b;font-weight:700">${r.rating}</span><span style="color:var(--text-secondary);font-size:11px">/4</span>`
+                : `<span class="adm-num-zero">â€”</span>`;
+            const color = appColor(r.key);
+            return `<tr>
+                <td class="adm-rank-num ${rankCls}">${i + 1}</td>
                 <td>
                     <div class="adm-app-cell">
-                        <span class="adm-app-dot" style="background:${appColor(r.key)}"></span>
+                        <span class="adm-app-dot" style="background:${color}"></span>
                         <span class="adm-app-name">${escapeHtml(r.label)}</span>
                     </div>
                 </td>
-                <td class="${r.todayU === 0 ? 'adm-num-zero' : ''}">${fmt(r.todayU)}</td>
-                <td class="${r.week7U === 0 ? 'adm-num-zero' : ''}">${fmt(r.week7U)}</td>
-                <td class="${r.day28U === 0 ? 'adm-num-zero' : ''}">${fmt(r.day28U)}</td>
-            </tr>`).join('');
+                <td class="${r.clicks === 0 ? 'adm-num-zero' : ''}">${fmt(r.clicks)}</td>
+                <td class="${r.users === 0 ? 'adm-num-zero' : ''}">${fmt(r.users)}</td>
+                <td class="${r.gens === 0 ? 'adm-num-zero' : ''}">${fmt(r.gens)}</td>
+                <td class="${r.downloads === 0 ? 'adm-num-zero' : ''}">${fmt(r.downloads)}</td>
+                <td>${r.clicks > 0 ? convHtml : '<span class="adm-num-zero">â€”</span>'}</td>
+                <td><span class="adm-value-score">${r.value > 0 ? fmt(r.value) + ' pts' : '<span class="adm-num-zero">â€”</span>'}</span></td>
+                <td>${ratingHtml}</td>
+            </tr>`;
+        }).join('');
     }
 
-    // ── Render full dashboard ────────────────────────────────
-    function render(data) {
-        renderStatCards(data);
+    // - Feedback section ------------------
+    function renderFeedbackSection(feedbackData) {
+        if (!feedbackData || !feedbackData.aggregates) return;
+        const { aggregates, app_labels } = feedbackData;
+        const grid = $('feedbackScoresGrid');
+        const card = $('feedbackScoresCard');
+        if (!grid || !card) return;
+
+        grid.innerHTML = '';
+        let hasAny = false;
+
+        for (const [appKey, agg] of Object.entries(aggregates)) {
+            if (!agg || !agg.total_count) continue;
+            hasAny = true;
+            const avg    = (agg.score_sum / agg.total_count).toFixed(1);
+            const scores = agg.scores || {};
+            const total  = agg.total_count || 1;
+            const label  = (app_labels && app_labels[appKey]) || appKey;
+            const color  = appColor(appKey);
+
+            const segments = [4, 3, 2, 1].map(r => {
+                const p    = ((scores[String(r)] || 0) / total * 100).toFixed(1);
+                const segC = r === 4 ? '#16a34a' : r === 3 ? '#2563eb' : r === 2 ? '#f59e0b' : '#dc2626';
+                return `<div style="flex:${p};background:${segC};min-width:${p > 0 ? '3px' : '0'}" title="Rating ${r}: ${scores[String(r)] || 0}"></div>`;
+            }).join('');
+
+            const el = document.createElement('div');
+            el.className = 'adm-feedback-score-card';
+            el.innerHTML = `
+                <div class="adm-feedback-score-label" style="color:${color}">${escapeHtml(label)}</div>
+                <div class="adm-feedback-score-avg">${avg}<span class="adm-feedback-score-max">/4</span></div>
+                <div class="adm-feedback-score-count">${agg.total_count} reaction${agg.total_count !== 1 ? 's' : ''}</div>
+                <div class="adm-feedback-mini-bar">${segments}</div>`;
+            grid.appendChild(el);
+        }
+        if (hasAny) card.hidden = false;
+    }
+
+    // - Full render --------------------â”€
+    function render(data, feedbackData) {
+        const d28Start = nDaysAgo(28);
+        const funnels = computeFunnels(data, d28Start);
+        const fbAgg   = feedbackData && feedbackData.aggregates ? feedbackData.aggregates : null;
+
+        renderHero(data, funnels);
+        renderFunnelCards(funnels, fbAgg);
         renderDailyChart(data);
-        renderGenBars(data);
-        renderAppTable(data);
+        renderRankings(funnels, fbAgg, 'value');
+        renderFeedbackSection(feedbackData);
         $('admLastUpdated').textContent = new Date().toLocaleTimeString();
+
+        // Sort button handlers
+        document.querySelectorAll('.adm-sort-btn').forEach(btn => {
+            btn.classList.toggle('adm-sort-active', btn.dataset.sort === _currentSort);
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.adm-sort-btn').forEach(b => b.classList.remove('adm-sort-active'));
+                btn.classList.add('adm-sort-active');
+                renderRankings(_rankFunnels, _rankFeedback, btn.dataset.sort);
+            });
+        });
     }
 
-    // ── Load data ──────────────────────────────────────────
+    // - Load ------------------------
     async function load(btn) {
         $('admLoading').hidden = false;
         $('admContent').hidden = true;
@@ -363,9 +507,9 @@
 
         try {
             const [data, feedbackData] = await Promise.all([fetchAnalytics(), fetchFeedback()]);
-            window._admData = data;
-            render(data);
-            renderFeedbackSection(feedbackData);
+            window._admData    = data;
+            window._admFeedback = feedbackData;
+            render(data, feedbackData);
             $('admContent').hidden = false;
         } catch (err) {
             $('admErrorMsg').textContent = err.message || 'Could not load analytics.';
@@ -376,7 +520,7 @@
         }
     }
 
-    // ── Canvas helper: bar with rounded top corners ──────────
+    // - Canvas helpers -------------------
     function roundedRectTop(ctx, x, y, w, h, r) {
         if (h <= 0) return;
         r = Math.min(r, h / 2, w / 2);
@@ -404,19 +548,17 @@
         return 5 * mag;
     }
 
-    // ── Boot ─────────────────────────────────────────────────
+    // - Boot ------------------------
     document.addEventListener('DOMContentLoaded', () => {
         const dateEl = $('admDate');
         if (dateEl) {
             dateEl.textContent = new Date().toLocaleDateString(undefined, {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
             });
         }
 
         const refreshBtn = $('admRefresh');
-        if (refreshBtn) {
-            refreshBtn.addEventListener('click', () => load(refreshBtn));
-        }
+        if (refreshBtn) refreshBtn.addEventListener('click', () => load(refreshBtn));
 
         let resizeTimer;
         window.addEventListener('resize', () => {
