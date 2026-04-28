@@ -1997,6 +1997,34 @@ async def admin_analytics(request: Request, days: int = Query(28, ge=7, le=365))
     return data
 
 
+@router.get("/user/stats")
+async def user_stats(request: Request):
+    """Return personal generation/download counts for the current user."""
+    import asyncio
+    from app.services.History import (
+        ppt_history_service,
+        diagram_history_service,
+        one_pager_history_service,
+    )
+    user_info = get_current_user(request)
+    user_id = user_info.get("user", "")
+    if not user_id:
+        return JSONResponse(status_code=401, content={"status": "error", "message": "Not authenticated."})
+
+    ppt_hist, diagram_hist, one_pager_hist = await asyncio.gather(
+        ppt_history_service.get_history(user_id),
+        diagram_history_service.get_history(user_id),
+        one_pager_history_service.get_history(user_id),
+    )
+
+    return {
+        "ppt": len(ppt_hist),
+        "diagram": len(diagram_hist),
+        "one_pager": len(one_pager_hist),
+        "total": len(ppt_hist) + len(diagram_hist) + len(one_pager_hist),
+    }
+
+
 # ============== Feedback ==============
 
 class FeedbackRequest(BaseModel):

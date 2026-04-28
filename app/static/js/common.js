@@ -1409,3 +1409,169 @@ window.DSCPTutorial = (() => {
         }
     };
 })();
+
+// -----------------------------------------------------------
+// Banner Rotation System
+// Rotates through tips, motivational messages, and stats
+// -----------------------------------------------------------
+
+const BannerRotator = (() => {
+    const messages = {
+        tips: [
+            "💡 Save your favorite Apps using the star icon for quick access next time",
+            "📋 Use the Changelog to see what's new — access it via the bell icon in the header",
+            "🎯 Dark mode available! Click the theme toggle in the top-right corner",
+            "🔄 Refresh your browser if a feature seems to load slowly",
+            "⌨️ Check app descriptions for keyboard shortcuts and pro tips",
+            "💾 Always export and save important results locally for backup"
+        ],
+        motivational: [
+            "🚀 Powering your supply chain with AI-assisted intelligence",
+            "✨ Your feedback helps us improve — share thoughts in the Feedback Form",
+            "🌟 AI-generated, human-validated. Always review before using",
+            "🎖️ Building smarter tools for BSH supply chain professionals",
+            "⚡ Speed up your workflow — explore all available apps on the home page",
+            "🏆 Quality matters. Take a moment to review AI outputs carefully"
+        ],
+        stats: null,    // populated from /api/admin/analytics
+        personal: null  // populated from /api/user/stats
+    };
+
+    let allMessages = [];
+    let currentIndex = 0;
+    let rotationInterval = null;
+
+    function buildMessagePool() {
+        allMessages = [
+            ...messages.tips,
+            ...(messages.stats || []),
+            ...(messages.personal || []),
+            ...messages.motivational
+        ];
+        // Shuffle for variety
+        for (let i = allMessages.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allMessages[i], allMessages[j]] = [allMessages[j], allMessages[i]];
+        }
+        currentIndex = 0;
+    }
+
+    function rotateMessage() {
+        const bannerEl = document.getElementById('bannerMessage');
+        if (!bannerEl || allMessages.length === 0) return;
+
+        // Exit: slide current text down and out
+        bannerEl.classList.remove('banner-enter');
+        bannerEl.classList.add('banner-exit');
+
+        setTimeout(() => {
+            // Swap text while off-screen
+            bannerEl.textContent = allMessages[currentIndex];
+            currentIndex = (currentIndex + 1) % allMessages.length;
+
+            // Enter: slide new text in from the top
+            bannerEl.classList.remove('banner-exit');
+            void bannerEl.offsetWidth; // Force reflow
+            bannerEl.classList.add('banner-enter');
+        }, 400);
+    }
+
+    async function fetchAnalyticsStats() {
+        try {
+            const res = await fetch('/api/admin/analytics?days=28');
+            if (!res.ok) return null;
+
+            const data = await res.json();
+            if (!data) return null;
+
+            const totalGens = data.generations_total ? Object.values(data.generations_total).reduce((a, b) => a + b, 0) : 0;
+            const totalUsers = data.users_total ? Object.keys(data.users_total).length : 0;
+            const totalDownloads = data.downloads_total ? Object.values(data.downloads_total).reduce((a, b) => a + b, 0) : 0;
+
+            const statMsgs = [];
+            if (totalGens > 0) {
+                statMsgs.push(`📊 ${totalGens.toLocaleString()} files AI-generated so far — join the community!`);
+            }
+            if (totalUsers > 0) {
+                statMsgs.push(`👥 Over ${totalUsers} users actively using DSCP AI tools`);
+            }
+            if (totalDownloads > 0) {
+                statMsgs.push(`⬇️ ${totalDownloads.toLocaleString()} files downloaded by our users`);
+            }
+
+            return statMsgs.length > 0 ? statMsgs : null;
+        } catch {
+            return null;
+        }
+    }
+
+    async function fetchPersonalStats() {
+        try {
+            const res = await fetch('/api/user/stats');
+            if (!res.ok) return null;
+
+            const data = await res.json();
+            if (!data || data.status === 'error') return null;
+
+            const msgs = [];
+            const { ppt, diagram, one_pager, total } = data;
+
+            if (total > 0) {
+                if (total === 1) {
+                    msgs.push(`🎉 You've made your first AI generation — welcome to the club!`);
+                } else if (total < 5) {
+                    msgs.push(`🚀 You've generated ${total} files so far — keep exploring!`);
+                } else if (total < 20) {
+                    msgs.push(`⚡ ${total} generations and counting — you're on a roll!`);
+                } else {
+                    msgs.push(`🏆 ${total} generations made — you're a power user!`);
+                }
+            }
+
+            if (ppt > 0 && diagram > 0) {
+                msgs.push(`📁 You've used ${ppt} PPT${ppt > 1 ? 's' : ''} and ${diagram} diagram${diagram > 1 ? 's' : ''} — great mix!`);
+            } else if (ppt >= 3) {
+                msgs.push(`📊 ${ppt} presentations generated — your decks are looking great!`);
+            } else if (diagram >= 3) {
+                msgs.push(`🗂️ ${diagram} diagrams created — your workflows are well documented!`);
+            } else if (one_pager >= 2) {
+                msgs.push(`📄 ${one_pager} one-pagers created — keeping it sharp and concise!`);
+            }
+
+            return msgs.length > 0 ? msgs : null;
+        } catch {
+            return null;
+        }
+    }
+
+    async function init() {
+        const bannerEl = document.getElementById('bannerMessage');
+        if (!bannerEl) return;
+
+        // Fetch global and personal stats in parallel; failures are silent
+        const [statMsgs, personalMsgs] = await Promise.all([
+            fetchAnalyticsStats(),
+            fetchPersonalStats(),
+        ]);
+        if (statMsgs && statMsgs.length > 0) messages.stats = statMsgs;
+        if (personalMsgs && personalMsgs.length > 0) messages.personal = personalMsgs;
+
+        buildMessagePool();
+        if (allMessages.length === 0) return;
+
+        bannerEl.textContent = allMessages[0];
+        currentIndex = 1;
+
+        if (rotationInterval) clearInterval(rotationInterval);
+        rotationInterval = setInterval(rotateMessage, 7000);
+    }
+
+    return { init };
+})();
+
+// Initialize banner on page load
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => BannerRotator.init());
+} else {
+    BannerRotator.init();
+}
