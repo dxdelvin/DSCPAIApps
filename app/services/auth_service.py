@@ -224,7 +224,7 @@ def get_current_user(request: Request) -> dict:
     Get current authenticated user from session.
     Redirects to login if not authenticated.
     """
-    # Check if running locally without XSUAA — requires BOTH conditions to
+    # Check if running locally without XSUAA - requires BOTH conditions to
     # prevent silent bypass if only one gate is accidentally present.
     if not os.getenv("VCAP_SERVICES") and os.getenv("AUTH_BYPASS_LOCAL", "").lower() == "true":
         return {"user": "local-dev", "email": "local@dev.local", "scopes": []}

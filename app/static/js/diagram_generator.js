@@ -79,14 +79,14 @@ class DiagramGeneratorApp {
                         return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
                     }).length;
                     if (currentImageCount >= this.MAX_IMAGES) {
-                        showToast(`Cannot add "${f.name}" — maximum ${this.MAX_IMAGES} images allowed.`, 'error');
+                        showToast(`Cannot add "${f.name}" - maximum ${this.MAX_IMAGES} images allowed.`, 'error');
                         continue;
                     }
                 }
                 const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
                 if (currentTotal + f.size > this.MAX_FILE_SIZE) {
                     showToast(
-                        `Cannot add "${f.name}" — adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        `Cannot add "${f.name}" - adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -282,9 +282,9 @@ class DiagramGeneratorApp {
         copyBtn.classList.toggle('copy-btn-pdf-warn', hasPdfs && !multiImages);
 
         if (multiImages) {
-            copyBtn.title = 'Exactly 1 image is required for this mode — click to see warning';
+            copyBtn.title = 'Exactly 1 image is required for this mode - click to see warning';
         } else if (onlyPdfs) {
-            copyBtn.title = 'Images only — click to see warning';
+            copyBtn.title = 'Images only - click to see warning';
         } else if (hasPdfs && imageFiles.length === 1) {
             copyBtn.title = 'Remove PDF to start Copy as Diagram';
         } else {
@@ -672,18 +672,18 @@ class DiagramGeneratorApp {
         let html = '<div class="no-content-state">';
         html += '<span class="no-content-icon"><svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.5"/><path d="m21 15-4-4-5 5-2-2-4 4"/></svg></span>';
         html += '<h4 class="no-content-title">Not a Diagram to Copy</h4>';
-        html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${escapeHtml(contentType || 'non-diagram content')}</strong> — not a structured diagram that can be reproduced in draw.io.</p>`;
+        html += `<p class="no-content-detail">The uploaded image appears to contain <strong>${escapeHtml(contentType || 'non-diagram content')}</strong> - not a structured diagram that can be reproduced in draw.io.</p>`;
         html += '<div class="no-content-tips">';
         html += '<p class="no-content-tips-heading">What you can do instead:</p>';
         html += '<ul>';
         html += '<li>Use <strong>Analyze Content</strong> to let AI understand the image and suggest diagram variations</li>';
-        html += '<li>Select <strong>AI Decides</strong> in the diagram type picker — it will generate the best diagram type for your content</li>';
+        html += '<li>Select <strong>AI Decides</strong> in the diagram type picker - it will generate the best diagram type for your content</li>';
         html += '<li><strong>Copy as Diagram</strong> works with: flowcharts, org charts, sequence diagrams, network maps, ER diagrams, swimlanes, and any diagram with shapes connected by arrows</li>';
         html += '</ul>';
         html += '</div></div>';
 
         resultInfo.innerHTML = html;
-        showToast('Image is not a diagram — try Analyze Content instead', 'info');
+        showToast('Image is not a diagram - try Analyze Content instead', 'info');
     }
 
     showError(title, detail) {
@@ -1186,7 +1186,7 @@ class DiagramGeneratorApp {
         const title = escapeHtml(entry.title || 'Untitled');
         const typeCount = Array.isArray(entry.diagramTypes) ? entry.diagramTypes.length : 0;
         const typesBadge = typeCount ? `${typeCount} type${typeCount > 1 ? 's' : ''}` : '';
-        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '-';
         const time = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
         const typesMeta = Array.isArray(entry.diagramTypes) && entry.diagramTypes.length
             ? entry.diagramTypes.slice(0, 3).map(t => this.formatTypeLabel(t)).join(', ')
@@ -1301,3 +1301,41 @@ class DiagramGeneratorApp {
 
 }
 
+
+// -- Diagram Generator feature tour ----------------------------
+// Register with DSCPTutorial so the navbar Tutorial button works on this page.
+
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('diagram-generator', () => {
+        return [
+            {
+                "id": "dg-welcome",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/></svg> Diagram Generator",
+                "text": "<p>This tool converts your uploaded documents and ideas into <strong>professional diagrams</strong> powered by AI.</p><p>Flowcharts, sequence diagrams, ER diagrams, BPMN, mind maps — all in one place.</p>"
+            },
+            {
+                "id": "dg-upload",
+                "attachTo": { "element": "#upload-area", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></svg> Upload Your Files",
+                "text": "<p>Drag and drop <strong>PDFs or images</strong> here, or click to browse. Up to <strong>10 MB</strong> total — the AI reads these to understand your content.</p>"
+            },
+            {
+                "id": "dg-types",
+                "attachTo": { "element": "#type-picker", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M3 12h3m12 0h3M12 3v3m0 12v3\"/></svg> Choose Diagram Types",
+                "text": "<p>Select one or more <strong>diagram types</strong> to generate, or leave <strong>AI Decides</strong> to let the AI pick the best format based on your content.</p>"
+            },
+            {
+                "id": "dg-context",
+                "attachTo": { "element": "#additional-context", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> Add Context",
+                "text": "<p>Optionally describe what to focus on — e.g. <em>\"Focus on the authentication flow\"</em> or <em>\"Include error handling paths\"</em>. More detail means better diagrams.</p>"
+            },
+            {
+                "id": "dg-result",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> What You Get",
+                "text": "<p>You receive <strong>.drawio files</strong> for every diagram type you selected. Open them in draw.io, share with colleagues, or download for later.</p><p>All generations are saved in <strong>My History</strong> so you can revisit anytime.</p>"
+            }
+        ];;
+    });
+}

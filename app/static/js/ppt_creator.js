@@ -76,7 +76,7 @@ class PptCreatorApp {
                         return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
                     }).length;
                     if (currentImageCount >= this.MAX_IMAGES) {
-                        showToast(`Cannot add "${f.name}" — maximum ${this.MAX_IMAGES} images allowed.`, 'error');
+                        showToast(`Cannot add "${f.name}" - maximum ${this.MAX_IMAGES} images allowed.`, 'error');
                         continue;
                     }
                 }
@@ -87,7 +87,7 @@ class PptCreatorApp {
                 
                 if (newTotal > this.MAX_FILE_SIZE) {
                     showToast(
-                        `Cannot add "${f.name}" — adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        `Cannot add "${f.name}" - adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -585,13 +585,13 @@ PptCreatorApp.prototype.switchTab = function (tab) {
     if (tab === 'history') this.loadHistory();
 };
 
-/* ── History — persist ────────────────────────────────────── */
+/* ── History - persist ────────────────────────────────────── */
 
 PptCreatorApp.prototype._persistToHistory = async function () {
     if (!this.currentContent || !this.chatHistoryId) return;
     try {
         if (!this.currentGenId) {
-            // First download for this session — create new entry
+            // First download for this session - create new entry
             const res = await fetch('/api/ppt/history', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -618,7 +618,7 @@ PptCreatorApp.prototype._persistToHistory = async function () {
     }
 };
 
-/* ── History — list ───────────────────────────────────────── */
+/* ── History - list ───────────────────────────────────────── */
 
 PptCreatorApp.prototype.loadHistory = async function () {
     const grid    = document.getElementById('history-grid');
@@ -718,7 +718,7 @@ PptCreatorApp.prototype._filterAndSort = function () {
 };
 
 PptCreatorApp.prototype._renderCard = function (entry) {
-    const date      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+    const date      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '-';
     const time      = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     const orange    = entry.forceOrangeTheme ? `<span class="gen-badge gen-badge-orange">Orange Theme</span>` : '';
     const subtitle  = entry.subtitle ? `<p class="gen-card-subtitle">${escapeHtml(entry.subtitle)}</p>` : '';
@@ -750,7 +750,7 @@ PptCreatorApp.prototype._renderCard = function (entry) {
     </div>`;
 };
 
-/* ── History — load generation into editor ────────────────── */
+/* ── History - load generation into editor ────────────────── */
 
 PptCreatorApp.prototype.loadGeneration = async function (genId, chatHistoryId) {
     try {
@@ -775,7 +775,7 @@ PptCreatorApp.prototype.loadGeneration = async function (genId, chatHistoryId) {
     }
 };
 
-/* ── History — download from history ─────────────────────── */
+/* ── History - download from history ─────────────────────── */
 
 PptCreatorApp.prototype.downloadFromHistory = async function (genId, title) {
     const userName = this.userId || 'Unknown User';
@@ -799,7 +799,7 @@ PptCreatorApp.prototype.downloadFromHistory = async function (genId, title) {
     }
 };
 
-/* ── History — delete ─────────────────────────────────────── */
+/* ── History - delete ─────────────────────────────────────── */
 
 PptCreatorApp.prototype.deleteGeneration = function (genId, cardEl) {
     if (typeof showConfirmation === 'function') {
@@ -836,3 +836,45 @@ PptCreatorApp.prototype._doDelete = async function (genId, cardEl) {
     }
 };
 
+
+// -- PPT Creator feature tour ----------------------------------
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('ppt-creator', () => {
+        return [
+            {
+                "id": "ppt-welcome",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\" y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/></svg> PPT Creator",
+                "text": "<p>Generate professional <strong>PowerPoint presentations</strong> in the BSH brand template from your documents and topic descriptions.</p>"
+            },
+            {
+                "id": "ppt-upload",
+                "attachTo": { "element": "#upload-area", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></svg> Upload Source Files",
+                "text": "<p>Drag and drop <strong>PDFs or images</strong> as reference material. Up to <strong>10 MB</strong> total — the AI reads these to build your slide content.</p>"
+            },
+            {
+                "id": "ppt-name",
+                "attachTo": { "element": "#user-name", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2\"/><circle cx=\"12\" cy=\"7\" r=\"4\"/></svg> Your Name",
+                "text": "<p>Enter your <strong>name</strong> here — it will appear on the generated presentation as the author.</p>"
+            },
+            {
+                "id": "ppt-instructions",
+                "attachTo": { "element": "#user-instructions", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> Additional Instructions",
+                "text": "<p>Describe the <strong>topic and key messages</strong> you want covered. Be specific — mention tone, number of slides, or sections you need for best results. It is always optional.</p>"
+            },
+            {
+                "id": "ppt-generate",
+                "attachTo": { "element": "#extract-btn", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polygon points=\"5 3 19 12 5 21 5 3\"/></svg> Generate the Deck",
+                "text": "<p>Hit <strong>Generate</strong> and the AI builds a fully structured slide deck in <strong>BSH brand style</strong> — slide titles, content, and formatting all applied.</p>"
+            },
+            {
+                "id": "ppt-result",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> Download & History",
+                "text": "<p>Download the finished <strong>.pptx file</strong> and open it directly in PowerPoint. Every generation is saved in <strong>My History</strong> so you can re-download anytime.</p>"
+            }
+        ];;
+    });
+}

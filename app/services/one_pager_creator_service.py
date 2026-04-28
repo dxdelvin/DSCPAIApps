@@ -58,8 +58,8 @@ PRINT MEDIA QUERY - CRITICAL:
 Add this @media print block to preserve all styles when printing:
 @media print {{
   * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }}
-  html, body {{ width: {page_w} !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }}
-  .page {{ width: {page_w} !important; height: {page_h} !important; page-break-after: avoid !important; page-break-inside: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
+  html, body {{ width: {page_w} !important; height: {page_h} !important; max-height: {page_h} !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }}
+  .page {{ width: {page_w} !important; height: {page_h} !important; max-height: {page_h} !important; overflow: hidden !important; page-break-after: avoid !important; page-break-before: avoid !important; break-after: avoid !important; break-before: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
   @page {{ size: {page_w} {page_h}; margin: 0; }}
 }}
 
@@ -100,7 +100,7 @@ CONTENT RULES:
 
 
 _TEMPLATE_STYLE_PROMPTS = {
-    "cheatsheet": """Create a dense, scannable cheatsheet one-pager. Multi-column layout, compact text, grouped sections with clear headers. Content-first — minimal decoration. Never cut off content.""",
+    "cheatsheet": """Create a dense, scannable cheatsheet one-pager. Multi-column layout, compact text, grouped sections with clear headers. Content-first - minimal decoration. Never cut off content.""",
 
     "flyer": """You are a creative print designer. Create a stunning PROMOTIONAL FLYER one-pager.
 
@@ -109,7 +109,7 @@ Layout: strong hero band at top, one focal message, supporting proof points, and
 Style: expressive headline typography, controlled accent usage, large readable sections, and visual momentum from top to bottom.
 Quality bar: avoid generic gradients and random blobs; every visual block should support the message.
 Content behavior: concise persuasive copy with concrete benefits and outcomes.
-Hero area: use a CSS gradient or solid color block for the hero background — NEVER an external image URL.
+Hero area: use a CSS gradient or solid color block for the hero background - NEVER an external image URL.
 Background: use a light base (white or very light tint) for the overall page; reserve bold color only for hero bands or accent strips.""",
 
     "executive_summary": """You are a creative business document designer. Create a polished EXECUTIVE SUMMARY one-pager.
@@ -163,8 +163,8 @@ PRINT MEDIA QUERY - REQUIRED:
 Include this @media print block to preserve styles when printing:
 @media print {{
   * {{ -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }}
-  html, body {{ width: {page_w} !important; height: auto !important; margin: 0 !important; padding: 0 !important; overflow: visible !important; }}
-  .page {{ width: {page_w} !important; height: {page_h} !important; page-break-after: avoid !important; page-break-inside: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
+  html, body {{ width: {page_w} !important; height: {page_h} !important; max-height: {page_h} !important; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }}
+  .page {{ width: {page_w} !important; height: {page_h} !important; max-height: {page_h} !important; overflow: hidden !important; page-break-after: avoid !important; page-break-before: avoid !important; break-after: avoid !important; break-before: avoid !important; break-inside: avoid !important; margin: 0 !important; }}
   @page {{ size: {page_w} {page_h}; margin: 0; }}
 }}
 
@@ -270,7 +270,7 @@ async def extract_one_pager_content(
                 ),
             }
 
-    # Images are sent to the AI via vision — let it analyse them directly
+    # Images are sent to the AI via vision - let it analyse them directly
     # instead of rejecting the request up-front.
 
     if pdf_bytes_list and not has_text and not has_images:
@@ -314,7 +314,7 @@ async def extract_one_pager_content(
     elif has_images:
         prompt_parts.append(
             "The user uploaded image(s) as the primary source material. "
-            "Carefully analyze every detail visible in the images — text, charts, data, diagrams, logos, and visual elements. "
+            "Carefully analyze every detail visible in the images - text, charts, data, diagrams, logos, and visual elements. "
             "Extract all key information and use it to populate the one-pager. Use ONLY what you see in the images."
         )
 

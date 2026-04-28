@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
     initSpringMode();
     initCardEntrance();
 
+    const tutorialBtn = document.getElementById('tutorialBtn');
+    if (tutorialBtn) {
+        tutorialBtn.addEventListener('click', () => window.DSCPTutorial.startCurrent());
+    }
+
     const changelogBell = document.getElementById('changelogBell');
     const changelogPanel = document.getElementById('changelog');
     const closeChangelog = document.getElementById('closeChangelog');
@@ -673,7 +678,7 @@ const LoadingOverlay = {
 };
 
 /**
- * Inline loading panel — renders animated loader inside an existing container.
+ * Inline loading panel - renders animated loader inside an existing container.
  *
  * Usage:
  *   LoadingPanel.show('loading-state', { messages: ['Analyzing…', 'Processing…'], hint: 'This may take a moment.' });
@@ -729,7 +734,7 @@ const LoadingPanel = {
  * Spring Mode
  * Fresh, clean, and energetic theme with vibrant greens,
  * soft yellows, floating leaves, blooming flowers, and
- * petal bursts — works on top of light or dark theme.
+ * petal bursts - works on top of light or dark theme.
  */
 function initSpringMode() {
     const toggle = document.getElementById('springToggle');
@@ -897,6 +902,10 @@ function initAiDisclaimer() {
         localStorage.setItem(STORAGE_KEY, 'true');
         modal.classList.remove('active');
         document.body.style.overflow = '';
+        // Auto-start the tour on first visit after accepting the disclaimer
+        if (!window.DSCPTutorial._isSeen()) {
+            setTimeout(() => window.DSCPTutorial.startCurrent(), 400);
+        }
     });
 }
 
@@ -961,3 +970,442 @@ const FeedbackWidget = {
         }
     },
 };
+
+// ------------------------------------------------------------
+// DSCPTutorial - Driver.js powered interactive tour system
+// ------------------------------------------------------------
+
+window.DSCPTutorial = (() => {
+    const STORAGE_KEY = 'dscp_tutorial_seen';
+    const DRIVER_JS_URL = '/static/js/driver.iife.js';
+    const DRIVER_CSS_URL = 'https://cdn.jsdelivr.net/npm/driver.js@1.3.6/dist/driver.css';
+
+    // Pathname prefix ? tour key mapping
+    const PATH_MAP = {
+        '/': 'homepage',
+        '/diagram-generator': 'diagram-generator',
+        '/signavio-bpmn': 'signavio-bpmn',
+        '/ppt-creator': 'ppt-creator',
+        '/audit-check': 'audit-check',
+        '/bpmn-checker': 'bpmn-checker',
+        '/one-pager-creator': 'one-pager-creator',
+        '/spec-builder': 'spec-builder',
+        '/docupedia-publisher': 'docupedia-publisher',
+    };
+
+    const _registry = {};
+    let _activeTour = null;
+    let _didComplete = false;
+    let _driverLoadPromise = null;
+
+    // -- Shared step builder helpers --------------------------
+
+    function _icon(svgPath, size = 18) {
+        return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${svgPath}</svg>`;
+    }
+
+    function _progressHTML(current, total) {
+        const pct = Math.round((current / total) * 100);
+        return `<div class="dscp-tour-progress">
+            <span class="dscp-tour-progress-label">Step ${current} of ${total}</span>
+            <div class="dscp-tour-progress-bar"><div class="dscp-tour-progress-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }
+
+    function _driverFactory() {
+        return window.driver && window.driver.js && typeof window.driver.js.driver === 'function'
+            ? window.driver.js.driver
+            : null;
+    }
+
+    function _ensureDriverCss() {
+        const existing = document.querySelector(`link[data-dscp-driver-css="1"], link[href="${DRIVER_CSS_URL}"]`);
+        if (existing) {
+            return Promise.resolve();
+        }
+
+        return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = DRIVER_CSS_URL;
+            link.dataset.dscpDriverCss = '1';
+            link.onload = () => resolve();
+            link.onerror = () => reject(new Error('Failed to load Driver CSS'));
+            document.head.appendChild(link);
+        });
+    }
+
+    function _ensureDriverScript() {
+        if (_driverFactory()) {
+            return Promise.resolve();
+        }
+
+        const existing = document.querySelector(`script[data-dscp-driver-js="1"], script[src="${DRIVER_JS_URL}"]`);
+        if (existing) {
+            return new Promise((resolve, reject) => {
+                if (_driverFactory()) {
+                    resolve();
+                    return;
+                }
+
+                existing.addEventListener('load', () => resolve(), { once: true });
+                existing.addEventListener('error', () => reject(new Error('Failed to load Driver script')), { once: true });
+            });
+        }
+
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = DRIVER_JS_URL;
+            script.async = true;
+            script.dataset.dscpDriverJs = '1';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('Failed to load Driver script'));
+            document.body.appendChild(script);
+        });
+    }
+
+    function _ensureDriverAssets() {
+        if (_driverFactory()) {
+            return Promise.resolve(true);
+        }
+
+        if (!_driverLoadPromise) {
+            _driverLoadPromise = Promise.all([_ensureDriverCss(), _ensureDriverScript()])
+                .then(() => !!_driverFactory())
+                .catch((err) => {
+                    console.error('DSCPTutorial: Failed to lazy-load Driver assets.', err);
+                    return false;
+                })
+                .finally(() => {
+                    _driverLoadPromise = null;
+                });
+        }
+
+        return _driverLoadPromise;
+    }
+
+    function _driverSide(attachTo) {
+        const on = (attachTo && attachTo.on) || 'bottom';
+        if (on === 'top' || on === 'right' || on === 'bottom' || on === 'left') {
+            return on;
+        }
+        return 'bottom';
+    }
+
+    function _ensureElementInView(target) {
+        if (!target || target.id === 'driver-dummy-element') return;
+
+        window.setTimeout(() => {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center',
+                inline: 'nearest'
+            });
+        }, 40);
+    }
+
+    function _injectLockedControls(popover) {
+        if (!popover || !popover.footerButtons || popover.footerButtons.querySelector('.dscp-tour-skip-btn')) {
+            return;
+        }
+
+        // Skip - completely custom class so Driver.js event delegation never intercepts it
+        const skipBtn = document.createElement('button');
+        skipBtn.type = 'button';
+        skipBtn.className = 'dscp-tour-skip-btn';
+        skipBtn.textContent = 'Skip';
+        skipBtn.addEventListener('click', (e) => {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            if (!_activeTour) return;
+            _didComplete = false;
+            _activeTour.destroy();
+        });
+        popover.footerButtons.prepend(skipBtn);
+
+        // Close × button pinned to the right side of the title header
+        if (popover.title && !popover.title.querySelector('.dscp-tour-close-btn')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.type = 'button';
+            closeBtn.className = 'dscp-tour-close-btn';
+            closeBtn.setAttribute('aria-label', 'Close tutorial');
+            closeBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="13" y2="13"/><line x1="13" y1="1" x2="1" y2="13"/></svg>';
+            closeBtn.addEventListener('click', (e) => {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                if (!_activeTour) return;
+                _didComplete = true;
+                _activeTour.destroy();
+            });
+            popover.title.appendChild(closeBtn);
+        }
+    }
+
+    function _toDriverSteps(stepsData) {
+        const total = stepsData.length;
+
+        return stepsData.map((step, idx) => {
+            const isFirst = idx === 0;
+            const isLast = idx === total - 1;
+            const popover = {
+                title: step.title,
+                description: `${step.text}${_progressHTML(idx + 1, total)}`,
+                popoverClass: 'dscp-driver-popover',
+                showButtons: isFirst ? ['next'] : ['previous', 'next'],
+                side: step.attachTo ? _driverSide(step.attachTo) : 'over',
+                align: 'center',
+                nextBtnText: isLast ? 'Finish' : 'Next →',
+                prevBtnText: '← Back',
+                onPopoverRender: (popover) => _injectLockedControls(popover),
+                onHighlightStarted: (el) => _ensureElementInView(el),
+                onPrevClick: () => {
+                    if (!_activeTour) return;
+                    if (isFirst) {
+                        return;
+                    }
+                    _activeTour.movePrevious();
+                },
+                onNextClick: () => {
+                    if (!_activeTour) return;
+                    if (isLast) {
+                        _didComplete = true;
+                        _activeTour.destroy();
+                        return;
+                    }
+                    _activeTour.moveNext();
+                }
+            };
+
+            if (step.attachTo && step.attachTo.element) {
+                return {
+                    element: step.attachTo.element,
+                    popover,
+                };
+            }
+
+            return { popover };
+        });
+    }
+
+    // -- Tour builder -----------------------------------------
+
+    function _buildTour(stepsData) {
+        const factory = _driverFactory();
+        if (!factory) {
+            console.warn('DSCPTutorial: Driver.js not loaded yet.');
+            showToast('Tutorial could not start because Driver.js did not load. Please refresh the page.', 'warning', 4500);
+            return null;
+        }
+
+        _didComplete = false;
+
+        let _keyDismissHandler = null;
+
+        const tour = factory({
+            animate: true,
+            smoothScroll: true,
+            allowClose: false,
+            allowKeyboardControl: false,
+            overlayOpacity: 0.62,
+            stagePadding: 8,
+            stageRadius: 10,
+            showProgress: false,
+            popoverClass: 'dscp-driver-popover',
+            onDestroyed: () => {
+                if (_keyDismissHandler) {
+                    document.removeEventListener('keydown', _keyDismissHandler, true);
+                    _keyDismissHandler = null;
+                }
+                _markSeen();
+                document.getElementById('tutorialBtn')?.classList.remove('tour-active');
+                if (_didComplete) {
+                    _burstConfetti();
+                    _didComplete = false;
+                }
+            }
+        });
+
+        _keyDismissHandler = (e) => {
+            // Ignore pure modifier keys
+            if (['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+            e.stopImmediatePropagation();
+            if (_activeTour && _activeTour.isActive()) {
+                _didComplete = false;
+                _activeTour.destroy();
+            }
+        };
+        document.addEventListener('keydown', _keyDismissHandler, true);
+
+        tour.setSteps(_toDriverSteps(stepsData));
+
+        return tour;
+    }
+
+    // -- Confetti burst on tour completion -------------------
+
+    function _burstConfetti() {
+        const colors = ['#FF6840', '#FF9B59', '#FFD166', '#06D6A0', '#118AB2', '#EF476F'];
+        const container = document.createElement('div');
+        container.className = 'dscp-confetti-container';
+        document.body.appendChild(container);
+
+        const count = 52;
+
+        for (let i = 0; i < count; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'dscp-confetti-piece';
+            piece.style.left = `${Math.random() * 100}%`;
+            piece.style.background = colors[i % colors.length];
+            piece.style.opacity = (0.65 + Math.random() * 0.35).toFixed(2);
+            piece.style.width = `${6 + Math.random() * 8}px`;
+            piece.style.height = `${5 + Math.random() * 9}px`;
+            piece.style.animationDelay = `${Math.random() * 0.25}s`;
+            piece.style.animationDuration = `${1.2 + Math.random() * 1.15}s`;
+            piece.style.setProperty('--drift-x', `${(Math.random() - 0.5) * 220}px`);
+            piece.style.setProperty('--spin', `${Math.random() > 0.5 ? 1 : -1}`);
+            container.appendChild(piece);
+        }
+
+        const sparkles = 18;
+        for (let i = 0; i < sparkles; i++) {
+            const sparkle = document.createElement('div');
+            sparkle.className = 'dscp-confetti-sparkle';
+            sparkle.style.left = `${Math.random() * 100}%`;
+            sparkle.style.animationDelay = `${Math.random() * 0.2}s`;
+            sparkle.style.animationDuration = `${0.9 + Math.random() * 0.5}s`;
+            container.appendChild(sparkle);
+        }
+
+        window.setTimeout(() => container.remove(), 2600);
+    }
+
+    // -- localStorage helpers ---------------------------------
+
+    function _markSeen() {
+        localStorage.setItem(STORAGE_KEY, 'true');
+    }
+
+    function _isSeen() {
+        return localStorage.getItem(STORAGE_KEY) === 'true';
+    }
+
+    // -- Homepage tour definition -----------------------------
+
+    function _homepageSteps() {
+        return [
+            {
+                id: 'welcome',
+                title: `${_icon('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>')} Welcome to DSCP AI Tools`,
+                text: `<p>Hi there! Welcome to <strong>BSH DSCP AI APPS</strong> - your intelligent toolkit for day to day activities.</p>
+                       <p>This quick tour takes about 30 seconds and covers everything you need to get started.</p>`,
+            },
+            {
+                id: 'search',
+                title: `${_icon('<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>')} Find any app instantly`,
+                text: `<p>Use the <strong>search bar</strong> to find the right AI tool fast. It searches by name, category, and description.</p>`,
+                attachTo: { element: '.search-box', on: 'bottom' },
+            },
+            {
+                id: 'filters',
+                title: `${_icon('<line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/>')} Browse by category`,
+                text: `<p>Use the <strong>filter chips</strong> to narrow down apps by category: <em>Day to Day</em>, <em>Signavio</em>, or <em>DSCP</em>.</p>`,
+                attachTo: { element: '.filter-bar', on: 'bottom' },
+            },
+            {
+                id: 'app-card',
+                title: `${_icon('<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>')} Your AI toolkit`,
+                text: `<p>Each <strong>app card</strong> describes what the tool does. Click <em>Open App</em> to launch it.</p>
+                       <p>There are lot of AI-powered tools ready for you to explore.</p>`,
+                attachTo: { element: '.app-card', on: 'right' },
+            },
+            {
+                id: 'favourites',
+                title: `${_icon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>')} Pin your favourites`,
+                text: `<p>Click the <strong>star icon</strong> on any app card to save it as a favourite. Starred apps get a special glow so you can find them instantly.</p>`,
+                attachTo: { element: '.fav-star-btn', on: 'left' },
+            },
+            {
+                id: 'theme',
+                title: `${_icon('<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>')} Light &amp; Dark mode`,
+                text: `<p>Toggle between <strong>light and dark mode</strong> any time with this button. Your preference is saved automatically.</p>`,
+                attachTo: { element: '#themeToggle', on: 'bottom' },
+            },
+            {
+                id: 'changelog',
+                title: `${_icon('<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 22h4"/>')} What's new`,
+                text: `<p>The <strong>bell</strong> lights up whenever there's a new release. Click it to see what features and fixes have landed.</p>`,
+                attachTo: { element: '#changelogBell', on: 'bottom' },
+            },
+            {
+                id: 'tutorial-btn',
+                title: `${_icon('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>')} Replay this tour anytime`,
+                text: `<p>Forgot something? Click this <strong>Tutorial button</strong> anytime to restart the guided tour for any App you're on.</p>`,
+                attachTo: { element: '#tutorialBtn', on: 'bottom' },
+            },
+            {
+                id: 'done',
+                title: `${_icon('<path d="M20 6 9 17l-5-5"/>')} You\'re all set!`,
+                text: `<p>You now know your way around DSCP AI. Each feature page also has its own tour - just click the Tutorial button once you're inside an app.</p>
+                       <p><strong>Happy building!</strong></p>`,
+            },
+        ];
+    }
+
+    async function _startWithSteps(stepsData) {
+        const ok = await _ensureDriverAssets();
+        if (!ok) {
+            showToast('Tutorial assets failed to load. Please check your connection and try again.', 'warning', 4500);
+            return;
+        }
+
+        if (_activeTour && _activeTour.isActive()) {
+            _activeTour.destroy();
+        }
+
+        _activeTour = _buildTour(stepsData);
+        if (_activeTour) {
+            document.getElementById('tutorialBtn')?.classList.add('tour-active');
+            _activeTour.drive();
+        }
+    }
+
+    // -- Public API -------------------------------------------
+
+    return {
+        _isSeen,
+        _markSeen,
+
+        register(key, stepsFactory) {
+            _registry[key] = stepsFactory;
+        },
+
+        async startHomepage() {
+            const steps = _homepageSteps();
+            await _startWithSteps(steps);
+        },
+
+        async startCurrent() {
+            // Detect current page key from pathname
+            const path = window.location.pathname.replace(/\/$/, '') || '/';
+            const key = PATH_MAP[path] || null;
+
+            if (key && _registry[key]) {
+                await _startWithSteps(_registry[key]());
+                return;
+            }
+
+            // Fallback: homepage tour or generic message
+            if (path === '/') {
+                await this.startHomepage();
+            } else {
+                showToast('No tour available for this page yet. Check back soon!', 'info', 3000);
+            }
+        },
+
+        async start(key) {
+            if (_registry[key]) {
+                await _startWithSteps(_registry[key]());
+            }
+        }
+    };
+})();

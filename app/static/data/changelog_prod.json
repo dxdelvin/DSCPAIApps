@@ -1,12 +1,13 @@
 [
   {
-    "date": "Apr 28th, 2026",
+    "date": "Apr 29th, 2026",
     "version": "v4.0.0",
     "isNew": true,
     "changes": [
       "New: Your Generation History will be Saved for the following apps: AI Diagram Generator, PowerPoint Creator, One Pager Creator. You can view, download, and manage your past generations in the History section.",
       "New: You can now Save your Favorite Apps in the Home Page for quick access.",
-      "New: Now you can rate your Generation results with a Thumbs Up/Down.",
+      "New: Now you can rate your Generation results with 4 options.",
+      "New: Tutorial Mode for All Apps - Get step-by-step guidance and tips while using any app for the first time.",
       "Improved: PowerPoint Designs and Smartarts are updated",
       "Fix: More Mobile Friendly Updates across all apps.",
       "Fix: Resolved Design and Printing Issues in One Pager Creator outputs."
@@ -29,7 +30,7 @@
       "New: Added a 404 Error Page for invalid routes.",
       "New: New Functional Spec Template added in FR & BR Document Builder.",
       "Improved: thumbnail previews, character limits, improved formatting in AI BPMN Builder.",
-      "Improved: Micro-interactions added across all apps — animated entrances for upload areas, file items, chat messages, stat counters, progress bars, findings, suggestion cards, review sections, and more.",
+      "Improved: Micro-interactions added across all apps - animated entrances for upload areas, file items, chat messages, stat counters, progress bars, findings, suggestion cards, review sections, and more.",
       "Fix: Resolved connectivity issues for some AI services.",
       "Fix: Security Upgraded with latest dependencies and vulnerability patches."
     ]

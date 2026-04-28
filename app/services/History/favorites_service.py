@@ -1,4 +1,4 @@
-"""User favourites persistence — stores starred app keys in Object Store."""
+"""User favourites persistence - stores starred app keys in Object Store."""
 import json
 import logging
 from typing import Optional

@@ -9,7 +9,7 @@ STATIC_DIR = BASE_DIR / "static"
 APP_TITLE = "BSH"
 
 # CSS Versioning - Update this to force cache refresh on CSS changes
-CSS_VERSION = "3.4.8.0.0"
+CSS_VERSION = "4.0.1"
 
 # Environment Configuration
 IS_PRODUCTION = os.getenv("ENVIRONMENT", "dev").lower() == "prod"
@@ -79,7 +79,7 @@ def get_object_store_config() -> dict:
         except (KeyError, IndexError, json.JSONDecodeError):
             pass
 
-    # Local dev fallback — individual env vars
+    # Local dev fallback - individual env vars
     host = os.getenv("OBJECT_STORE_HOST")
     bucket = os.getenv("OBJECT_STORE_BUCKET")
     access_key = os.getenv("OBJECT_STORE_ACCESS_KEY_ID")

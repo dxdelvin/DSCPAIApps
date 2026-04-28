@@ -93,7 +93,7 @@ GENERATE_BEHAVIOUR = (
     "5. Edges must reference source and target cell IDs.\n"
     "6. Always include root cells: id=\"0\" (root) and id=\"1\" (default parent).\n"
     "7. Use readable, professional styling with colors.\n"
-    "8. Space elements properly — no overlapping shapes.\n"
+    "8. Space elements properly - no overlapping shapes.\n"
     "9. Use clear, concise labels on all shapes and connections.\n"
     "10. Do NOT wrap in markdown code fences.\n\n"
     "STYLING GUIDELINES:\n"
@@ -121,19 +121,19 @@ REFINE_BEHAVIOUR = (
 COPY_IMAGE_BEHAVIOUR = (
     "You are a diagram reproduction specialist for draw.io (mxGraph) XML.\n"
     "You will receive one or more images.\n\n"
-    "STEP 1 — CLASSIFY:\n"
+    "STEP 1 - CLASSIFY:\n"
     "Determine if the image contains an actual DIAGRAM: a flowchart, org chart, sequence diagram, "
     "network diagram, mind map, ER diagram, swimlane, block diagram, UML diagram, process map, "
     "architecture diagram, or any structured visual made of shapes connected by arrows/lines.\n"
     "A diagram has geometric shapes (boxes, circles, diamonds, cylinders) connected by arrows "
     "or lines that represent processes, structures, or relationships.\n\n"
-    "These are NOT diagrams — return the JSON flag for these:\n"
+    "These are NOT diagrams - return the JSON flag for these:\n"
     "- Plain text documents or screenshots\n"
     "- Bar charts, pie charts, line charts (data visualizations, NOT draw.io diagrams)\n"
     "- Photos or illustrations\n"
     "- Slides or pages with only text and no connecting arrows\n"
     "- Tables without connecting arrows between shapes\n\n"
-    "STEP 2A — If the image IS a diagram, reproduce it as draw.io mxGraph XML:\n\n"
+    "STEP 2A - If the image IS a diagram, reproduce it as draw.io mxGraph XML:\n\n"
     "REPRODUCTION GOAL:\n"
     "- Recreate the diagram as literally and completely as possible.\n"
     "- DO NOT summarize, simplify, merge, normalize, or redesign the source diagram.\n"
@@ -160,7 +160,7 @@ COPY_IMAGE_BEHAVIOUR = (
     "- For architecture diagrams, DO NOT collapse multiple services into one generic box.\n"
     "- If a label is partially readable, keep the readable portion rather than omitting the entire node.\n"
     "- Set x, y, width, height in <mxGeometry> to reflect the relative layout.\n\n"
-    "CONNECTIONS (edges) — THIS IS THE MOST IMPORTANT PART:\n"
+    "CONNECTIONS (edges) - THIS IS THE MOST IMPORTANT PART:\n"
     "- Every visible arrow, line, or connector in the image MUST become an mxCell with edge=\"1\".\n"
     "- Each edge cell MUST have source=\"<id>\" and target=\"<id>\" referencing the correct shape ids.\n"
     "- Copy edge labels (e.g. 'Yes', 'No', conditions) into the value attribute.\n"
@@ -185,9 +185,9 @@ COPY_IMAGE_BEHAVIOUR = (
     "5. Vertices need: <mxGeometry x=\"...\" y=\"...\" width=\"...\" height=\"...\" as=\"geometry\" />\n"
     "6. Edges need: <mxGeometry relative=\"1\" as=\"geometry\" />\n"
     "7. Use readable, professional colors that match the source image as closely as possible.\n"
-    "8. Space shapes so nothing overlaps — minimum 40px gap between shapes.\n"
+    "8. Space shapes so nothing overlaps - minimum 40px gap between shapes.\n"
     "9. Do NOT wrap output in markdown code fences.\n\n"
-    "STEP 2B — If the image is NOT a diagram:\n"
+    "STEP 2B - If the image is NOT a diagram:\n"
     "Return ONLY this exact JSON (no markdown wrapper, no extra text):\n"
     '{"not_a_diagram": true, "content_type": "<brief description of what the image actually shows>", '
     '"suggestion": "Use Analyze Content mode to let AI generate diagram suggestions from this content."}\n\n'
@@ -472,7 +472,7 @@ async def copy_image_as_diagram(image_files: list) -> dict:
     """
     Reproduce image(s) as an exact draw.io diagram using AI vision.
 
-    Accepts a list of UploadFile objects (images only — no PDFs).
+    Accepts a list of UploadFile objects (images only - no PDFs).
     Returns one of:
       - {"diagrams": [...], "chatHistoryId": ...}           on success
       - {"not_a_diagram": True, "content_type": ..., ...}   when image is not a diagram
@@ -524,7 +524,7 @@ async def copy_image_as_diagram(image_files: list) -> dict:
     raw = response.get("result", "")
     updated_chat_id = response.get("chatHistoryId", chat_history_id)
 
-    # Check for the not_a_diagram JSON flag — try direct parse first
+    # Check for the not_a_diagram JSON flag - try direct parse first
     cleaned = re.sub(r"```(?:json)?", "", raw).strip().rstrip("`").strip()
     try:
         parsed = json.loads(cleaned)

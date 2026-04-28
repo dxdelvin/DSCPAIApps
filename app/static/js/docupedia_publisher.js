@@ -1034,3 +1034,31 @@ class DocupediaPublisherApp {
         return `file-${Date.now()}-${Math.random().toString(16).slice(2)}`;
     }
 }
+
+// -- Docupedia Publisher feature tour -------------------------
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('docupedia-publisher', () => {
+        const icon = (path, size = 18) =>
+            `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+
+        return [
+            {
+                "id": "dp-welcome",
+                "attachTo": { "element": "[data-panel='auth']", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 19l9 2-9-18-9 18 9-2zm0 0v-8\"/></svg> Docupedia Publisher",
+                "text": "<p>Publish AI-generated content <strong>directly to Docupedia</strong> (Confluence) pages in one click - no copy-paste needed.</p>"
+            },
+            {
+                "id": "dp-how",
+                "attachTo": { "element": "#dp-space-key", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> How to use it",
+                "text": "<p><strong>Step 1:</strong> Enter your target Docupedia page URL.</p><p><strong>Step 2:</strong> Upload source files or describe the content to publish.</p><p><strong>Step 3:</strong> Hit <strong>Publish</strong> and the AI generates and posts the content.</p>"
+            },
+            {
+                "id": "dp-result",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> What you get",
+                "text": "<p>Structured content published directly to your Docupedia page - formatted, linked, and ready to read.</p>"
+            }
+        ];;
+    });
+}

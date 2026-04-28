@@ -82,7 +82,7 @@ class OnePagerApp {
                         return n.endsWith('.png') || n.endsWith('.jpg') || n.endsWith('.jpeg');
                     }).length;
                     if (currentImageCount >= this.MAX_IMAGES) {
-                        showToast(`Cannot add "${f.name}" — maximum ${this.MAX_IMAGES} images allowed.`, 'error');
+                        showToast(`Cannot add "${f.name}" - maximum ${this.MAX_IMAGES} images allowed.`, 'error');
                         continue;
                     }
                 }
@@ -90,7 +90,7 @@ class OnePagerApp {
                 const currentTotal = this.files.reduce((sum, file) => sum + file.size, 0);
                 if (currentTotal + f.size > this.MAX_FILE_SIZE) {
                     showToast(
-                        `Cannot add "${f.name}" — adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
+                        `Cannot add "${f.name}" - adding this file (${formatFileSize(f.size)}) would exceed the 10 MB upload limit.`,
                         'error'
                     );
                     continue;
@@ -491,10 +491,11 @@ class OnePagerApp {
   
   html, body {
     width: ${pageW}px !important;
-    height: auto !important;
+    height: ${pageH}px !important;
+    max-height: ${pageH}px !important;
     margin: 0 !important;
     padding: 0 !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
@@ -505,20 +506,17 @@ class OnePagerApp {
     width: ${pageW}px !important;
     height: ${pageH}px !important;
     max-height: ${pageH}px !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
     position: relative !important;
     page-break-after: avoid !important;
-    page-break-inside: avoid !important;
+    page-break-before: avoid !important;
+    break-after: avoid !important;
+    break-before: avoid !important;
     break-inside: avoid !important;
     margin: 0 !important;
   }
-  
-  * {
-    break-inside: avoid !important;
-    page-break-inside: avoid !important;
-  }
-  
+
   h1, h2, h3, h4, h5, h6 { 
     break-after: avoid !important; 
     page-break-after: avoid !important;
@@ -538,7 +536,7 @@ class OnePagerApp {
     width: ${pageW}px !important;
     height: ${pageH}px !important;
     position: relative !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
   }
 }
@@ -558,13 +556,13 @@ window.onload = function () {
             : printStyle + this.currentHtml;
 
         // Open as a Blob URL in a new full tab so the browser renders it
-        // at full width with all CSS intact — no popup size restrictions.
+        // at full width with all CSS intact - no popup size restrictions.
         const blob = new Blob([printHtml], { type: 'text/html' });
         const url  = URL.createObjectURL(blob);
         const tab  = window.open(url, '_blank');
 
         if (!tab) {
-            showToast('Popup blocked — allow popups for this site and try again.', 'error');
+            showToast('Popup blocked - allow popups for this site and try again.', 'error');
             URL.revokeObjectURL(url);
             return;
         }
@@ -572,7 +570,7 @@ window.onload = function () {
         // Revoke the object URL after the tab has had time to load
         setTimeout(() => URL.revokeObjectURL(url), 15000);
 
-        showToast('Print dialog opened — choose "Save as PDF" and enable "Background graphics".', 'info');
+        showToast('Print dialog opened - choose "Save as PDF" and enable "Background graphics".', 'info');
     }
 
     _extractTitle() {
@@ -821,7 +819,7 @@ window.onload = function () {
         const style = escapeHtml(entry.templateStyle || '');
         const orient = escapeHtml(entry.orientation || '');
         const refinements = entry.refinements || 0;
-        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '—';
+        const date = entry.updatedAt ? new Date(entry.updatedAt).toLocaleDateString() : '-';
         const time = entry.updatedAt ? new Date(entry.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
         card.innerHTML = `
@@ -939,4 +937,41 @@ window.onload = function () {
             showToast('Failed to delete.', 'error');
         }
     }
+}
+
+// -- One Pager Creator feature tour ---------------------------
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('one-pager-creator', () => {
+        return [
+            {
+                "id": "op-welcome",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"4\" y=\"3\" width=\"16\" height=\"18\" rx=\"2\"/><path d=\"M8 7h8M8 11h8M8 15h5\"/></svg> One Pager Creator",
+                "text": "<p>Turn documents and ideas into a polished <strong>single-page PDF summary</strong> — perfect for presentations, briefings, and status updates.</p>"
+            },
+            {
+                "id": "op-upload",
+                "attachTo": { "element": "#upload-area", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></svg> Upload Your Files",
+                "text": "<p>Drag and drop your <strong>PDFs or images</strong> here, or click to browse. Up to <strong>10 MB</strong> total — these become the source material for your one-pager.</p>"
+            },
+            {
+                "id": "op-topic",
+                "attachTo": { "element": "#topic-input", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> Set the Topic",
+                "text": "<p>Enter a clear <strong>topic or subject</strong> for your one-pager. Optionally add <strong>key points</strong> below — facts, stats, or messages you want the AI to emphasise.</p>"
+            },
+            {
+                "id": "op-layout",
+                "attachTo": { "element": "#template-grid", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\"/></svg> Choose a Layout",
+                "text": "<p>Pick one of the <strong>layout templates</strong> and set the accent colour. Each template arranges sections differently — choose the one that best fits your content.</p>"
+            },
+            {
+                "id": "op-generate",
+                "attachTo": { "element": "#generate-btn", "on": "top" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> Generate & Download",
+                "text": "<p>Hit <strong>Generate</strong> and the AI produces a live in-page <strong>preview</strong> of your one-pager. Download as a <strong>PDF</strong> ready to share — saved to <strong>My History</strong> for easy re-download later.</p>"
+            }
+        ];;
+    });
 }

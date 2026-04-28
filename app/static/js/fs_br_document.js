@@ -172,7 +172,7 @@ function closeAllStepJumpMenus() {
 }
 
 /* ═══════════════════════════════════════════════════
-   FUNCTIONAL SPEC — Navigation
+   FUNCTIONAL SPEC - Navigation
    ═══════════════════════════════════════════════════ */
 
 function initFsNavigation() {
@@ -483,7 +483,7 @@ function buildFsReviewSummary() {
     for (const [key, label] of Object.entries(respLabels)) {
         const r = data.responsibilities[key];
         const parts = [r.name, r.date].filter(Boolean);
-        respRows.push(row(label, parts.join(' — ') || ''));
+        respRows.push(row(label, parts.join(' - ') || ''));
     }
     html += section('Responsibilities', respRows);
 
@@ -540,7 +540,7 @@ function buildFsReviewSummary() {
 
     // Glossary
     if (data.glossary.length) {
-        const gRows = data.glossary.map(r => row(r[0] || '—', r[1] || ''));
+        const gRows = data.glossary.map(r => row(r[0] || '-', r[1] || ''));
         html += section('Glossary', gRows);
     }
 
@@ -803,7 +803,7 @@ function row(label, value) {
 
 
 /* ═══════════════════════════════════════════════════
-   BUSINESS REQUIREMENT — Navigation
+   BUSINESS REQUIREMENT - Navigation
    ═══════════════════════════════════════════════════ */
 
 function initBrNavigation() {
@@ -928,7 +928,7 @@ function brResetForm() {
 }
 
 /* ═══════════════════════════════════════════════════
-   BR Decision Toggle — show/hide sub-options
+   BR Decision Toggle - show/hide sub-options
    ═══════════════════════════════════════════════════ */
 
 function initBrDecisionToggle() {
@@ -1231,7 +1231,7 @@ async function exportBrDocx() {
 }
 
 /* ═══════════════════════════════════════════════════
-   BR Cost Table — auto-calculate & collect
+   BR Cost Table - auto-calculate & collect
    ═══════════════════════════════════════════════════ */
 
 function initBrCostTable() {
@@ -1452,7 +1452,7 @@ function loadBrFromJson(data) {
 
 
 /* ═══════════════════════════════════════════════════
-   FS VARIANT — Navigation
+   FS VARIANT - Navigation
    ═══════════════════════════════════════════════════ */
 
 function initFvNavigation() {
@@ -1757,7 +1757,7 @@ function buildFvReviewSummary() {
 
     if (data.selectionScreen.length) {
         const selRows = data.selectionScreen.map(r =>
-            row(r[0] || '—', [r[1], r[2], r[3], r[4], r[5]].filter(Boolean).join(' · '))
+            row(r[0] || '-', [r[1], r[2], r[3], r[4], r[5]].filter(Boolean).join(' · '))
         );
         html += section('Selection Screen', selRows);
     }
@@ -1767,7 +1767,7 @@ function buildFvReviewSummary() {
     for (const [key, label] of Object.entries(charLabels)) {
         const c = data.reportCharacteristics[key] || {};
         const parts = [c.value, c.comments].filter(Boolean);
-        if (parts.length) charRows.push(row(label, parts.join(' — ')));
+        if (parts.length) charRows.push(row(label, parts.join(' - ')));
     }
     if (charRows.length) html += section('Report Characteristics', charRows);
 
@@ -1964,4 +1964,38 @@ function _loadFvDynamicTable(tableId, data, cols) {
         tbody.insertAdjacentHTML('beforeend', `<tr>${cells}</tr>`);
     });
     _bindRemoveButtons(tbody);
+}
+
+// -- FS & BR Document Builder feature tour --------------------
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('spec-builder', () => {
+        const icon = (path, size = 18) =>
+            `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+
+        return [
+            {
+                "id": "sb2-welcome",
+                "attachTo": { "element": ".mode-tabs", "on": "bottom" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"4\" width=\"18\" height=\"16\" rx=\"2\"/><path d=\"M7 8h10M7 12h10M7 16h6\"/></svg> Document Builder",
+                "text": "<p>Create <strong>Functional Specifications</strong>, <strong>Business Requirements</strong>, and <strong>FS Templates</strong> using guided multi-step forms.</p>"
+            },
+            {
+                "id": "sb2-how",
+                "attachTo": { "element": "#fs-step-1", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> How to use it",
+                "text": "<p><strong>Step 1:</strong> Choose your document type &mdash; Functional Spec, Business Requirement, or FS Template.</p><p><strong>Step 2:</strong> Walk through the structured form covering scope, requirements, and details.</p>"
+            },
+            {
+                "id": "sb2-json",
+                "attachTo": { "element": "#fsLoadJsonBtn", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></svg> Save &amp; resume later",
+                "text": "<p>Filling in a long spec? At the end of the form you can <strong>save your progress as a JSON file</strong> before generating the document.</p><p>Next time, click <strong>Load from JSON</strong> right here to restore every field instantly &mdash; no re-typing needed.</p>"
+            },
+            {
+                "id": "sb2-result",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> What you get",
+                "text": "<p>A complete <strong>Word document (.docx)</strong> with all sections filled in, ready for review and submission to stakeholders.</p>"
+            }
+        ];;
+    });
 }

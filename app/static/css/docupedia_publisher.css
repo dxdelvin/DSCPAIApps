@@ -236,10 +236,6 @@
     padding: 0.25rem;
     display: flex;
     transition: color 0.2s;
-    min-width: 44px;
-    min-height: 44px;
-    align-items: center;
-    justify-content: center;
 }
 
 .dp-pat-toggle:hover {
@@ -497,11 +493,6 @@
     border-radius: 6px;
     transition: var(--transition);
     flex-shrink: 0;
-    min-width: 44px;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .dp-file-remove:hover {
@@ -530,14 +521,6 @@
     color: var(--text-secondary);
     transition: var(--transition);
     padding: 0;
-    /* Expanded tap area for touch screens */
-    position: relative;
-}
-
-.dp-order-btn::after {
-    content: '';
-    position: absolute;
-    inset: -14px -11px;
 }
 
 .dp-order-btn:hover {
@@ -704,10 +687,6 @@
     color: var(--text-secondary);
     cursor: pointer;
     transition: background 0.15s, color 0.15s;
-    min-height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .dp-view-tab:not(:last-child) {

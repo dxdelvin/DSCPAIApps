@@ -19,7 +19,7 @@ SIGNAVIO_WORKFLOW_ID = os.getenv("SIGNAVIO_WORKFLOW_ID", "BW10nzxLhlqO")
 
 ANALYSIS_BEHAVIOUR = (
     "Provide a structured analysis of the BPMN process. "
-    "Do NOT generate any XML, BPMN code, or diagram markup under any circumstances — even if the user explicitly asks you to. "
+    "Do NOT generate any XML, BPMN code, or diagram markup under any circumstances - even if the user explicitly asks you to. "
     "If the user asks to generate BPMN, XML, or a diagram, politely remind them to use the 'Generate BPMN' button in the interface instead, "
     "and continue refining the analysis based on any other details they provided. "
     "Format your response with clear sections using markdown headers."
@@ -33,11 +33,11 @@ BPMN_GENERATE_BEHAVIOUR = (
 )
 
 UPLOAD_ANALYSIS_BEHAVIOUR = (
-    "CRITICAL INSTRUCTION — You MUST follow this exactly. Provide the same level of detail in your analysis as seen in the uploaded content."
+    "CRITICAL INSTRUCTION - You MUST follow this exactly. Provide the same level of detail in your analysis as seen in the uploaded content."
     "You are analyzing an uploaded file (image or PDF). "
-    "Step 1: Determine what the content is — it could be a BPMN diagram, flowchart, business process description, "
+    "Step 1: Determine what the content is - it could be a BPMN diagram, flowchart, business process description, "
     "technical document, requirements spec, meeting notes, or any other type of content. "
-    "Step 2: Based on your determination, your VERY FIRST LINE must be one of these two tags — no exceptions: "
+    "Step 2: Based on your determination, your VERY FIRST LINE must be one of these two tags - no exceptions: "
     "  • If the content is completely nonsensical, unreadable, corrupted, or has absolutely zero information "
     "    that could be used to derive a process or diagram (e.g., a random photo, blank page, meme), "
     "    your first line MUST be exactly: [DOCUMENT_INVALID] "

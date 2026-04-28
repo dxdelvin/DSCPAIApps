@@ -27,7 +27,7 @@ from app.services.common_service import (
 DEFAULT_CONFLUENCE_URL = "https://inside-docupedia.bosch.com/confluence2"
 MAX_DISPLAY_IMAGES = 10
 
-# Allowlist — only HTTPS requests to these hostnames are permitted.
+# Allowlist - only HTTPS requests to these hostnames are permitted.
 _CONFLUENCE_ALLOWED_HOSTS = {
     h.strip().lower()
     for h in os.getenv("CONFLUENCE_ALLOWED_HOSTS", "inside-docupedia.bosch.com").split(",")
@@ -747,7 +747,7 @@ async def verify_confluence_connection(
 
     logger.info("[verify] Starting connection check for %s, space=%s, parent=%s", base, space_key, parent_page_id)
 
-    # Do NOT follow redirects automatically — a redirect itself usually means
+    # Do NOT follow redirects automatically - a redirect itself usually means
     # SSO is intercepting.  Handle it explicitly so the auth header isn't
     # silently stripped during the redirect chain.
     async with httpx.AsyncClient(verify=get_ssl_context(), timeout=20.0, follow_redirects=False, trust_env=True) as client:

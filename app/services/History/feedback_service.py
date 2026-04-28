@@ -103,7 +103,7 @@ async def _delete_one_expired(app_key: str) -> None:
             if last_mod < cutoff:
                 await store.delete_object(obj["key"])
                 logger.info("feedback_service: expired record deleted key=%r", obj["key"])
-                return  # one per submission — slow but safe
+                return  # one per submission - slow but safe
 
 
 async def get_all_feedback_aggregates() -> dict[str, dict | None]:

@@ -1,5 +1,5 @@
 /* ===================================================
-   Admin Analytics Dashboard — admin.js
+   Admin Analytics Dashboard - admin.js
    =================================================== */
 
 (function () {
@@ -70,7 +70,7 @@
         for (const [appKey, agg] of Object.entries(aggregates)) {
             if (!agg || !agg.total_count) continue;
             hasAny = true;
-            const avg = agg.total_count > 0 ? (agg.score_sum / agg.total_count).toFixed(1) : '—';
+            const avg = agg.total_count > 0 ? (agg.score_sum / agg.total_count).toFixed(1) : '-';
             const scores = agg.scores || {};
             const total = agg.total_count || 1;
             const label = (app_labels && app_labels[appKey]) || appKey;

@@ -1,5 +1,4 @@
 """Secure user ID sanitization for S3 object keys."""
-import hashlib
 import re
 from typing import Optional
 
@@ -8,20 +7,15 @@ _SAFE_CHARS_RE = re.compile(r"[^a-zA-Z0-9._\-]")
 
 
 def safe_user_id(user_id: Optional[str]) -> str:
-    """Generate a safe, unique identifier for S3 object keys from a user ID."""
-    if not user_id or not user_id.strip():
-        return "anonymous"
-    
-    user_id = user_id.strip().lower()
-    
-    hash_bytes = hashlib.sha256(user_id.encode("utf-8")).digest()
-    hash_suffix = hash_bytes.hex()[:8]
-    
-    prefix = _SAFE_CHARS_RE.sub("_", user_id)[:24].rstrip("_")
-    if not prefix:
-        prefix = "user"
-    
-    return f"{prefix}_{hash_suffix}"
+    """Sanitise a user identifier so it is safe to embed in an S3 object key.
+
+    Replaces every character that is not alphanumeric, dot, dash, or underscore
+    with an underscore and truncates to 64 characters.  This preserves the same
+    key paths used by the original per-service history code so that data already
+    stored in the object store remains accessible after the refactor.
+    """
+    sanitised = _SAFE_CHARS_RE.sub("_", user_id or "anonymous")
+    return sanitised[:64] or "anonymous"
 
 
 def validate_user_id(user_id: str) -> str:

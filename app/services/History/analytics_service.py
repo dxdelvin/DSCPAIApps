@@ -1,11 +1,11 @@
 """
-Analytics tracking — best-effort, non-blocking counters backed by BTP Object Store.
+Analytics tracking - best-effort, non-blocking counters backed by BTP Object Store.
 
 Storage layout:
-    analytics/clicks/{YYYY-MM-DD}.json      — per-app page-open counts for that calendar day
-    analytics/users/{YYYY-MM-DD}.json       — per-app sets of unique user IDs for that day
-    analytics/gen_daily/{YYYY-MM-DD}.json   — per-app generation counts for that calendar day
-    analytics/generations.json              — all-time total generation count per app
+    analytics/clicks/{YYYY-MM-DD}.json      - per-app page-open counts for that calendar day
+    analytics/users/{YYYY-MM-DD}.json       - per-app sets of unique user IDs for that day
+    analytics/gen_daily/{YYYY-MM-DD}.json   - per-app generation counts for that calendar day
+    analytics/generations.json              - all-time total generation count per app
 """
 
 import asyncio
@@ -51,7 +51,7 @@ def _gen_daily_key(date_str: str) -> str:
 
 
 async def track_click(app_key: str, user_id: str = "anonymous") -> None:
-    """Increment today's open counter and record unique user for app_key. Best-effort — never raises."""
+    """Increment today's open counter and record unique user for app_key. Best-effort - never raises."""
     try:
         today = date.today().isoformat()
         click_key = _clicks_key(today)
@@ -94,7 +94,7 @@ async def track_click(app_key: str, user_id: str = "anonymous") -> None:
 
 
 async def track_generation(app_key: str) -> None:
-    """Increment total and daily generation counters for app_key. Best-effort — never raises."""
+    """Increment total and daily generation counters for app_key. Best-effort - never raises."""
     try:
         today_str   = date.today().isoformat()
         all_time_key = _generations_key()

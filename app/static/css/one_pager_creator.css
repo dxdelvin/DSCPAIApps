@@ -148,7 +148,7 @@ body.dark-mode .op-container .dg-tab-btn:hover {
     padding: 0.6rem 0.8rem;
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.88rem;
     resize: vertical;
     background: var(--bg, #f8fafc);
     color: var(--text-primary, #0f172a);
@@ -239,7 +239,7 @@ body.dark-mode .op-container .dg-tab-btn:hover {
 .file-item .file-icon { font-size: 0.95rem; flex-shrink: 0; }
 .file-item .file-name { flex: 1; color: var(--navy-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .file-item .file-size { font-size: 0.7rem; color: var(--slate-500); white-space: nowrap; }
-.file-item .file-remove { padding: 0; font-size: 0.7rem; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; }
+.file-item .file-remove { padding: 2px 6px; font-size: 0.7rem; }
 
 .file-item.total-size {
     background: rgba(255, 104, 64, 0.06);
@@ -271,7 +271,6 @@ body.dark-mode .op-container .dg-tab-btn:hover {
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    min-height: 44px;
 }
 
 .orientation-btn.active {
@@ -400,8 +399,8 @@ body.dark-mode .orientation-btn.active {
 }
 
 .color-input {
-    width: 44px;
-    height: 44px;
+    width: 34px;
+    height: 30px;
     border: 2px solid var(--border, #e2e8f0);
     border-radius: 6px;
     cursor: pointer;
@@ -426,8 +425,8 @@ body.dark-mode .orientation-btn.active {
 }
 
 .color-preset {
-    width: 44px;
-    height: 44px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     border: 2px solid transparent;
     cursor: pointer;
@@ -529,7 +528,7 @@ body.dark-mode .orientation-btn.active {
     padding: 9px 12px;
     border: 1px solid var(--border, #e2e8f0);
     border-radius: 8px;
-    font-size: 1rem;
+    font-size: 0.82rem;
     resize: none;
     color: var(--text-primary, #0f172a);
     background: var(--bg, #f8fafc);

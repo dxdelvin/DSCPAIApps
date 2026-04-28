@@ -89,7 +89,7 @@ def _friendly_http_error(e: "httpx.HTTPStatusError", context: str = "AI service"
     messages = {
         400: ("Invalid Request", "The request was rejected by the AI service. Please check your inputs and try again."),
         401: ("Authentication Error", "The AI service rejected the request due to an authentication issue. Please contact your administrator."),
-        403: ("Access Denied", "The AI service could not be reached. This is usually a temporary access restriction — please try again in a moment."),
+        403: ("Access Denied", "The AI service could not be reached. This is usually a temporary access restriction - please try again in a moment."),
         404: ("Service Not Found", "The requested AI service endpoint was not found. Please contact your administrator."),
         429: ("Too Many Requests", "The AI service is currently rate-limited. Please wait a moment and try again."),
         500: ("AI Service Error", "The AI service encountered an internal error. Please try again."),

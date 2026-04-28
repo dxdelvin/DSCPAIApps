@@ -105,14 +105,14 @@ EXTRACT_BEHAVIOUR = (
     '- "timeline": Horizontal timeline with events/milestones (3-6 items)\n'
     '- "venn": Overlapping circles showing relationships (2-3 items)\n'
     '- "funnel": Conversion funnel - wide at top, narrow at bottom (3-5 items)\n'
-    '- "hierarchy": Org-chart tree — first item is root, rest are children (3-7 items)\n'
+    '- "hierarchy": Org-chart tree - first item is root, rest are children (3-7 items)\n'
     '- "chevron_process": Chevron arrows with descriptions above/below. Items use pipe: "Step | Description" (3-6 items)\n'
     '- "timeline_detailed": Timeline with description boxes above/below. Items use pipe: "Milestone | Description" (3-6 items)\n'
     '- "agenda": Numbered agenda list with headlines. Items use pipe: "Headline | Subtext" (3-6 items)\n\n'
     "RULES:\n"
     "1. Start with a title_slide and end with an end_slide.\n"
     "2. Use chapter slides to separate major sections.\n (Optional)"
-    "3. Use VARIED layouts — do NOT use the same layout for every slide. (Use what feels natural for the content)\n"
+    "3. Use VARIED layouts - do NOT use the same layout for every slide. (Use what feels natural for the content)\n"
     "4. Use \"smart_art\" layout for AT LEAST 25-30% of content slides. (Make sure it fits the content, see types below)\n"
     "Choose the type that best fits:\n"
     "   - Sequential steps/workflows -> process or chevron_process (with descriptions)\n"
@@ -133,7 +133,7 @@ EXTRACT_BEHAVIOUR = (
     "(e.g., ['#FF5F00', '#228BE6']). If not specified, default palette is used.\n"
     "10. Never use the same 'layout' value for two or more consecutive slides. If you would "
     "repeat a 'content' slide back-to-back, switch to 'two_columns', 'smart_art', or a "
-    "column variant instead. Visual variety is mandatory — reviewers notice monotony.\n\n"
+    "column variant instead. Visual variety is mandatory - reviewers notice monotony.\n\n"
     "Return your response as a valid JSON object with this EXACT structure:\n"
     "{\n"
     '  "title": "Presentation Title",\n'
@@ -162,7 +162,7 @@ EXTRACT_BEHAVIOUR = (
     "- content_with_image / image_with_content: title + bullets + image_description\n"
     "- two_columns / three_columns / four_quadrants: title + columns\n"
     "- full_image: title + image_description\n\n"
-    "CRITICAL — USER INSTRUCTIONS OVERRIDE:\n"
+    "CRITICAL - USER INSTRUCTIONS OVERRIDE:\n"
     "If the user provides additional instructions (e.g., color preferences, slide count like 'one pager', "
     "specific themes, layout preferences, or any other customisation), you MUST follow them and they take "
     "HIGHEST PRIORITY over all other rules above. For example:\n"
@@ -223,14 +223,14 @@ def _create_placeholder_image(
     # Subtle darker-grey border
     draw.rectangle([0, 0, width_px - 1, height_px - 1], outline=(160, 160, 160), width=2)
 
-    # Small camera/image icon hint — a thin inner rect to suggest a picture frame
+    # Small camera/image icon hint - a thin inner rect to suggest a picture frame
     pad = width_px // 14
     draw.rectangle(
         [pad, pad, width_px - pad, height_px - pad],
         outline=(170, 170, 170), width=1,
     )
 
-    # Description text — centred, dark grey
+    # Description text - centred, dark grey
     try:
         font = ImageFont.truetype("arial.ttf", max(16, min(width_px, height_px) // 18))
     except (OSError, IOError):
@@ -304,7 +304,7 @@ def _add_shape_with_text(
 
 
 def _draw_process_smart_art(slide, items, custom_colors=None):
-    """Horizontal process flow — rounded boxes with arrows between them."""
+    """Horizontal process flow - rounded boxes with arrows between them."""
     n = len(items)
     if n == 0:
         return
@@ -444,7 +444,7 @@ def _draw_list_blocks_smart_art(slide, items, custom_colors=None):
 
 
 def _draw_pyramid_smart_art(slide, items, custom_colors=None):
-    """Pyramid — widest at bottom, narrowest at top."""
+    """Pyramid - widest at bottom, narrowest at top."""
     n = len(items)
     if n == 0:
         return
@@ -778,7 +778,7 @@ def _draw_hierarchy_smart_art(slide, items, custom_colors=None):
     gap_x = Inches(0.2)
     gap_y = Inches(0.55)
 
-    # Root node — centred at top
+    # Root node - centred at top
     root_x = area_left + (area_w - root_w) // 2
     root_y = area_top
     _add_shape_with_text(
@@ -941,7 +941,7 @@ def _draw_chevron_process_smart_art(slide, items, custom_colors=None):
 
 
 def _draw_timeline_detailed_smart_art(slide, items, custom_colors=None):
-    """Detailed timeline — horizontal line with vertical connectors and
+    """Detailed timeline - horizontal line with vertical connectors and
     description boxes alternating above and below each marker.
 
     Items: "Label | Description" or just "Label".

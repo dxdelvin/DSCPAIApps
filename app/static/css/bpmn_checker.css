@@ -223,8 +223,8 @@ body.dark-mode {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: transparent;
     color: var(--slate-500);
@@ -519,9 +519,6 @@ body.dark-mode {
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s ease;
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
 }
 
 .filter-btn:hover {
@@ -857,8 +854,8 @@ body.dark-mode .finding-item.success {
 }
 
 .modal-close {
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border: none;
     background: transparent;
     font-size: 1.5rem;
@@ -866,9 +863,6 @@ body.dark-mode .finding-item.success {
     cursor: pointer;
     border-radius: 6px;
     transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .modal-close:hover {

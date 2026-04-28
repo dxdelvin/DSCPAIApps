@@ -235,7 +235,7 @@ async def bpmn_chat(data: BPMNChatRequest):
 async def bpmn_upload_analyze(file: UploadFile = File(...)):
     """Analyze an uploaded BPMN diagram or process image/PDF."""
     _BPMN_EXTS = (".png", ".jpg", ".jpeg", ".pdf")
-    # Validate by extension — content_type header is client-controlled
+    # Validate by extension - content_type header is client-controlled
     if not (file.filename or "").lower().endswith(_BPMN_EXTS):
         return JSONResponse(
             status_code=400,
@@ -355,7 +355,7 @@ async def make_bpmn_analysis(data: dict):
 @router.post("/audit-doc-check")
 async def audit_doc_check(file: UploadFile = File(...)):
     """Send an uploaded audit PDF to the Audit Brain for analysis."""
-    # Validate by extension — content_type header is client-controlled
+    # Validate by extension - content_type header is client-controlled
     if not (file.filename or "").lower().endswith(".pdf"):
         return JSONResponse(
             status_code=400,
@@ -879,7 +879,7 @@ class DiagramDownloadRequest(BaseModel):
 async def diagram_copy_image(
     files: List[UploadFile] = File(...),
 ):
-    """Reproduce image-based diagram(s) as exact draw.io XML — images only, no PDFs."""
+    """Reproduce image-based diagram(s) as exact draw.io XML - images only, no PDFs."""
     _IMAGE_EXTS = (".png", ".jpg", ".jpeg")
     MAX_TOTAL_SIZE = 10 * 1024 * 1024
     MAX_IMAGES = 3
@@ -1065,7 +1065,7 @@ async def diagram_history_save(data: DiagramHistorySaveRequest, request: Request
             user_id, data.content, data.chatHistoryId
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save diagram generation")
@@ -1190,7 +1190,7 @@ async def bpmn_history_save(data: BpmnHistorySaveRequest, request: Request):
     try:
         gen_id = await bpmn_history_service.save_generation(user_id, data.content)
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save BPMN generation")
@@ -1397,7 +1397,7 @@ async def ppt_history_save(data: PptHistorySaveRequest, request: Request):
             user_id, data.content, data.chatHistoryId, data.forceOrangeTheme
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save PPT generation")
@@ -1877,7 +1877,7 @@ async def one_pager_history_save(data: OnePagerHistorySaveRequest, request: Requ
             chat_history_id=data.chatHistoryId,
         )
         if gen_id is None:
-            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable — history not saved."})
+            return JSONResponse(status_code=503, content={"status": "error", "message": "Storage unavailable - history not saved."})
         return {"status": "success", "genId": gen_id}
     except Exception:
         logger.exception("Failed to save one-pager generation")

@@ -351,7 +351,7 @@ async function analyzeUploadedFile() {
                         <line x1="12" y1="9" x2="12" y2="13"></line>
                         <line x1="12" y1="17" x2="12.01" y2="17"></line>
                     </svg>
-                    Document Invalid — The uploaded content does not contain meaningful information for process diagram generation.
+                    Document Invalid - The uploaded content does not contain meaningful information for process diagram generation.
                 </div>`;
             }
             contentEl.innerHTML = html;
@@ -437,7 +437,7 @@ async function refreshUploadAnalysis() {
 
 async function generateUploadBPMN() {
     if (!uploadDocumentValid) {
-        showToast('Document invalid — cannot generate BPMN from this content.', 'warning');
+        showToast('Document invalid - cannot generate BPMN from this content.', 'warning');
         return;
     }
 
@@ -1982,3 +1982,37 @@ async function downloadBpmnGeneration(genId, filename) {
 document.addEventListener('click', (e) => {
     if (e.target.closest('#bpmnHistoryRefreshBtn')) loadBpmnHistory();
 });
+
+// -- BPMN Builder feature tour --------------------------------
+if (window.DSCPTutorial) {
+    window.DSCPTutorial.register('signavio-bpmn', () => {
+        const icon = (path, size = 18) =>
+            `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+
+        return [
+            {
+                "id": "sb-welcome",
+                "attachTo": { "element": "#bpmnModeTabs", "on": "bottom" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"8.5\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/></svg> BPMN Builder",
+                "text": "<p>Build BPMN diagrams from a guided form <em>or</em> from an uploaded document - then export to Signavio.</p>"
+            },
+            {
+                "id": "sb-form",
+                "attachTo": { "element": "#form-mode", "on": "right" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7\"/><path d=\"M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z\"/></svg> Form Builder mode",
+                "text": "<p>Fill in the process name, participants, steps, and decisions using the structured form. Perfect for designing new processes from scratch.</p>"
+            },
+            {
+                "id": "sb-upload",
+                "attachTo": { "element": "[data-mode='upload']", "on": "bottom" },
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4\"/><polyline points=\"17 8 12 3 7 8\"/><line x1=\"12\" y1=\"3\" x2=\"12\" y2=\"15\"/></svg> Upload & Build mode",
+                "text": "<p>Upload a process document or description and the AI extracts the flow automatically, building BPMN from it for you.</p>"
+            },
+            {
+                "id": "sb-result",
+                "title": "<svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M20 6 9 17l-5-5\"/></svg> What you get",
+                "text": "<p>You get a <strong>Signavio-compatible BPMN export file</strong> ready to import into your workspace. All previous exports are saved in <strong>My History</strong>.</p>"
+            }
+        ];;
+    });
+}
