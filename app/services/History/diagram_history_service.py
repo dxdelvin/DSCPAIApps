@@ -25,7 +25,7 @@ from app.services.History.analytics_service import track_generation
 logger = logging.getLogger(__name__)
 
 _PREFIX = "diagram-history"
-_MAX_HISTORY_ENTRIES = 50
+_MAX_HISTORY_ENTRIES = 100
 
 
 async def get_history(user_id: str) -> list[dict]:

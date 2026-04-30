@@ -76,7 +76,19 @@
                 <h3 class="changelog-date">{{ entry.date }}: {% if entry.isNew %}<span class="badge-new">NEW</span> {% endif %}<span class="badge-version">{{ entry.version }}</span></h3>
                 <ul class="changelog-list">
                     {% for item in entry.changes %}
-                    <li>{{ item }}</li>
+                    <li>
+                        {%- if item.startswith('New App:') -%}
+                            <span class="cl-pill cl-pill-app">New App</span>{{ item[8:] }}
+                        {%- elif item.startswith('New:') -%}
+                            <span class="cl-pill cl-pill-new">New</span>{{ item[4:] }}
+                        {%- elif item.startswith('Fix:') -%}
+                            <span class="cl-pill cl-pill-fix">Fix</span>{{ item[4:] }}
+                        {%- elif item.startswith('Improved:') -%}
+                            <span class="cl-pill cl-pill-improved">Improved</span>{{ item[9:] }}
+                        {%- else -%}
+                            {{ item }}
+                        {%- endif -%}
+                    </li>
                     {% endfor %}
                 </ul>
             </div>

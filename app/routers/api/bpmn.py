@@ -262,8 +262,20 @@ async def generate_bpmn(data: BPMNGenerateRequest):
     return {"status": "success", "xml": result.get("result"), "filename": filename}
 
 # Legacy endpoint for backward compatibility
+class MakeBpmnAnalysisRequest(BaseModel):
+    processName: str = Field(default="", max_length=200)
+    poolName: str = Field(default="", max_length=200)
+    participants: str = Field(default="", max_length=500)
+    subLanes: str = Field(default="", max_length=500)
+    startTriggers: str = Field(default="", max_length=1000)
+    processActivities: str = Field(default="", max_length=10000)
+    processEnding: str = Field(default="", max_length=1000)
+    intermediateEvents: str = Field(default="", max_length=1000)
+    reviewOverride: str = Field(default="", max_length=2000)
+
+
 @router.post("/make-bpmn-analysis")
-async def make_bpmn_analysis(data: dict):
+async def make_bpmn_analysis(data: MakeBpmnAnalysisRequest):
     """Ask the Signavio Brain to summarize its understanding of the provided process inputs.
     
     Note: This is a legacy endpoint. Use /api/bpmn/start-session for new implementations.
@@ -279,7 +291,7 @@ async def make_bpmn_analysis(data: dict):
             },
         )
 
-    response = await analyze_process(data)
+    response = await analyze_process(data.model_dump())
 
     if response.get("error"):
         return JSONResponse(

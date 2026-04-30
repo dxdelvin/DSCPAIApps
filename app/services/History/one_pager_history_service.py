@@ -25,7 +25,7 @@ from app.services.History.analytics_service import track_generation
 logger = logging.getLogger(__name__)
 
 _PREFIX = "one-pager-history"
-_MAX_HISTORY_ENTRIES = 30
+_MAX_HISTORY_ENTRIES = 100
 
 
 async def get_history(user_id: str) -> list[dict]:

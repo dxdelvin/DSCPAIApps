@@ -1797,6 +1797,13 @@ body.dark-mode .bpmn-viewer-header h3 {
     height: 520px;
     background: #fff;
     position: relative;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+}
+
+.bpmn-viewer-canvas:active {
+    cursor: grabbing;
 }
 
 body.dark-mode .bpmn-viewer-canvas {

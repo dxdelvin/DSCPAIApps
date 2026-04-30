@@ -134,6 +134,15 @@ const Toast = {
         const container = document.getElementById('toast-container');
         if (!container) return null;
 
+        // Deduplication: suppress identical messages already visible
+        for (const el of container.querySelectorAll('.toast .message')) {
+            if (el.textContent === message) return null;
+        }
+
+        // 6-cap: evict oldest toast before adding a new one
+        const active = container.querySelectorAll('.toast');
+        if (active.length >= 6) this.remove(active[0]);
+
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         toast.innerHTML = `

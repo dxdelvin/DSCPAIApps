@@ -500,6 +500,10 @@ async function showBpmnViewer(xml) {
 
     panel.style.display = 'block';
 
+    // Wait for the browser to lay out the panel before initializing the viewer.
+    // Without this the canvas reports 0×0, making pan hit-detection a no-op.
+    await new Promise(r => requestAnimationFrame(r));
+
     bpmnViewer = new BpmnJS({ container: canvas });
 
     try {
