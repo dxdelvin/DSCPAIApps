@@ -12,6 +12,8 @@ if os.getenv("ENVIRONMENT", "dev").lower() == "prod":
     for _key in ("HTTP_PROXY", "HTTPS_PROXY", "http_proxy", "https_proxy"):
         os.environ.pop(_key, None)
 
+import logging
+
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import RedirectResponse, JSONResponse
@@ -21,6 +23,10 @@ import os
 import secrets
 import sys
 from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
+
+import re
 
 from app.core.config import APP_TITLE, STATIC_DIR, TEMPLATES_DIR
 from app.routers import pages, api
@@ -33,7 +39,13 @@ from app.services.auth_service import (
 )
 
 
-app = FastAPI(title=APP_TITLE)
+_is_prod = bool(os.getenv("VCAP_SERVICES")) or os.getenv("ENVIRONMENT") == "prod"
+app = FastAPI(
+    title=APP_TITLE,
+    docs_url=None if _is_prod else "/docs",
+    redoc_url=None if _is_prod else "/redoc",
+    openapi_url=None if _is_prod else "/openapi.json",
+)
 
 
 @app.on_event("startup")
@@ -89,9 +101,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         public_paths = [
-            "/login", "/auth/callback", "/logout", 
-            "/static", "/docs", "/openapi.json",
-            "/health",
+            "/login", "/auth/callback", "/logout",
+            "/static", "/health",
         ]
         
         for path in public_paths:
@@ -103,7 +114,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         
         if not request.session.get("user_info") and not request.session.get("access_token"):
-            print(f"Auth middleware: No session for path {request.url.path}, redirecting to login")
+            logger.info("No session, redirecting to login")
             return RedirectResponse(url="/login", status_code=302)
         
         return await call_next(request)
@@ -143,6 +154,11 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=(), payment=(), usb=()"
+        response.headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        if IS_PROD_ENV:
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
 
@@ -167,43 +183,42 @@ async def login(request: Request):
 async def auth_callback(request: Request, code: str = None, error: str = None, state: str = None):
     """Handle OAuth2 callback from XSUAA."""
     if error:
-        print(f"Auth callback error: {error}")
-        return RedirectResponse(url=f"/login?error={quote(error)}", status_code=302)
+        logger.warning("Auth callback error from IdP")
+        # Constrain redirect error code so it can't be abused for HTML/script payloads downstream.
+        safe_error = "auth_failed" if not re.fullmatch(r"[A-Za-z0-9_\-]{1,64}", error or "") else error
+        return RedirectResponse(url=f"/login?error={quote(safe_error)}", status_code=302)
     
     if not code:
-        print("Auth callback: No code received")
+        logger.info("Auth callback: No code received")
         return RedirectResponse(url="/login", status_code=302)
     
     expected_state = request.session.pop("oauth_state", None)
     if not expected_state or not state or not secrets.compare_digest(expected_state, state):
-        print("Auth callback: Invalid OAuth state")
+        logger.warning("Auth callback: Invalid OAuth state")
         return RedirectResponse(url="/login?error=invalid_state", status_code=302)
     
     try:
-        print(f"Auth callback: Exchanging code for token")
         token_data = await exchange_code_for_token(code, request)
         
         access_token = token_data.get("access_token")
         if not access_token:
-            print("Auth callback: No access_token in response")
+            logger.warning("Auth callback: No access_token in response")
             return RedirectResponse(url="/login?error=no_token", status_code=302)
         
-        # Validate and store user info (optimized for cookie size)
+        # Validate and store user info (optimized for cookie size).
+        # We explicitly do NOT store the full access_token in the session cookie
+        # because XSUAA JWTs are often >4KB and would cause browsers to drop the cookie.
         try:
             user_info = validate_token(access_token)
             request.session["user_info"] = user_info
-            # We explicitly do NOT store the full access_token in the session cookie
-            # because XSUAA JWTs are often >4KB, causing browsers to drop the cookie.
-            # This fixes the "Too many redirects" loop.
-            print(f"Auth callback: User {user_info.get('user')} authenticated")
-        except Exception as e:
-            print(f"Token validation failed in callback: {e}")
+            logger.info("Auth callback: user authenticated")
+        except Exception:
+            logger.exception("Token validation failed in callback")
             return RedirectResponse(url="/login?error=token_validation_failed", status_code=302)
         
-        print("Auth callback: Session established, redirecting to home")
         return RedirectResponse(url="/", status_code=302)
-    except Exception as e:
-        print(f"Auth callback exception: {e}")
+    except Exception:
+        logger.exception("Auth callback exception")
         return RedirectResponse(url=f"/login?error=auth_failed", status_code=302)
 
 

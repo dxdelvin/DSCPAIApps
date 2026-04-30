@@ -62,8 +62,9 @@ def extract_pdf_text(pdf_bytes: bytes) -> tuple[str | None, str | None]:
         return full_text, None
     except ImportError:
         return None, "PDF processing library (PyMuPDF) is not installed on the server."
-    except Exception as e:
-        return None, f"PDF text extraction failed: {str(e)}"
+    except Exception:
+        logger.exception("PDF text extraction failed")
+        return None, "Could not extract text from the PDF. Please ensure the file is a valid, text-based PDF."
 
 
 def sanitize_filename_for_prompt(filename: str) -> str:
