@@ -1,280 +1,303 @@
-# 01 — Architecture (the ULTRA PLAN)
+# 01 — Architecture Overview
 
-> "Plan it, ultra-plan it, then ultra-think it." This page is the unified mental model.
+> This page explains how DSCP_AI is built — think of it as a map of the whole system.
+
+---
+
+## Key terms used throughout all docs
+
+Before diving in, here are the most common technical terms you will see:
+
+| Term | Plain-English meaning |
+|---|---|
+| **Cloud Foundry (CF)** | SAP's cloud hosting platform. The app runs here in production. Think of it as "the server in SAP's cloud." |
+| **CF GoRouter** | Cloud Foundry's built-in web traffic forwarder. It sits between the user's browser and the Python app, receiving HTTPS requests and passing them on. |
+| **BTP** | SAP Business Technology Platform — the larger SAP cloud that contains Cloud Foundry. |
+| **XSUAA** | SAP's login service (stands for "eXtended Services for User Account and Authentication"). It verifies who you are using your corporate Bosch account. |
+| **VCAP_SERVICES** | A JSON variable that Cloud Foundry automatically injects into the app, containing credentials (URLs, passwords) for every cloud service it is connected to. Only present when running on Cloud Foundry — not on your laptop. |
+| **Object Store** | Cloud file storage (similar to Amazon S3) where the app saves history, analytics, and feedback as JSON files. |
+| **DIA Brain** | Bosch's internal AI service. Every AI feature in the app calls this. |
+| **Middleware** | Code that runs automatically before every request is handled — like a security checkpoint pipeline. |
+| **JWT** | JSON Web Token — a compact login token issued by XSUAA. Contains the user's identity and permissions. |
+| **Pydantic** | A Python library that checks incoming data is valid (right type, not too long, etc.) before processing it. |
+| **Jinja** | The HTML template engine used to build pages. Python variables are inserted into HTML template files. |
+| **boto3** | Amazon's Python library for S3-compatible file storage. Used to read/write the BTP Object Store. |
+| **UUID** | Universally Unique Identifier — a random ID that is virtually guaranteed to be unique. Used to identify saved items. |
 
 ---
 
 ## 1. The big picture
 
-DSCP_AI is a **server-rendered FastAPI monolith** that hosts a *suite* of AI productivity apps for the BSH Digital Supply Chain Planning org. There is **no SPA** and **no separate API gateway**. One Python process serves HTML, static assets and JSON APIs, sitting behind SAP BTP's OAuth2 (XSUAA) and using two BTP-bound services: **XSUAA** for identity and **Object Store** (S3-compatible) for persistence.
+DSCP_AI is a **single Python web server** that hosts a suite of AI productivity tools for the BSH Digital Supply Chain Planning team.
+
+- **No separate frontend app** — pages are built server-side and sent as complete HTML
+- **No separate API gateway** — one process handles both HTML pages and JSON API calls
+- **Runs on SAP BTP Cloud Foundry** in production (Cloud Foundry = SAP's cloud hosting platform)
+- **Uses two cloud services**: XSUAA for login, and Object Store for saving data
 
 ```mermaid
 flowchart LR
-    U[User browser] -->|HTTPS| CF[CF GoRouter]
-    CF -->|forwarded-proto=https| APP[FastAPI : uvicorn<br/>app.main:app]
-    APP -- /login,/callback --> XSUAA[(XSUAA OAuth2)]
-    APP -- async httpx --> MSAZ[(Microsoft Login<br/>client_credentials)]
-    MSAZ --> DIA[(DIA Brain LLM<br/>workflow + pure-LLM endpoints)]
-    APP -- async httpx --> DIA
-    APP -- boto3 S3v4 --> OS[(BTP Object Store<br/>DSCP_APPS_Object_DB)]
-    APP -. server-rendered HTML .-> U
-    APP -. /api/* JSON .-> U
+    U[User browser] -->|HTTPS| CF[CF GoRouter\nSAP's web traffic forwarder]
+    CF -->|forwards request + adds https header| APP[FastAPI Python app\napp.main:app]
+    APP -- login & token validation --> XSUAA[(XSUAA\nSAP login service)]
+    APP -- get AI token --> MSAZ[(Microsoft Azure\nclient credentials)]
+    MSAZ --> DIA[(DIA Brain\nBosch AI service)]
+    APP -- AI calls --> DIA
+    APP -- read/write JSON files --> OS[(BTP Object Store\ncloud file storage)]
+    APP -. HTML pages .-> U
+    APP -. JSON API responses .-> U
 ```
 
 ---
 
-## 2. Layered architecture
+## 2. How the code is layered
+
+Think of the code as layers from "what the user sees" down to "infrastructure":
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  Presentation (Jinja templates + static CSS/JS)                  │
-│   app/templates/*.html · app/static/css · app/static/js          │
+│  Presentation (what users see)                                   │
+│   HTML templates in app/templates/                               │
+│   CSS in app/static/css/  ·  JS in app/static/js/               │
 ├──────────────────────────────────────────────────────────────────┤
-│  HTTP layer (FastAPI routers)                                    │
-│   app/routers/pages.py  (HTML)  ·  app/routers/api/  (JSON)     │
+│  HTTP layer (handles incoming requests)                          │
+│   app/routers/pages.py  ← HTML page routes                       │
+│   app/routers/api/      ← JSON API routes                        │
 ├──────────────────────────────────────────────────────────────────┤
-│  Middleware stack                                                │
+│  Middleware (runs automatically before every request)            │
 │   SecurityHeaders → MaxBodySize → Session → Auth → Route         │
 ├──────────────────────────────────────────────────────────────────┤
-│  Services (business logic, async)                                │
-│   feature_service.py × 9   +   common_service.py (Brain helpers) │
+│  Services (the actual feature logic, all async)                  │
+│   One service file per feature + common_service.py for AI calls  │
 ├──────────────────────────────────────────────────────────────────┤
-│  Persistence & infra                                             │
-│   History/  (storage_service · common_history · analytics ·      │
-│   feedback · favorites · user_id_utils · per-feature history)    │
+│  Persistence (saves and loads data)                              │
+│   app/services/History/ — per-feature history + analytics        │
 ├──────────────────────────────────────────────────────────────────┤
-│  External systems                                                │
-│   XSUAA · Microsoft AAD · DIA Brain · BTP Object Store           │
+│  External services                                               │
+│   XSUAA (login) · Microsoft Azure (AI auth) · DIA Brain (AI)    │
+│   BTP Object Store (file storage)                                │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-Rules of the road:
-
-* **Routers never call boto3 or httpx.** They orchestrate services.
-* **Services are async** and use `httpx.AsyncClient` with `verify=get_ssl_context()`.
-* **History services** never call Brain. They are pure CRUD over the Object Store.
-* **`common_service.py`** is the only file that knows how to construct Brain payloads.
+**The rules:**
+* **Routes call services.** Services call the AI or storage. Routes never directly touch storage.
+* **Services are async** — they don't block while waiting for network responses.
+* **History services** only save/load data. They never call the AI.
+* **`common_service.py`** is the only file that builds requests to DIA Brain.
 
 ---
 
-## 3. Request lifecycle
+## 3. What happens when a request comes in
+
+Here is the step-by-step journey of every request:
 
 ```mermaid
 sequenceDiagram
     autonumber
     participant B as Browser
-    participant CF as CF Router
-    participant SH as SecurityHeadersMW
-    participant MB as MaxBodySizeMW
-    participant SM as SessionMiddleware
-    participant AM as AuthMiddleware
-    participant R as Route handler
-    participant S as Service
-    participant X as External (Brain/S3)
+    participant CF as CF GoRouter (SAP's forwarder)
+    participant SH as 1. SecurityHeaders check
+    participant MB as 2. Body size check (15 MB limit)
+    participant SM as 3. Session loader
+    participant AM as 4. Auth check
+    participant R as Route handler (the feature code)
+    participant S as Feature service
+    participant X as AI (DIA Brain) or Storage
 
     B->>CF: HTTPS request
-    CF->>SH: forwarded request (x-forwarded-proto=https)
-    SH->>MB: pass through, will add headers on response
-    MB->>MB: reject if Content-Length > 15 MB or body > 15 MB
-    MB->>SM: read body once, cache in request._body
-    SM->>AM: attach request.session
-    AM->>AM: public path? bypass.<br/>local-dev bypass? requires VCAP_SERVICES absent + AUTH_BYPASS_LOCAL=true
-    AM->>AM: else: require user_info or access_token in session, else redirect /login
-    AM->>R: dispatch
-    R->>S: await service call
-    S->>X: httpx / boto3
+    CF->>SH: forwards request, adds x-forwarded-proto=https header
+    SH->>MB: passes through (will add security headers on the way back)
+    MB->>MB: rejects with 413 if body > 15 MB
+    MB->>SM: caches body so it can be read once
+    SM->>AM: attaches user's session from cookie
+    AM->>AM: is this a public path (e.g. /health)? allow through
+    AM->>AM: local dev bypass active? use synthetic user
+    AM->>AM: is user logged in? continue — or redirect to /login
+    AM->>R: dispatch to feature handler
+    R->>S: calls feature service
+    S->>X: calls AI or reads/writes storage
     X-->>S: response
-    S-->>R: dict
-    R-->>SH: JSONResponse / TemplateResponse
-    SH-->>B: + X-Content-Type-Options, X-Frame-Options
+    S-->>R: result
+    R-->>SH: JSON or HTML response
+    SH-->>B: response with security headers added
 ```
 
-Middleware are added in `app/main.py` in **reverse order of execution**:
+**Why middleware is added in reverse order in the code:**
 
 ```python
-app.add_middleware(AuthMiddleware)            # innermost
+app.add_middleware(AuthMiddleware)            # innermost — runs last before the route
 app.add_middleware(SessionMiddleware, ...)
 app.add_middleware(MaxBodySizeMiddleware)
-app.add_middleware(SecurityHeadersMiddleware) # outermost
+app.add_middleware(SecurityHeadersMiddleware) # outermost — runs first on requests
 ```
 
-So a real request is processed: `SecurityHeaders → MaxBody → Session → Auth → Route`, and the response unwinds in reverse.
+FastAPI/Starlette stacks middleware: last added = outermost = first to run on incoming requests, last on responses. So `SecurityHeaders` is first to see the request and last to touch the response (adding the headers).
 
 ---
 
-## 4. The 9 apps in one frame
+## 4. The 9 apps at a glance
 
-| App | Page route | Primary API | Service | Brain ID env | Persists history? |
-|---|---|---|---|---|---|
-| BPMN Builder | `/signavio-bpmn` | `/api/bpmn/*`, `/api/generate-bpmn` | `signavio_service.py` | `SIGNAVIO_BRAIN_ID` | yes (`bpmn-history`) |
-| Audit Check | `/audit-check` | `/api/audit-doc-check`, `/api/audit-chat` | `audit_service.py` | `AUDIT_CHECK_BRAIN_ID` | no |
-| BPMN Checker | `/bpmn-checker` | `/api/bpmn-diagram-check` | `bpmn_checker_service.py` | `BPMN_CHECKER_BRAIN_ID` | no |
-| Spec Builder | `/spec-builder` | `/api/export-functional-spec`, `/api/export-business-requirement`, `/api/export-fs-variant` | `fs_br_document_service.py` | (none — pure docx) | no |
-| PPT Creator | `/ppt-creator` | `/api/ppt/*` | `ppt_creator_service.py` | `PPT_BRAIN_ID` | yes (`ppt-history`) |
-| Diagram Generator | `/diagram-generator` | `/api/diagram/*` | `diagram_generator_service.py` | `DIAGRAM_BRAIN_ID` | yes (`diagram-history`) |
-| Docupedia Publisher | `/docupedia-publisher` | `/api/confluence-builder/*` | `confluence_builder_service.py` | `DOCUPEDIA_BRAIN_ID` | no (publishes to Confluence) |
-| One Pager Creator | `/one-pager-creator` | `/api/one-pager/*` | `one_pager_creator_service.py` | `ONE_PAGER_BRAIN_ID` | yes (`one-pager-history`) |
-| Signavio Learning | `/signavio-learning` | (redirect only) | external GH Pages | – | – |
-| Admin | `/dscpadmin` | `/api/admin/analytics`, `/api/admin/feedback` | `analytics_service.py`, `feedback_service.py` | – | reads only |
+| App | Page URL | Service file | Saves history? |
+|---|---|---|---|
+| BPMN Builder | `/signavio-bpmn` | `signavio_service.py` | Yes |
+| Audit Check | `/audit-check` | `audit_service.py` | No |
+| BPMN Checker | `/bpmn-checker` | `bpmn_checker_service.py` | No |
+| Spec Builder | `/spec-builder` | `fs_br_document_service.py` | No (streams a .docx file) |
+| PPT Creator | `/ppt-creator` | `ppt_creator_service.py` | Yes |
+| Diagram Generator | `/diagram-generator` | `diagram_generator_service.py` | Yes |
+| Docupedia Publisher | `/docupedia-publisher` | `confluence_builder_service.py` | No (publishes to Confluence) |
+| One Pager Creator | `/one-pager-creator` | `one_pager_creator_service.py` | Yes |
+| Signavio Learning | `/signavio-learning` | External GitHub Pages (redirect) | No |
+| Admin Dashboard | `/dscpadmin` | `analytics_service.py`, `feedback_service.py` | Reads only |
 
-See [03-apps-catalog.md](03-apps-catalog.md) for the full app dossier.
-
----
-
-## 5. Two HTTP "personalities" of the app
-
-The app exposes **two contracts** from one process:
-
-### 5.1 HTML pages (server-rendered)
-* Defined in [app/routers/pages.py](../app/routers/pages.py).
-* Each route does three things:
-  1. `user_info = get_current_user(request)` (raises 401 if unauth in prod).
-  2. `asyncio.create_task(track_click(app_key, user_id))` (fire-and-forget analytics).
-  3. `_render_template(...)` — wraps `TemplateResponse` for both new/old Starlette signatures.
-* Templates extend [base.html](../app/templates/base.html). The base layer injects `window.APP_CONFIG` so the JS layer knows app env, log level, brain portal URL, css version, and changelog.
-
-### 5.2 JSON & file APIs (`/api/*`)
-* Defined in the [app/routers/api/](../app/routers/api/) package — one module per feature, aggregated by `api/__init__.py`.
-* Pydantic models on every body input (`Field(max_length=…)` everywhere).
-* File uploads go through `_validate_magic` for PDF/PNG/JPG signatures and a 10 MB cap.
-* Errors return `JSONResponse` with `{status, message, detail}`. Internals (`str(e)`) are **never** exposed.
+See [03-apps-catalog.md](03-apps-catalog.md) for full details on each app.
 
 ---
 
-## 6. The DIA Brain integration shape
+## 5. Two types of responses
 
-Every AI feature follows the same recipe:
+The app serves two types of content from the same Python process:
+
+### 5.1 HTML pages (what you see in the browser)
+Defined in [app/routers/pages.py](../app/routers/pages.py). Every page route does exactly three things:
+1. Looks up who the logged-in user is
+2. Fires a "page visit" analytics counter in the background (doesn't slow down the page load)
+3. Returns a rendered HTML page using Jinja templates (Python variables inserted into .html files)
+
+Templates extend [base.html](../app/templates/base.html). The base template injects `window.APP_CONFIG` so the page's JavaScript knows the environment, log level, brain portal URL, CSS version, and changelog.
+
+### 5.2 JSON API responses (`/api/*`)
+Defined in [app/routers/api/](../app/routers/api/) — one module per feature. These:
+* Validate all input data using Pydantic (type checks, length limits)
+* Check uploaded files are real PDFs/PNGs/JPGs by reading the first few bytes (magic bytes), not just the filename
+* Always return errors as JSON with a user-friendly message — internal error details (`str(e)`) are **never** sent to the browser
+
+---
+
+## 6. How the AI (DIA Brain) integration works
+
+Every AI feature follows the same four-step recipe:
 
 ```python
-# 1. ensure a Brain ID is configured
+# Step 1: create a "chat session" so the AI can remember context across turns
 brain_id = os.getenv("SIGNAVIO_BRAIN_ID")
-
-# 2. (optional) create a chat history once → server-side context
 chat = await create_chat_history(brain_id)
 chat_history_id = chat["chatHistoryId"]
 
-# 3. (optional) upload attachments → returns IDs you reuse later
+# Step 2: (optional) upload files — the AI can then read them
 upload = await upload_attachments(brain_id, [upload_file])
 attachment_ids = upload["attachmentIds"]
 
-# 4. invoke the brain
-result = await call_brain_workflow_chat(    # or call_brain_pure_llm_chat
+# Step 3: send a prompt and get back the AI result
+result = await call_brain_workflow_chat(
     brain_id,
     prompt=build_prompt(...),
     chat_history_id=chat_history_id,
     attachment_ids=attachment_ids,
-    custom_behaviour="…",
     workflow_id="BW10nzxLhlqO",
 )
 
-# 5. parse result["result"] (sometimes JSON, sometimes XML, sometimes markdown)
+# Step 4: parse the result (sometimes JSON, sometimes XML, sometimes plain text)
 ```
 
-The two Brain endpoints used:
+**Two types of Brain calls:**
 
-| Helper | URL | When to use |
-|---|---|---|
-| `call_brain_workflow_chat` | `POST /chat/workflow` | Feature with a configured "Workflow" in DIA Brain (e.g. BPMN, PPT) |
-| `call_brain_pure_llm_chat` | `POST /chat/pure-llm` | Pure LLM completion, no RAG retrieval (Confluence drafts) |
+| Helper | When to use |
+|---|---|
+| `call_brain_workflow_chat` | Uses a pre-configured AI pipeline in DIA Brain (RAG retrieval, tools, etc.). Used by most features (BPMN, PPT, Diagrams). |
+| `call_brain_pure_llm_chat` | Simple free-form prompt, no pipeline. Used by Docupedia Publisher. |
 
-Auth tokens come from Microsoft AAD (`brain_auth.py`):
+> **RAG (Retrieval-Augmented Generation):** A technique where the AI retrieves relevant documents from a knowledge base before answering. The Brain workflow handles this automatically.
 
-```python
-POST https://login.microsoftonline.com/{BRAIN_TENANT_ID}/oauth2/v2.0/token
-  grant_type=client_credentials
-  scope=api://dia-brain/.default
-```
-
-Tokens are 2-hour Bearer tokens, fetched fresh per request (no in-memory cache; trivial cost for this throughput).
+**Authentication to the AI:** Uses Microsoft Azure credentials (client ID + client secret) to obtain a Bearer token valid for 2 hours. A new token is fetched per request — this is cheap at the current usage level.
 
 ---
 
-## 7. Persistence model (Object Store)
+## 7. How data is saved (no database)
 
-We do **not** use a relational DB. All persisted data is JSON in S3.
+There is **no relational database**. All saved data is JSON files in the Object Store (cloud file storage, similar to Amazon S3).
 
 ```
-analytics/
-  clicks/{YYYY-MM-DD}.json          {app_key: int}
-  users/{YYYY-MM-DD}.json           {app_key: [user_id, …]}
-  users_total.json                  {app_key: [user_id, …]}
-  gen_daily/{YYYY-MM-DD}.json       {app_key: int}
-  gen_failed/{YYYY-MM-DD}.json      {app_key: int}
-  generations.json                  {app_key: int}    (all-time)
-  gen_failed_total.json             {app_key: int}
-  downloads/{YYYY-MM-DD}.json       {app_key: int}
-  downloads_total.json              {app_key: int}
-
-{prefix}-history/{safe_user_id}/
-  index.json                                  list[entry]  (newest first, max 50)
-  {gen_id}/content.json                       full payload (slides / xml / html)
-
-favorites/{safe_user_id}.json                 ["ppt", "diagram", …]
-feedback/{app_key}/{feedback_id}.json         single rating record
-feedback/aggregate/{app_key}.json             rolling counts {1..4}
+Object Store bucket ("DSCP_APPS_Object_DB")
+│
+├── analytics/
+│   ├── clicks/{YYYY-MM-DD}.json    ← how many times each app was opened each day
+│   ├── users/{YYYY-MM-DD}.json     ← which users opened each app each day
+│   ├── generations.json            ← all-time AI generation counts per app
+│   └── downloads/{date}.json       ← download counts
+│
+├── ppt-history/{user}/             ← each user's saved PPT generations
+│   ├── index.json                  ← list of items (newest first, max 50)
+│   └── {gen_id}/content.json       ← full saved content for one item
+│
+├── diagram-history/{user}/...
+├── bpmn-history/{user}/...
+├── one-pager-history/{user}/...
+│
+├── favorites/{user}.json           ← starred apps per user
+└── feedback/{app}/{id}.json        ← user ratings
 ```
 
-* **`safe_user_id`** = lowercase regex-sanitised, 64 chars max — protects S3 key safety.
-* **`gen_id`** = UUID4. Validated by regex on every API entry.
-* **Reads/writes are async** via `asyncio.to_thread` wrapping boto3.
-* **Best-effort**: tracking calls are wrapped in `try/except` and never raise.
+* **`safe_user_id`** = the user's ID with special characters removed (max 64 chars). Keeps file paths safe.
+* **`gen_id`** = UUID (randomly generated unique ID). Validated by regex on every API entry.
+* **Reads/writes are async** — they don't block the request while waiting for storage.
+* **Best-effort**: counter writes are wrapped in try/except and never fail the user's actual request.
 
 Full layout in [06-storage-and-history.md](06-storage-and-history.md).
 
 ---
 
-## 8. Security boundary summary
+## 8. Security — plain-English summary
 
-| Threat | Mitigation | File |
+| Threat | How it's stopped | Where in code |
 |---|---|---|
-| Unauthenticated access | `AuthMiddleware` redirects to `/login`; bypass requires *both* `AUTH_BYPASS_LOCAL=true` AND missing `VCAP_SERVICES` | [app/main.py](../app/main.py) |
-| OAuth CSRF | `state` token via `secrets.token_urlsafe(32)`, compared with `secrets.compare_digest` | [app/main.py](../app/main.py) |
-| Body DoS | `MaxBodySizeMiddleware` 15 MB hard cap | [app/main.py](../app/main.py) |
-| Upload spoofing | `_validate_magic()` checks PDF/PNG/JPEG headers + 10 MB cap | [app/routers/api/_shared.py](../app/routers/api/_shared.py) |
-| SSRF (Confluence) | `_validate_confluence_url()` enforces HTTPS + host allowlist | [app/services/confluence_builder_service.py](../app/services/confluence_builder_service.py) |
-| Path traversal in S3 keys | `_validate_key()` blocks `..` and absolute keys | [app/services/History/storage_service.py](../app/services/History/storage_service.py) |
-| Prompt injection from filenames | `sanitize_filename_for_prompt()` | [app/services/common_service.py](../app/services/common_service.py) |
-| Cookie overflow | Only `user_info` (name/email/scopes) goes into the session cookie, never the JWT | [app/main.py](../app/main.py) |
-| TLS verification | `get_ssl_context()` returns `True` or a custom CA in prod, never disables | [app/core/config.py](../app/core/config.py) |
-| Sensitive logs | `logger.exception()` server-side, generic messages to client | every router/service |
-| Clickjacking / sniffing | `X-Frame-Options: SAMEORIGIN`, `X-Content-Type-Options: nosniff` | `SecurityHeadersMiddleware` |
+| **Unauthorised access** | Every page requires login. Only a small list of paths (login page, health check, static files) are public. | [app/main.py](../app/main.py) |
+| **Login hijacking (CSRF)** | When login starts, a random 32-character secret is created and stored in the session. On the callback, it must match. Attackers cannot forge this. | [app/main.py](../app/main.py) |
+| **Giant request attacks (DoS)** | Requests bigger than 15 MB are rejected before any processing. | [app/main.py](../app/main.py) |
+| **Fake file uploads** | Files are checked by their first few bytes ("magic bytes") — a real PDF always starts with `%PDF-`. Renaming a .exe to .pdf doesn't fool this check. | [app/routers/api/_shared.py](../app/routers/api/_shared.py) |
+| **Tricking the server to call bad URLs (SSRF)** | The Confluence URL is checked against an approved hostname list before any outgoing request. SSRF = Server-Side Request Forgery. | [app/services/confluence_builder_service.py](../app/services/confluence_builder_service.py) |
+| **Folder tricks in file storage (path traversal)** | Storage paths containing `..` or starting with `/` are rejected. | [app/services/History/storage_service.py](../app/services/History/storage_service.py) |
+| **Commands injected via filenames into AI prompts** | Filenames are cleaned before being included in any AI prompt. | [app/services/common_service.py](../app/services/common_service.py) |
+| **Cookie too large / overflow** | Only a small user info dict goes into the session cookie, never the full JWT login token (which can be kilobytes). | [app/main.py](../app/main.py) |
+| **Insecure connections** | TLS verification is always on in production. It can only be turned off locally and only when `ENVIRONMENT` is not `prod`. | [app/core/config.py](../app/core/config.py) |
+| **Leaking error details** | All exception details are logged on the server. The browser only receives a generic "try again" message. | every router/service |
+| **Clickjacking / content sniffing** | `X-Frame-Options: SAMEORIGIN` and `X-Content-Type-Options: nosniff` headers are added to every response. | `SecurityHeadersMiddleware` |
 
 Deep dive in [04-auth-and-security.md](04-auth-and-security.md).
 
 ---
 
-## 9. Configuration model
+## 9. Configuration
 
-Three sources, in precedence order:
+Settings come from three places, in order of priority (higher = wins):
 
-1. **CF environment** (set via `cf set-env` or BTP Cockpit).
-2. **Bound services** (`VCAP_SERVICES` JSON injected by the platform).
-3. **`.env` files** loaded early by `app/main.py` (root then `app/.env`) — local dev only.
+1. **CF environment variables** — set via `cf set-env` command or the BTP Cockpit web UI.
+2. **VCAP_SERVICES** — automatically injected by Cloud Foundry with credentials for bound services (XSUAA, Object Store).
+3. **`.env` files** — only loaded on your local machine for development.
 
-The most important categories:
-
-| Group | Vars |
+| Group | Variables |
 |---|---|
-| Brain | `BRAIN_TENANT_ID`, `BRAIN_CLIENT_ID`, `BRAIN_CLIENT_SECRET`, `BRAIN_API_BASE_URL`, `BRAIN_PORTAL_URL` |
-| Brain feature IDs | `SIGNAVIO_BRAIN_ID`, `AUDIT_CHECK_BRAIN_ID`, `BPMN_CHECKER_BRAIN_ID`, `PPT_BRAIN_ID`, `DIAGRAM_BRAIN_ID`, `ONE_PAGER_BRAIN_ID`, `DOCUPEDIA_BRAIN_ID` |
-| Workflow IDs | `SIGNAVIO_WORKFLOW_ID`, … |
-| Sessions | `SESSION_SECRET` (required in prod) |
-| Object Store (local fallback) | `OBJECT_STORE_HOST`, `OBJECT_STORE_BUCKET`, `OBJECT_STORE_ACCESS_KEY_ID`, `OBJECT_STORE_SECRET_ACCESS_KEY`, `OBJECT_STORE_REGION` |
-| TLS | `SSL_VERIFY`, `SSL_CA_BUNDLE` |
-| Behaviour | `ENVIRONMENT`, `AUTH_BYPASS_LOCAL`, `CLIENT_LOGGING_ENABLED`, `CLIENT_LOG_LEVEL`, `CONFLUENCE_ALLOWED_HOSTS` |
+| AI authentication | `BRAIN_TENANT_ID`, `BRAIN_CLIENT_ID`, `BRAIN_CLIENT_SECRET`, `BRAIN_API_BASE_URL`, `BRAIN_PORTAL_URL` |
+| AI feature IDs (one per app) | `SIGNAVIO_BRAIN_ID`, `PPT_BRAIN_ID`, `DIAGRAM_BRAIN_ID`, `ONE_PAGER_BRAIN_ID`, `DOCUPEDIA_BRAIN_ID`, etc. |
+| Session security | `SESSION_SECRET` — required in production; app refuses to start without it |
+| Storage (local dev only) | `OBJECT_STORE_HOST`, `OBJECT_STORE_BUCKET`, `OBJECT_STORE_ACCESS_KEY_ID`, `OBJECT_STORE_SECRET_ACCESS_KEY`, `OBJECT_STORE_REGION` |
+| TLS / SSL | `SSL_VERIFY` (always true in prod), `SSL_CA_BUNDLE` (path to custom CA certificate) |
+| Behaviour flags | `ENVIRONMENT`, `AUTH_BYPASS_LOCAL`, `CLIENT_LOGGING_ENABLED`, `CONFLUENCE_ALLOWED_HOSTS` |
 
-In production, **proxy env vars are stripped** (`HTTP_PROXY`, …) so DNS works on BTP. Done at the very top of `app/main.py`.
+> In production, corporate proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`, etc.) are automatically removed at startup so that SAP BTP's own DNS works correctly.
 
 Full reference in [09-deployment.md](09-deployment.md).
 
 ---
 
-## 10. Why this shape?
+## 10. Why was it built this way?
 
-* **Monolith over microservices** — small team, ~10 K LOC, deployment is a single CF push.
-* **Server-rendered Jinja over SPA** — every page is independent, SEO is irrelevant inside corporate, and "no JS framework" lowers the barrier to contribution.
-* **Object Store over relational DB** — history is per-user JSON; we don't need joins or transactions.
-* **Best-effort analytics** — never block a user request because a counter file failed to write.
-* **One Brain helper module** — keeps the auth, retry, error-mapping logic in one place; feature services stay thin.
+| Decision | Reason |
+|---|---|
+| **One server instead of microservices** | Small team, ~10K lines of code. One `cf push` deploys everything. No inter-service networking to manage. |
+| **Server-rendered HTML instead of a React/Vue/Angular SPA** | Each page is self-contained. No JavaScript framework to learn or maintain. Easier for new contributors. |
+| **File storage instead of a relational database** | History is per-user JSON blobs. No joins or transactions needed. Simpler to run and cheaper. |
+| **Best-effort analytics** | Analytics counters are fire-and-forget. If a counter write fails, the user's actual request is never delayed or broken. |
+| **One AI helper module (`common_service.py`)** | All Brain authentication, retry logic, and error handling in one place. Feature services stay thin and focused. |
 
-That's the system. Now read [02-onboarding.md](02-onboarding.md) to actually run it.
+Next: read [02-onboarding.md](02-onboarding.md) to set up your local development environment.

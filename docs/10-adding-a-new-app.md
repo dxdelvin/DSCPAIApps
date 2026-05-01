@@ -1,28 +1,28 @@
 # 10 — Adding a New App
 
-> The "secret" is that every app in DSCP_AI is just **the same six-step pattern** repeated. Each feature is a thin slice through the same stack: a Jinja page route → a JS/CSS pair → an API route → a service → optional history. Everything else (auth, storage, analytics, theming, toast, loading) is already wired for you.
+Every app in DSCP_AI follows the same repeatable pattern. Once you understand how one app is built, you can build any new app by filling in the same slots.
 
 Read this alongside [01-architecture.md](01-architecture.md) for the big picture and [08-frontend-guide.md](08-frontend-guide.md) for UI conventions.
 
 ---
 
-## 0. The secret pattern (read this first)
+## 0. The repeating pattern (read this first)
 
 Every existing app — PPT Creator, BPMN Builder, Diagram Generator, etc. — is wired the same way:
 
 ```
-pages.py             → HTML route + track_click
-api.py               → JSON route(s) + validation
-myfeature_service.py → Brain call(s) via common_service helpers
-myfeature_history.py → CRUD over Object Store (optional)
-analytics_service.py → APP_LABELS entry + (auto) track_generation
-favorites_service.py → ALLOWED_APP_KEYS entry
-templates/my.html    → extends base.html
-static/css/my.css    → only tokens, no raw colours
-static/js/my.js      → Utils.apiRequest, showToast, LoadingOverlay
+pages.py                  → HTML page route + fire-and-forget click tracker
+api/<feature>.py          → JSON API route(s) + input validation
+my_feature_service.py     → AI call(s) via common_service helpers
+my_feature_history.py     → Save/load/delete results in Object Store (optional)
+analytics_service.py      → Register app key in APP_LABELS
+favorites_service.py      → Register app key in ALLOWED_APP_KEYS
+templates/my_tool.html    → Jinja template extending base.html
+static/css/my_tool.css    → Feature styles using CSS tokens only (no raw hex colours)
+static/js/my_tool.js      → Uses Utils.apiRequest, showToast, LoadingOverlay
 ```
 
-If you touch **all nine** of these locations consistently, the app works end-to-end including auth, history, analytics, dark mode, and production SSE-AES256 storage on the first deploy.
+If you fill in **all nine** locations consistently, the app works end-to-end including auth, history, analytics, dark mode, and encrypted cloud storage on the first deploy.
 
 ---
 
@@ -123,15 +123,15 @@ def _build_prompt(content: str) -> str:
     return f"Please process the following:\n\n{safe}"
 ```
 
-### Which `call_brain_*` to use?
+### Which `call_brain_*` helper to use?
 
 | Helper | Use when |
 |---|---|
-| `call_brain_workflow` | You have a structured Brain workflow with a workflow ID (most features). |
-| `call_brain_pure_llm` | Free-form prompt, no workflow (Docupedia drafts). |
-| `call_brain_chat` | Follow-up turns in a multi-turn conversation (refinement/chat). |
+| `call_brain_workflow` | You have a structured AI workflow with a workflow ID. This is what most features use. |
+| `call_brain_pure_llm` | Free-form prompt with no workflow structure (used by Docupedia for drafts). |
+| `call_brain_chat` | Follow-up turns in a multi-turn conversation (refinement / chat endpoints). |
 
-All three accept `chat_history_id` so refinement / follow-up always works.
+All three accept `chat_history_id` so follow-up messages always work.
 
 ### Environment variable
 
@@ -281,12 +281,12 @@ async def my_tool_history_delete(request: Request, gen_id: str):
 
 **Security checklist for every API handler:**
 
-- [ ] `get_current_user(request)` called at the top (auth gate)
-- [ ] All user strings go through `Field(max_length=…)` in the Pydantic model
-- [ ] File uploads validated with `_validate_magic(content, filename)` — never trust `content_type`
-- [ ] `gen_id` path params go through `_validate_gen_id(gen_id)`
-- [ ] Errors log with `logger.exception(...)`, return a generic `message` only — no `str(exc)`
-- [ ] User-supplied strings embedded in prompts pass through `sanitize_filename_for_prompt`
+- [ ] `get_current_user(request)` called at the top (ensures only logged-in users can call this)
+- [ ] All user-supplied strings use `Field(max_length=…)` in the Pydantic model (prevents oversized inputs)
+- [ ] File uploads validated with `_validate_magic(content, filename)` after reading the file bytes (never trust `Content-Type` header alone)
+- [ ] History ID path params go through `_validate_gen_id(gen_id)` (prevents malformed input reaching storage)
+- [ ] Errors: log with `logger.exception(…)` server-side; return a generic `message` to the user — never include `str(exc)`
+- [ ] User-supplied strings embedded in AI prompts pass through `sanitize_filename_for_prompt` (prevents prompt injection)
 
 For file uploads, mirror the existing `ppt/extract` or `diagram/analyze` endpoints exactly — they already do size checks, magic-byte checks, and multi-file logic.
 
@@ -450,12 +450,12 @@ Minimal skeleton:
 ```
 
 Rules:
-* **No raw `innerHTML` of user content** — always `escapeHtml(...)`.
-* **Never `alert()`** — use `showToast(...)` and `showConfirmation(...)`.
-* **All API calls** via `Utils.apiRequest` (handles JSON and propagates errors consistently).
-* **Loading states** via `LoadingOverlay.show/hide` or `LoadingPanel.show/hide`.
-* **Log errors** via `AppLogger.error(msg, meta)` — this also POSTs to `/api/client-log`.
-* **History cards** must use `gen-card` / `gen-card-*` classes and SVG icons from `HistoryIcons`. No emoji.
+* **No raw `innerHTML` of user content** — always `escapeHtml(...)` first (prevents XSS).
+* **Never `alert()`** — use `showToast(...)` for notifications and `showConfirmation(...)` for destructive actions.
+* **All API calls** via `Utils.apiRequest` (handles JSON, Content-Type, and error propagation consistently).
+* **Loading states** via `LoadingOverlay.show/hide` (full-screen) or `LoadingPanel.show/hide` (inline).
+* **Log errors** via `AppLogger.error(msg, meta)` — this also POSTs to `/api/client-log` so errors are visible server-side.
+* **History cards** must use `gen-card` / `gen-card-*` class names and SVG icons from `HistoryIcons`. No emoji.
 
 ---
 

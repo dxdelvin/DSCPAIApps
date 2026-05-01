@@ -1,44 +1,49 @@
 # 07 — API Reference
 
-Full inventory of every HTTP route exposed by `app.main:app`. Routes split across:
+This page lists every HTTP route the app exposes.
 
-* **OAuth / system** — defined in [app/main.py](../app/main.py)
-* **HTML pages** — [app/routers/pages.py](../app/routers/pages.py)
-* **JSON / file APIs** — [app/routers/api/](../app/routers/api/) package, mounted under `/api`
+**Three groups of routes:**
+* **OAuth / system** — login, logout, health check (defined in [app/main.py](../app/main.py))
+* **HTML pages** — return browser pages (defined in [app/routers/pages.py](../app/routers/pages.py))
+* **JSON / file APIs** (`/api/*`) — return JSON data or stream files (defined in [app/routers/api/](../app/routers/api/))
 
-> Auth: every route is gated by `AuthMiddleware` unless listed in §1.1. All `/api/*` errors return `JSONResponse({"status": "error", "message": …, "detail": …})` with no internal details exposed.
+> **Auth:** Every route requires login unless listed in §1.1. All `/api/*` errors return JSON `{"status": "error", "message": "..."}` — internal exception details are never exposed.
 
-### Module layout
+> **Pydantic models** = Python classes used to validate request data. `max_length=200` means the field cannot be longer than 200 characters. This prevents oversized inputs from reaching the AI or storage.
 
-The API router is a package, not a single file. Each feature owns its own module that exposes an `APIRouter` named `router`; [app/routers/api/__init__.py](../app/routers/api/__init__.py) aggregates them all into a single parent router that `app.main` mounts under `/api`.
+### API module layout
+
+Each feature has its own module under `app/routers/api/`. New features should follow this same pattern and be registered in `api/__init__.py`.
 
 | Module | Endpoints |
 |---|---|
-| [`_shared.py`](../app/routers/api/_shared.py) | Shared helpers — `logger`, `MAX_UPLOAD_SIZE`, `_FILE_MAGIC`, `_validate_magic`, `_GEN_ID_RE`, `_validate_gen_id`, log-sanitisation regex |
+| [`_shared.py`](../app/routers/api/_shared.py) | Shared helpers used by all modules (logger, size limits, file type validators, UUID validator) |
 | [`client_log.py`](../app/routers/api/client_log.py) | `POST /client-log` |
-| [`bpmn.py`](../app/routers/api/bpmn.py) | `/bpmn/start-session`, `/bpmn/chat`, `/bpmn/upload-analyze`, `/generate-bpmn`, `/make-bpmn-analysis`, `/bpmn/history*` |
-| [`audit.py`](../app/routers/api/audit.py) | `/audit-doc-check`, `/audit-chat` |
-| [`bpmn_checker.py`](../app/routers/api/bpmn_checker.py) | `/bpmn-diagram-check` |
-| [`spec_builder.py`](../app/routers/api/spec_builder.py) | `/export-functional-spec`, `/export-business-requirement`, `/export-fs-variant` |
-| [`ppt.py`](../app/routers/api/ppt.py) | `/ppt/extract`, `/ppt/refine`, `/ppt/download`, `/ppt/history*` |
-| [`diagram.py`](../app/routers/api/diagram.py) | `/diagram/analyze`, `/diagram/generate`, `/diagram/refine`, `/diagram/copy-image`, `/diagram/download`, `/diagram/history*` |
-| [`confluence.py`](../app/routers/api/confluence.py) | `/confluence-builder/verify-connection`, `/confluence-builder/generate`, `/confluence-builder/refine`, `/confluence-builder/publish` |
-| [`one_pager.py`](../app/routers/api/one_pager.py) | `/one-pager/extract`, `/one-pager/refine`, `/one-pager/history*` |
-| [`favorites.py`](../app/routers/api/favorites.py) | `GET/POST/DELETE /favorites[/{app_key}]` |
-| [`admin.py`](../app/routers/api/admin.py) | `/admin/analytics`, `/admin/feedback`, `/user/stats` |
-| [`feedback.py`](../app/routers/api/feedback.py) | `POST /feedback/{app_key}` |
+| [`bpmn.py`](../app/routers/api/bpmn.py) | BPMN Builder endpoints + history |
+| [`audit.py`](../app/routers/api/audit.py) | Audit Check endpoints |
+| [`bpmn_checker.py`](../app/routers/api/bpmn_checker.py) | BPMN Checker endpoint |
+| [`spec_builder.py`](../app/routers/api/spec_builder.py) | Spec Builder document export endpoints |
+| [`ppt.py`](../app/routers/api/ppt.py) | PPT Creator endpoints + history |
+| [`diagram.py`](../app/routers/api/diagram.py) | Diagram Generator endpoints + history |
+| [`confluence.py`](../app/routers/api/confluence.py) | Docupedia Publisher endpoints |
+| [`one_pager.py`](../app/routers/api/one_pager.py) | One Pager Creator endpoints + history |
+| [`favorites.py`](../app/routers/api/favorites.py) | Favourites management |
+| [`admin.py`](../app/routers/api/admin.py) | Admin analytics + user stats |
+| [`feedback.py`](../app/routers/api/feedback.py) | User ratings/feedback |
 
-> When adding a new app, create a new module here following the same pattern and register it in `__init__.py`. See [10-adding-a-new-app.md](10-adding-a-new-app.md).
+> When adding a new app, create a new module here and register it in `__init__.py`. See [10-adding-a-new-app.md](10-adding-a-new-app.md).
 
 ---
 
 ## 1. System & OAuth
 
-### 1.1 Public paths (auth bypassed)
+### 1.1 Public paths (no login required)
 
 ```
-/login, /auth/callback, /logout, /static/*, /docs, /openapi.json,
-/health, /api/client-log
+/login, /auth/callback, /logout  — OAuth2 login flow
+/static/*                        — CSS, JS, images (no secrets here)
+/health                          — SAP BTP health probe (must be public)
+/api/client-log                  — browser error logging (no user data)
 ```
 
 ### 1.2 Auth flow
@@ -77,7 +82,9 @@ class ClientLogRequest(BaseModel):
 
 All page handlers do exactly three things:
 
-1. `user_info = get_current_user(request)`
+1. Look up the currently logged-in user (`get_current_user(request)`)
+2. Start a page-visit counter in the background ("fire-and-forget" — doesn't slow the page load)
+3. Return a rendered HTML template
 2. `asyncio.create_task(track_click(app_key, user_info["user"]))`
 3. Return `_render_template(template, request, **ctx)`
 
@@ -414,37 +421,39 @@ Returns the full structure documented in [06-storage-and-history.md §5.4](06-st
 
 | Concern | Rule |
 |---|---|
-| Body size | Hard cap 15 MB (`MaxBodySizeMiddleware`, before auth) |
-| Upload size | 10 MB per file / 10 MB total per multi-file endpoint (`MAX_UPLOAD_SIZE`) |
-| File type | Magic-byte validation: PDF (`%PDF-`), PNG (`\x89PNG\r\n`), JPEG (`\xff\xd8\xff`). `content_type` header is **never** trusted. |
-| `gen_id` | Regex-validated UUID v4 → **422** on malformed |
-| Pydantic strings | All have `max_length` |
+| Request body size | Hard cap of 15 MB. Requests over this are rejected before login check. |
+| Upload size | Max 10 MB per file. Max 10 MB total across all files in one request. |
+| File type | Checked by **magic bytes** (first few bytes of the file), not by filename or Content-Type header. Accepted: PDF (`%PDF-`), PNG (`\x89PNG\r\n`), JPEG (`\xff\xd8\xff`). |
+| `gen_id` (history IDs) | Must match UUID v4 format (e.g. `a1b2c3d4-...`). Invalid values return HTTP 422. |
+| Text fields | All Pydantic string fields have `max_length` limits to prevent oversized AI prompts. Short identifiers ≤ 200 chars; long content fields ≤ 50,000 chars. |
 | Nested JSON | `formData` ≤ 50 KB; `currentHtml` ≤ 200 KB; `html` ≤ 500 KB; `currentXml` ≤ 50 KB |
 
 ---
 
-## 16. HTTP status code map
+## 16. HTTP status codes
 
-| Code | Meaning here |
+| Code | Plain-English meaning |
 |---|---|
 | **200** | Success |
-| **302** | Redirect (login, logout, signavio-learning) |
-| **400** | Bad input / invalid app_key / SSRF block |
-| **401** | Not authenticated (rare; AuthMiddleware redirects to `/login` instead) |
-| **403** | Admin gate failure |
-| **404** | gen_id not found |
-| **413** | Upload > size limit |
-| **422** | Pydantic validation / malformed gen_id |
-| **500** | Brain failure / storage error / unhandled |
-| **502** | Brain auth or upstream HTTP error |
-| **503** | Storage unavailable / Brain network error |
-| **504** | Brain timeout |
+| **302** | Redirect (e.g. after login/logout, or to Signavio Learning) |
+| **400** | Bad input: invalid app_key, SSRF block (disallowed Confluence URL), or malformed request |
+| **401** | Not logged in (rare — `AuthMiddleware` normally redirects to `/login` instead) |
+| **403** | Logged in but not an admin (admin-only endpoint) |
+| **404** | gen_id not found (the history item doesn't exist or was deleted) |
+| **413** | File too large (over the 10 MB or 15 MB limit) |
+| **422** | Pydantic validation failure (e.g. string too long) or invalid gen_id format |
+| **500** | AI call failed, storage error, or unexpected internal error |
+| **502** | AI authentication error or upstream HTTP error |
+| **503** | Storage unavailable or AI network error |
+| **504** | AI request timed out |
 
-Errors **never** include `str(exc)`. Use `logger.exception(...)` server-side, return generic `message`.
+Errors **never** include Python exception details. Use `logger.exception(...)` server-side and return a user-friendly `message` field.
 
 ---
 
-## 17. Error envelope
+## 17. Error response format
+
+All `/api/*` errors return this shape:
 
 ```json
 {
@@ -454,7 +463,8 @@ Errors **never** include `str(exc)`. Use `logger.exception(...)` server-side, re
 }
 ```
 
-`detail` is a stable machine-readable code (e.g. `INVALID_GEN_ID`, `STORAGE_UNAVAILABLE`, `SSRF_BLOCKED`, `BRAIN_TIMEOUT`). Do not put exception text here.
+* **`message`** = human-readable text shown to the user.
+* **`detail`** = a stable code for programmatic handling (e.g. `INVALID_GEN_ID`, `STORAGE_UNAVAILABLE`, `SSRF_BLOCKED`, `BRAIN_TIMEOUT`). Never put Python exception text here.
 
 ---
 

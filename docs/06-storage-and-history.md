@@ -1,8 +1,12 @@
 # 06 — Storage & History
 
-> The persistence model for DSCP_AI. There is **no relational database**. Everything is JSON in the BTP **Object Store** (S3-compatible), accessed through `boto3` wrapped in `asyncio.to_thread`.
+There is **no relational database** in this app. All saved data is stored as JSON files in the BTP **Object Store** — a cloud file storage service similar to Amazon S3.
 
-This page documents the full Object Store layout, every history service, the analytics tracker, the feedback aggregator, the favorites store, and the safety rails (key validation, SSE-AES256, retention, 50-entry trim).
+> **Object Store** = a cloud service where you store files by a "key" (a path-like string) and retrieve them by the same key. Think of it like a giant key-value file system in the cloud.
+>
+> **boto3** = Amazon's official Python library for S3-compatible storage. We use it to talk to the BTP Object Store because the Object Store uses the same API as Amazon S3.
+>
+> **asyncio.to_thread** = boto3 is synchronous (it blocks while waiting for network responses). Our app is async (non-blocking). `asyncio.to_thread` runs a boto3 call in a background thread so the rest of the app doesn't freeze while waiting for storage.
 
 ---
 
@@ -41,9 +45,9 @@ BTP Object Store (one bucket: "DSCP_APPS_Object_DB")
 
 ## 2. Storage layer — `app/services/History/storage_service.py`
 
-The boto3 wrapper. **Routers and feature services never touch boto3 directly.**
+This is the boto3 (S3) wrapper. **Routes and feature services never call boto3 directly** — they only call this wrapper.
 
-### 2.1 boto3 client construction
+### 2.1 How the S3 client is created
 
 ```python
 boto3.client(
@@ -52,18 +56,19 @@ boto3.client(
     endpoint_url=endpoint,                # https://{host}
     aws_access_key_id=cfg["access_key_id"],
     aws_secret_access_key=cfg["secret_access_key"],
-    config=BotoCfg(signature_version="s3v4"),  # SigV4 always
+    config=BotoCfg(signature_version="s3v4"),  # SigV4: Amazon's request auth method
 )
 ```
 
-* **Credentials resolution** (in [app/core/config.py](../app/core/config.py)):
-  1. `VCAP_SERVICES.objectstore[0].credentials` — production binding.
-  2. Env vars `OBJECT_STORE_HOST/BUCKET/ACCESS_KEY_ID/SECRET_ACCESS_KEY/REGION` — local dev.
-  3. **Local dev** with neither: `(None, None)` returned, history silently disabled.
-  4. **Production** with neither: `RuntimeError`.
-* **Endpoint**: `https://{host}` if scheme missing.
-* **Region default**: `eu-central-1`.
-* **Server-side encryption**: every `put_object` passes `ServerSideEncryption="AES256"`.
+> **SigV4 (Signature Version 4)** = Amazon's method of authenticating API requests by signing them with a secret key. We use it because the Object Store is S3-compatible and expects this format.
+
+Credential resolution order:
+1. **Production (CF)**: Read from `VCAP_SERVICES` (automatically injected by Cloud Foundry).
+2. **Local dev**: Read from env vars `OBJECT_STORE_HOST`, `OBJECT_STORE_BUCKET`, `OBJECT_STORE_ACCESS_KEY_ID`, `OBJECT_STORE_SECRET_ACCESS_KEY`, `OBJECT_STORE_REGION`.
+3. **Local dev with neither**: Storage is disabled. History returns "unavailable" messages instead of crashing.
+4. **Production with neither**: `RuntimeError` (app refuses to start).
+
+> **SSE-AES256 (Server-Side Encryption with AES-256)** = All files are encrypted before being stored on disk. AES-256 is the gold-standard encryption algorithm. We add `ServerSideEncryption="AES256"` to every `put_object` call.
 
 ### 2.2 Path-traversal guard
 
@@ -125,18 +130,20 @@ def content_key(prefix, user_id, gen_id) -> "{prefix}/{safe}/{gen_id}/content.js
 
 ### 3.4 The 50-entry trim rule
 
+To prevent unlimited storage growth, each user's history is capped:
+
 ```python
-history.insert(0, entry)
+history.insert(0, entry)          # add new item at the front
 if len(history) > max_entries:
-    pruned = history[max_entries:]            # tail
-    history = history[:max_entries]           # keep
-    # delete pruned content blobs in parallel
+    pruned = history[max_entries:]  # items to delete (the oldest ones)
+    history = history[:max_entries] # keep only the newest max_entries
+    # delete the pruned content files from storage in parallel
 ```
 
-* PPT, Diagram, BPMN: **50 entries** per user.
-* One-Pager: **30 entries** per user (HTML payloads are larger).
+When the cap is exceeded, the oldest items are removed. Their actual content files are also deleted from storage (not just the index reference) so storage stays bounded.
 
-When the cap is exceeded the **oldest content.json files are deleted** so storage stays bounded; the index is then re-saved with the kept entries only.
+* **PPT, Diagram, BPMN**: cap = **50** entries per user.
+* **One-Pager**: cap = **30** entries per user (HTML content files are larger, ~500 KB each).
 
 ---
 
@@ -208,19 +215,19 @@ Same function pattern as PPT; `save_generation` tracks `"diagram"`.
 {
   "id": "uuid4",
   "processName": "Order Processing",
-  "mode": "form",          // "form" | "upload"
+  "mode": "form",          // "form" = Form Builder mode, "upload" = Upload & Build mode
   "hasXml": true,
   "filename": "order_process.bpmn",
-  "chatHistoryId": "…",
+  "chatHistoryId": "...",
   "refinements": 0,
-  "createdAt": "…",
-  "updatedAt": "…"
+  "createdAt": "...",
+  "updatedAt": "..."
 }
 ```
 
 **Content blob**: `{ "mode", "formData", "xml", "filename", "chatHistoryId" }` (last four optional).
 
-**Special: rollback on index failure** — if `save_content` succeeds but `save_index` fails, the orphan content blob is deleted to keep storage consistent.
+**Note on safety:** If saving the content file succeeds but saving the index fails, the orphan content file is deleted automatically to keep storage consistent.
 
 `save_generation` derives `processName` from `formData.processName` → filename (cleaned) → `"Untitled"`.
 

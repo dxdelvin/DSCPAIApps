@@ -1,8 +1,10 @@
 # 03 — Apps Catalog
 
-One page, every app, every entry point, every artifact.
+This page documents every app in DSCP_AI: its URL, files, API endpoints, and what it saves.
 
-App keys (used in analytics, favourites, tracking) live in `APP_LABELS` in [analytics_service.py](../app/services/History/analytics_service.py):
+### What is an "app key"?
+
+Each app has a short code name called an **app key** (e.g. `"ppt"`, `"bpmn"`, `"diagram"`). This key is used everywhere — analytics counters, user history storage paths, the favourites list. The full list is defined in `APP_LABELS` in [analytics_service.py](../app/services/History/analytics_service.py):
 
 ```python
 APP_LABELS = {
@@ -49,11 +51,11 @@ APP_LABELS = {
 | DELETE | `/api/ppt/history/{gen_id}` | Remove |
 | POST | `/api/ppt/history/{gen_id}/download` | Re-render `.pptx` from stored JSON |
 
-**Index entry**
+**Index entry** (the metadata saved in the history list for each item)
 
 ```json
 {
-  "id": "<uuid4>",
+  "id": "<uuid>",
   "title": "...",
   "subtitle": "...",
   "slideCount": 12,
@@ -100,7 +102,9 @@ UI must mirror the **mode tabs** (`dg-tab-nav`, `dg-tab-btn`) baseline shared wi
 
 ## 3. BPMN Builder (`bpmn`)
 
-**Purpose**: Generate Signavio-compatible BPMN 2.0 XML from either form input ("Form Builder") or an uploaded diagram/PDF ("Upload & Build"), with chat refinement.
+**Purpose**: Generate Signavio-compatible BPMN 2.0 XML (a standard process diagram format) from either form input ("Form Builder" mode) or an uploaded diagram/PDF ("Upload & Build" mode), with chat refinement.
+
+> **BPMN** = Business Process Model and Notation — the international standard for process diagrams. Signavio is the process modelling tool used at Bosch.
 
 | Aspect | Value |
 |---|---|
@@ -123,9 +127,7 @@ UI must mirror the **mode tabs** (`dg-tab-nav`, `dg-tab-btn`) baseline shared wi
 | POST | `/api/make-bpmn-analysis` | **Legacy** endpoint (kept for back-compat) |
 | GET / POST / PUT / DELETE / POST `…/download` | `/api/bpmn/history*` | Save / load / replay XML |
 
-`signavio_service.py` contains 3 critical "behaviour" prompts: analysis (no XML), generation (XML only), upload analysis (with the `[DOCUMENT_VALID]` first-line contract).
-
-The mode switch tabs in the UI must match the Diagram/PPT tab styling. SVG icons only.
+The `[DOCUMENT_VALID]` / `[DOCUMENT_INVALID]` tag on the **first line** of the upload analysis response is a contract between the AI prompt and the JavaScript. The JS checks this tag to decide whether to continue. Do not break this convention.
 
 ---
 
@@ -188,7 +190,11 @@ Each calls `track_generation("spec-builder")` + `track_download("spec-builder")`
 
 ## 7. Docupedia Publisher (`docupedia`)
 
-**Purpose**: Take uploaded files, ask Brain to draft a **Confluence storage-format** page, refine, then publish to Bosch Docupedia (Confluence) using a user-supplied **Personal Access Token (PAT)**.
+**Purpose**: Take uploaded files, ask the AI to draft a **Confluence storage-format** page, refine it via chat, then publish to Bosch Docupedia (Confluence) using a user-supplied **Personal Access Token (PAT)**.
+
+> **Confluence storage format**: Confluence's internal XML-based page format. The AI generates this XML directly, which can then be published via the Confluence REST API.
+>
+> **PAT (Personal Access Token)**: A password-like token the user generates in Confluence. The app uses it to publish on the user's behalf. The token is **never logged or saved** by the app.
 
 | Aspect | Value |
 |---|---|
@@ -319,13 +325,15 @@ The frontend uses canvas-based stacked bar charts, dark-mode aware. See [08-fron
 
 ## App-by-app failure modes
 
-| App | "Brain unavailable" → | Storage unavailable → |
+What happens to each app when the AI service is down, or when cloud storage is unavailable:
+
+| App | If AI (Brain) is unavailable | If storage is unavailable |
 |---|---|---|
-| PPT | 500 with friendly message; `track_generation_failed("ppt")` | history endpoints return 503; generation still works in-memory |
-| Diagram | 500/502/503/504 (mapped) + `track_generation_failed("diagram")` | history 503 |
-| BPMN Builder | 500; `track_generation_failed` not currently called for the XML step | history 503 |
-| BPMN Checker | 500; no history affected | n/a |
-| Audit | 500 | n/a |
-| Spec Builder | n/a (no Brain) | n/a (no history) |
-| Docupedia | 500 with mapped status; PAT errors return specific messages | n/a |
-| One Pager | 500/502/503/504 + `track_generation_failed("one-pager")` | history 503 |
+| PPT Creator | Returns 500 with a friendly message; failure is counted | History endpoints return 503; generation still works in-session |
+| Diagram Generator | Returns 500/502/503/504 (mapped from AI error); failure counted | History returns 503 |
+| BPMN Builder | Returns 500; failure not counted for the XML generation step | History returns 503 |
+| BPMN Checker | Returns 500; no history affected | Not applicable (no history) |
+| Audit Check | Returns 500 | Not applicable (no history) |
+| Spec Builder | Not applicable (no AI calls) | Not applicable (no history) |
+| Docupedia Publisher | Returns 500 with mapped status; PAT errors return specific messages | Not applicable |
+| One Pager Creator | Returns 500/502/503/504; failure counted | History returns 503 |

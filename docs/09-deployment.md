@@ -1,26 +1,32 @@
 # 09 — Deployment
 
-> Everything you need to deploy, configure, and operate DSCP_AI on **SAP BTP Cloud Foundry** (and run it locally).
+Everything you need to deploy, configure, and run DSCP_AI on **SAP BTP Cloud Foundry** (and locally).
 
-For the architecture rationale, see [01-architecture.md](01-architecture.md). For the auth/security side, see [04-auth-and-security.md](04-auth-and-security.md).
+> **SAP BTP (Business Technology Platform)** = SAP's cloud hosting service. We use it because BSH runs SAP software.
+>
+> **Cloud Foundry (CF)** = the platform-as-a-service layer inside BTP. You deploy by running `cf push` from your terminal. CF handles server provisioning, scaling, and health checks automatically.
+>
+> **`cf push`** = deploys your code to CF. CF reads `manifest.yml` to know how to build and run the app.
+
+For architecture details, see [01-architecture.md](01-architecture.md). For auth/security details, see [04-auth-and-security.md](04-auth-and-security.md).
 
 ---
 
-## 1. Topology
+## 1. Topology (what runs where)
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
 │ SAP BTP — Subaccount: BSH-DSCP                                     │
 │   Org: bsh-dscp · Space: dev | qa | prod                           │
 │                                                                    │
-│   App: dscp-ai (1× instance, 512M memory, 512M disk, python BP)    │
-│      ├── bound: dscp-ai-app           (XSUAA)                      │
-│      └── bound: DSCP_APPS_Object_DB   (Object Store, S3-compatible)│
+│   App: dscp-ai (1 instance, 512 MB memory, Python buildpack)       │
+│      ├── bound: dscp-ai-app         (XSUAA — login service)          │
+│      └── bound: DSCP_APPS_Object_DB  (Object Store — file storage)   │
 │                                                                    │
-│   External:                                                        │
-│      Microsoft AAD (login.microsoftonline.com) — Brain client_creds│
-│      DIA Brain      (ews-emea.api.bosch.com)   — workflow / pure   │
-│      Confluence     (inside-docupedia.bosch.com)                   │
+│   External services (called over HTTPS):                           │
+│      Microsoft AAD (login.microsoftonline.com) — AI auth tokens    │
+│      DIA Brain (ews-emea.api.bosch.com)        — AI requests       │
+│      Confluence (inside-docupedia.bosch.com)   — Docupedia publish │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -58,15 +64,19 @@ applications:
       SESSION_SECRET:         "SET_VIA_CF_SET_ENV"
 ```
 
-Critical flags:
+Critical flags explained:
 
-* `--proxy-headers --forwarded-allow-ips '*'` — without these, `request.url_for("auth_callback")` produces `http://` URLs and XSUAA rejects the redirect.
-* `instances: 1` — analytics/history JSON files are **not** locked across instances; do not scale horizontally without adding distributed locking.
-* `memory: 512M` — fits comfortably; `python-pptx` + `PyMuPDF` peak around 200–250 MB during heavy generations.
+* `--proxy-headers --forwarded-allow-ips '*'` — CF sits behind a load balancer. These flags tell Uvicorn to trust the forwarded headers (`X-Forwarded-Proto: https`) so that login callback URLs are built with `https://` instead of `http://`. Without this, XSUAA rejects the OAuth redirect.
+* `instances: 1` — **Do not increase this without adding distributed locking.** History files are stored as JSON in Object Store with no concurrency protection. If two instances write the same file at the same time, data loss is possible.
+* `memory: 512M` — Enough for normal use. `python-pptx` and `PyMuPDF` peak at around 200–250 MB during heavy file processing.
 
 ### 2.2 `xs-security.json`
 
-```json
+This file defines the **XSUAA application security descriptor** — it tells SAP's login system what roles exist and which OAuth2 redirect URLs are allowed.
+
+> **Scopes** = permission levels (`Display` = regular user, `Admin` = admin user).
+> **Role templates** = named roles that BTP administrators can assign to users.
+> **redirect-uris** = the list of allowed OAuth2 callback URLs. XSUAA rejects any login callback to a URL not on this list.
 {
   "xsappname":   "bsh_dscp_ai_apps",
   "tenant-mode": "dedicated",
@@ -97,9 +107,7 @@ Critical flags:
 }
 ```
 
-> The `Admin` scope is for the **XSUAA** role; the **app-level** admin gate (`/dscpadmin`) is enforced separately by `ADMIN_USERS` in [analytics_service.py](../app/services/History/analytics_service.py). Both must be granted for full admin power.
-
-### 2.3 `Procfile`
+```json
 
 ```
 web: python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT
@@ -131,15 +139,15 @@ requests
 babel
 ```
 
-Roles:
-* `fastapi` / `uvicorn` / `jinja2` / `python-multipart` — web stack.
-* `httpx` — async HTTP (Brain, XSUAA token exchange, Confluence).
-* `pydantic` — request models.
-* `python-dotenv` — `.env` loading.
-* `itsdangerous` — Starlette `SessionMiddleware`.
-* `python-pptx` / `python-docx` / `Pillow` / `PyMuPDF` — document generation + PDF parsing.
-* `boto3>=1.34.0` — S3v4 signature support.
-* `cfenv` / `sap-xssec` — CF service binding + JWT validation.
+Roles of each package:
+* `fastapi` / `uvicorn` / `jinja2` / `python-multipart` — core web stack.
+* `httpx` — async HTTP client for calling the AI and XSUAA.
+* `pydantic` — validates request data (enforces `max_length` etc.).
+* `python-dotenv` — loads `.env` files for local development.
+* `itsdangerous` — required by Starlette's session middleware for signing session cookies.
+* `python-pptx` / `python-docx` / `Pillow` / `PyMuPDF` — PowerPoint / Word generation and PDF parsing.
+* `boto3>=1.34.0` — S3-compatible storage client. Version 1.34+ is required for SigV4 signatures.
+* `cfenv` / `sap-xssec` — read CF service bindings (`VCAP_SERVICES`) and validate XSUAA JWT tokens.
 
 ---
 
@@ -206,6 +214,12 @@ Credentials are read in [app/core/config.py](../app/core/config.py) `get_object_
 
 ## 5. Deployment workflow
 
+> **`cf push`** = packages your code and sends it to CF. CF installs dependencies from `requirements.txt` and starts the app.
+>
+> **`cf set-env`** = sets a secret environment variable on the deployed app. Use this for anything you must NOT commit to Git.
+>
+> **`cf restage`** = rebuilds the app container with the current env vars. Required after `cf set-env` for the change to take effect.
+
 ### 5.1 First-time deploy
 
 ```bash
@@ -244,15 +258,15 @@ cf push        # picks up code + manifest.yml
 
 `cf set-env` does **not** auto-restage — call `cf restage dscp-ai` after changing env vars.
 
-### 5.3 Role assignment
+### 5.3 Assign user roles in BTP
 
-In BTP Cockpit → Security → Role Collections:
+In the BTP Cockpit → Security → Role Collections:
 
-1. Create role collection `DSCP_AI_Users` and assign `BT109D1_UD_DSCP_Apps_Viewer`.
-2. Create role collection `DSCP_AI_Admins` and assign both templates.
-3. Map collections to identity provider users / groups.
+1. Create role collection `DSCP_AI_Users` and assign the `BT109D1_UD_DSCP_Apps_Viewer` role template.
+2. Create role collection `DSCP_AI_Admins` and assign both role templates.
+3. Map collections to identity provider users or groups.
 
-> Reminder: app-level admin gate (`/dscpadmin`) also requires the user-id (e.g. `dsd9di`) to be in `ADMIN_USERS` in [analytics_service.py](../app/services/History/analytics_service.py). XSUAA `Admin` scope alone is **not** sufficient.
+> **Reminder:** Even after assigning the Admin role collection, a user still needs their user ID (e.g. `dsd9di`) added to `ADMIN_USERS` in [analytics_service.py](../app/services/History/analytics_service.py) to access `/dscpadmin`. The XSUAA `Admin` scope alone is not enough.
 
 ### 5.4 Liveness
 
@@ -362,8 +376,8 @@ What to grep for:
 
 ### 7.4 Scaling
 
-* **Vertical**: `cf scale dscp-ai -m 1G`. Most generations stay under 250 MB but PPT with embedded images can spike.
-* **Horizontal**: not safe today. The Object Store JSON files are written without distributed locking. Either add a lock (Redis) or stick to `instances: 1`.
+* **Vertical (more memory)**: `cf scale dscp-ai -m 1G`. Most generations use under 250 MB but PPT with embedded images can spike higher.
+* **Horizontal (more instances)**: **Not safe today.** History JSON files are written to Object Store without distributed locking. If two instances write the same file simultaneously, data loss can occur. To scale horizontally, add a distributed lock (e.g. Redis) first.
 
 ### 7.5 Observability
 

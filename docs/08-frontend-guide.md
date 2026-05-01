@@ -1,8 +1,14 @@
 # 08 — Frontend Guide
 
-> Server-rendered Jinja2 + vanilla JS. **No SPA framework.** All pages extend [base.html](../app/templates/base.html); shared design tokens live in [common.css](../app/static/css/common.css); shared JS helpers live in [common.js](../app/static/js/common.js).
+The frontend is built with **server-rendered HTML + vanilla JavaScript**. There is no React, Vue, or any other SPA framework.
 
-This page is the contract every feature page is expected to obey.
+> **Server-rendered HTML** = the server builds the complete HTML page and sends it to the browser. Jinja2 is the Python template engine that fills in the variable parts (like the user's name or the changelog data).
+>
+> **Vanilla JS** = plain JavaScript with no framework. All shared utilities live in [common.js](../app/static/js/common.js).
+
+All pages extend [base.html](../app/templates/base.html); shared design tokens (colours, sizes) live in [common.css](../app/static/css/common.css); shared JS helpers live in [common.js](../app/static/js/common.js).
+
+This page is the contract every feature page is expected to follow.
 
 ---
 
@@ -25,33 +31,37 @@ base.html  ← every page extends this
 
 ### 1.1 Blocks defined in `base.html`
 
+Jinja2 **template inheritance** works like a shared layout. `base.html` defines named "blocks" that child templates can override.
+
 | Block | Purpose | Default |
 |---|---|---|
-| `title` | `<title>` content | `BSH DSCP` |
-| `page_name` | navbar subtitle | `BSH DSCP` |
-| `extra_css` | feature-scoped `<link>` tags | empty |
-| `content` | main page body | empty |
-| `extra_js` | feature-scoped `<script>` tags | empty |
+| `title` | Browser tab title | `BSH DSCP` |
+| `page_name` | Subtitle shown in the navbar | `BSH DSCP` |
+| `extra_css` | Page-specific `<link>` tags (your feature CSS file) | empty |
+| `content` | Main page content area | empty |
+| `extra_js` | Page-specific `<script>` tags (your feature JS file) | empty |
 
-Every CSS/JS link is appended with `?v={{ css_version }}` for cache-busting (see `CSS_VERSION` in [app/core/config.py](../app/core/config.py)).
+Every CSS/JS link is appended with `?v={{ css_version }}` for **cache-busting**.
+
+> **Cache-busting** = adding a version number to a file URL (e.g. `common.css?v=42`) forces the browser to download the new file rather than using the cached old version. The version number is `CSS_VERSION` in [app/core/config.py](../app/core/config.py). Bump it after any CSS/JS change.
 
 ### 1.2 `window.APP_CONFIG`
 
-The base template emits a config block on every page:
+The base template injects a small JavaScript config block into every page so the frontend JS knows what environment it is running in:
 
 ```html
 <script>
   window.APP_CONFIG = {
-    env:                  "{{ app_env }}",          // "dev" | "prod"
+    env:                  "{{ app_env }}",          // "dev" (local) or "prod" (SAP BTP)
     clientLoggingEnabled: {{ client_logging|tojson }},
-    clientLogLevel:       "{{ client_log_level }}", // "debug"|"info"|"warn"|"error"
-    brainPortalUrl:       "{{ brain_portal_url }}",
+    clientLogLevel:       "{{ client_log_level }}", // controls which log levels are sent
+    brainPortalUrl:       "{{ brain_portal_url }}", // link to the Bosch DIA Brain portal
     cssVersion:           "{{ css_version }}"
   };
 </script>
 ```
 
-Read by `AppLogger.getConfig()`. Never write to it from feature scripts.
+`AppLogger` reads this config via `AppLogger.getConfig()`. **Never write to `window.APP_CONFIG` from your feature scripts.**
 
 ### 1.3 Base structure
 
@@ -71,7 +81,9 @@ Read by `AppLogger.getConfig()`. Never write to it from feature scripts.
 
 ## 2. Design tokens (`common.css`)
 
-The full token set, plus overrides under `body.dark-mode`. **Always reference these instead of raw colors** in feature CSS.
+**Design tokens** = CSS variables that define the colour palette, spacing, shadows, etc. in one place. All feature CSS should use `var(--token-name)` instead of raw colour values. This ensures dark mode and brand changes only need to be updated in `common.css`.
+
+> **Dark mode** is toggled by adding the class `dark-mode` to `<body>`. The CSS overrides all the token values under `body.dark-mode { ... }`. You get dark mode for free if you use the tokens. Only add manual `body.dark-mode` overrides for special cases (e.g. a custom shadow).
 
 ### 2.1 Color tokens
 
@@ -139,20 +151,17 @@ Group | Classes
 
 ## 3. Shared JS — `common.js`
 
-The single dependency every feature script can rely on. **Do not duplicate** any of these helpers in feature files.
+The single shared JavaScript file loaded on every page. **Do not recreate any of these helpers** in your feature files — they are already available globally.
 
-### 3.1 Globals
+### 3.1 Global functions
 
-| Function | Use |
+| Function | When to use it |
 |---|---|
-| `showToast(message, type, duration?)` | Always use instead of `alert()`. `type` ∈ `success/error/warning/info`. Default duration 4 s. |
-| `escapeHtml(str)` | HTML-escape user-supplied strings. **Mandatory** before injecting into `innerHTML`. |
-| `formatFileSize(bytes)` | `"12.5 KB"`, `"1.2 MB"`. |
-| `showConfirmation(title, message, onConfirm, options?)` | Modal with confirm/cancel. Returns nothing — pass an `onConfirm` callback. |
-| `closeConfirmation()` | Programmatically dismiss. |
-| `countUp(el, target, duration?)` | Animate a counter from 0. |
-| `highlightMatch(text, term)` | Wrap matched substring in `<span class="match-highlight">`. |
-| `initAppSearch()` / `initCharacterCounters()` / `initAiDisclaimer()` / `initAiWarningTimer()` / `initSpringMode()` / `initCardEntrance()` | Page-init helpers, called from base.html on `DOMContentLoaded`. |
+| `showToast(message, type, duration?)` | Show a notification. Use instead of `alert()`. `type` ∈ `success/error/warning/info`. Default 4 s. |
+| `escapeHtml(str)` | **Always** call this before inserting user text into `innerHTML`. Prevents XSS. |
+| `formatFileSize(bytes)` | Converts bytes to human-readable string: `"12.5 KB"`, `"1.2 MB"`. |
+| `showConfirmation(title, message, onConfirm, options?)` | Show a blocking confirm/cancel dialog. Pass a callback for what happens when the user confirms. |
+| `closeConfirmation()` | Programmatically close the confirmation dialog. |
 
 ### 3.2 Namespaces
 
@@ -303,12 +312,12 @@ The changelog file shown is selected by `app_env` in `pages.py` and passed to th
 
 1. **No emoji** in PPT-creator, BPMN-builder, history cards, status indicators, mode tabs, or feedback buttons. Use inline `<svg>` icons (or the `HistoryIcons.*` strings).
 2. **No `alert()`**. Use `showToast(...)` for transient messages and `showConfirmation(...)` for blocking decisions.
-3. **No raw `innerHTML` of user input**. Run it through `escapeHtml()` first.
-4. **No new colour literals.** Use `var(--…)` from §2.
-5. **No new history-card markup.** Reuse `gen-card*` classes so existing JS event bindings keep working.
-6. **CSS-version cache busting**: when you ship a CSS or JS change, bump `CSS_VERSION` in [app/core/config.py](../app/core/config.py).
-7. **Dark mode is automatic** if you use the design tokens. Only override under `body.dark-mode { … }` if you need a special shadow / image.
-8. **Accessibility**: every icon-only button needs `aria-label`. Modal `Esc` must close.
+3. **No raw `innerHTML` of user input**. Always call `escapeHtml()` first to prevent XSS attacks.
+4. **No new colour literals.** Use `var(--...)` CSS variables from §2 so dark mode keeps working.
+5. **No new history-card markup.** Reuse the existing `gen-card*` classes so existing JavaScript event bindings keep working.
+6. **CSS-version cache busting**: bump `CSS_VERSION` in [app/core/config.py](../app/core/config.py) after any CSS/JS change, so users load the new file instead of a cached old one.
+7. **Dark mode is automatic** if you use the design tokens. Only override under `body.dark-mode { … }` if you need a special shadow or image.
+8. **Accessibility**: every icon-only button needs `aria-label`. Pressing `Esc` must close modals.
 
 ---
 

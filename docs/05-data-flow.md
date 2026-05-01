@@ -1,12 +1,25 @@
-# 05 — Data flows
+# 05 — Data Flows
 
-End-to-end sequence diagrams for every meaningful interaction.
+Step-by-step sequence diagrams for every major user action in the app.
 
-> Convention: **B** = browser, **R** = router (FastAPI route handler), **S** = feature service, **C** = `common_service` (Brain helper layer), **DB** = DIA Brain, **OS** = Object Store, **H** = History service, **A** = analytics service.
+**Key to abbreviations used in all diagrams below:**
+
+| Abbreviation | Full name | Plain-English description |
+|---|---|---|
+| **B** | Browser | The user's browser / JavaScript frontend |
+| **R** | Route handler | The FastAPI endpoint (e.g. `/api/ppt/extract`) |
+| **S** | Feature service | The feature's Python service file (e.g. `ppt_creator_service.py`) |
+| **C** | common_service | The shared helper that builds all AI requests |
+| **DB** | DIA Brain | Bosch's internal AI service |
+| **OS** | Object Store | BTP cloud file storage (like Amazon S3) |
+| **H** | History service | The feature's history save/load service |
+| **A** | analytics_service | Records usage counts |
 
 ---
 
 ## 1. PPT Creator — extract → refine → download → save
+
+**What this flow does:** The user uploads files and a topic. The app creates an AI chat session, uploads the files to the AI, sends a prompt, gets back slide content, and returns it. The user can then refine the slides via follow-up messages, download a `.pptx` file, and save to history.
 
 ```mermaid
 sequenceDiagram
@@ -68,6 +81,8 @@ Key invariants:
 
 ## 2. Diagram Generator — analyze → generate → refine → download
 
+**What this flow does:** User uploads source documents. The AI analyses them and suggests diagram types. The user picks types and the AI generates draw.io XML. Diagrams can be refined via chat and downloaded.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -112,7 +127,9 @@ The "Copy as Diagram" mode skips analysis and goes straight to `/api/diagram/cop
 
 ---
 
-## 3. BPMN Builder — two paths into the same brain
+## 3. BPMN Builder — two paths into the same AI
+
+**What this flow does:** Either the user fills in a form describing a process (Form Builder mode), or uploads an existing document (Upload & Build mode). Either way, the AI generates BPMN 2.0 XML that can be imported into Signavio.
 
 ```mermaid
 sequenceDiagram
@@ -159,7 +176,9 @@ The `[DOCUMENT_VALID]` / `[DOCUMENT_INVALID]` first-line tag is a **prompt-engin
 
 ---
 
-## 4. Audit Check — analyze + chat with attachments
+## 4. Audit Check — analyse + chat with attachments
+
+**What this flow does:** User uploads a document. The AI analyses it for compliance/quality issues. The user can then ask follow-up questions, optionally attaching more files. There is no history — the conversation ends when the tab closes.
 
 ```mermaid
 sequenceDiagram
@@ -194,6 +213,10 @@ No history — when the tab closes, the conversation is gone. This is intentiona
 ---
 
 ## 5. Docupedia Publisher — verify → generate → refine → publish
+
+**What this flow does:** User verifies a Confluence connection using their Personal Access Token (PAT). Then uploads files and the AI generates a Confluence-format XML page. After optional refinement, the page is published directly to Docupedia via the Confluence REST API.
+
+> **PAT = Personal Access Token**: A password-like token the user creates in their Confluence profile. The app uses it only for the current request and never saves or logs it.
 
 ```mermaid
 sequenceDiagram
@@ -243,7 +266,7 @@ The PAT travels in `Authorization: Bearer …` only. It is never logged, never p
 
 ## 6. One Pager Creator — extract → refine → save
 
-Same shape as PPT, but the artifact is HTML instead of slides:
+**What this flow does:** Same shape as PPT Creator, but the AI produces a single-page HTML document instead of slides.
 
 ```mermaid
 sequenceDiagram
@@ -277,6 +300,8 @@ sequenceDiagram
 
 ## 7. Admin analytics fetch
 
+**What this flow does:** The admin dashboard calls this endpoint to load usage statistics. It fetches many JSON files from the Object Store in parallel (`asyncio.gather` = run all requests at the same time instead of one by one) and returns a combined payload.
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -301,35 +326,37 @@ Missing daily files are normal (no activity that day) and are coerced to empty d
 
 ## 8. Generic generation/download tracking
 
+**What this flow does:** Every AI generation and every file download increments a counter in the Object Store. These are "fire-and-forget" (`asyncio.create_task`) — the counter runs in the background without making the user wait. If the counter fails, the user is unaffected.
+
 Every generate-style endpoint follows this pattern:
 
 ```python
 try:
     result = await service.do_thing(...)
-    asyncio.create_task(track_generation(app_key))
+    asyncio.create_task(track_generation(app_key))  # fire-and-forget counter
     return JSONResponse(...)
 except BrainError as e:
-    asyncio.create_task(track_generation_failed(app_key))
+    asyncio.create_task(track_generation_failed(app_key))  # count the failure too
     return JSONResponse(status_code=mapped_status, content=friendly_error)
 ```
 
 Every download-style endpoint follows:
 
 ```python
-asyncio.create_task(track_download(app_key))
+asyncio.create_task(track_download(app_key))  # fire-and-forget
 return StreamingResponse(...)
 ```
-
-These three counters (generation, generation-failed, download) are surfaced in the admin dashboard as stacked bars.
 
 ---
 
 ## 9. Error propagation across layers
 
+**What this shows:** How an error from the AI service travels through the code layers and reaches the user as a friendly toast notification (never as a raw Python exception).
+
 ```
-DIA Brain    →  httpx.HTTPStatusError
+DIA Brain returns an HTTP error
                 ↓
-common_service._friendly_http_error() maps:
+common_service maps it to a plain-English message:
   400 → "The request couldn't be processed. Please try again."
   401/403 → "Authentication issue with the AI service."
   404 → "Resource not found."
@@ -337,11 +364,13 @@ common_service._friendly_http_error() maps:
   429 → "Service is busy. Please retry."
   502/503/504 → "Service temporarily unavailable."
                 ↓
-service raises BrainError(status, message)
+The service raises BrainError(status_code, message)
                 ↓
-router catches BrainError → JSONResponse(status, {message})
+The route handler catches BrainError
+→ returns JSONResponse({status, message}) with the appropriate HTTP status
                 ↓
-client common.js Utils.apiRequest → showToast(error)
+Browser's Utils.apiRequest() detects the error status
+→ calls showToast(message, "error") to show a notification to the user
 ```
 
-There is **no path** by which `str(exc)` reaches the browser. That's the contract.
+**The contract:** There is no path by which raw Python exception details reach the browser. Internal details are always logged server-side only.
