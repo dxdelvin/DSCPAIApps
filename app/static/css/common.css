@@ -155,8 +155,7 @@ body.dark-mode .brand-logo {
 .brand-sub { font-size: 12px; color: var(--slate-500); }
 
 .changelog-bell,
-.theme-toggle,
-.tutorial-btn {
+.theme-toggle {
     background: none;
     border: 1px solid var(--border);
     border-radius: 0.5rem;
@@ -171,8 +170,7 @@ body.dark-mode .brand-logo {
 }
 
 .changelog-bell:hover,
-.theme-toggle:hover,
-.tutorial-btn:hover {
+.theme-toggle:hover {
     background: var(--slate-100);
     border-color: var(--navy-900);
     color: var(--navy-900);
@@ -180,37 +178,15 @@ body.dark-mode .brand-logo {
 }
 
 .changelog-bell:active,
-.theme-toggle:active,
-.tutorial-btn:active {
+.theme-toggle:active {
     transform: scale(0.9);
     transition-duration: 0.08s;
 }
 
 /* Dark mode specific hover fix */
 body.dark-mode .changelog-bell:hover,
-body.dark-mode .theme-toggle:hover,
-body.dark-mode .tutorial-btn:hover {
+body.dark-mode .theme-toggle:hover {
     background: rgba(255, 255, 255, 0.1);
-}
-
-/* Tutorial button active state while tour is running */
-.tutorial-btn.tour-active {
-    background: var(--brand-orange);
-    border-color: var(--brand-orange);
-    color: #fff;
-}
-
-.tutorial-btn.tour-active:hover {
-    background: #e55530;
-    border-color: #e55530;
-    color: #fff;
-    transform: scale(1.05);
-}
-
-body.dark-mode .tutorial-btn.tour-active {
-    background: var(--brand-orange);
-    border-color: var(--brand-orange);
-    color: #fff;
 }
 
 /* Theme toggle icon spin */
@@ -250,24 +226,6 @@ body.dark-mode .tutorial-btn.tour-active {
 .beta-text {
     font-weight: 600;
     text-transform: uppercase;
-}
-
-.beta-text.banner-exit {
-    animation: banner-exit 0.4s ease-in forwards;
-}
-
-.beta-text.banner-enter {
-    animation: banner-enter 0.5s ease-out forwards;
-}
-
-@keyframes banner-exit {
-    from { opacity: 1; transform: translateY(0); }
-    to   { opacity: 0; transform: translateY(60%); }
-}
-
-@keyframes banner-enter {
-    from { opacity: 0; transform: translateY(-60%); }
-    to   { opacity: 1; transform: translateY(0); }
 }
 
 body.dark-mode .beta-banner {
@@ -1420,8 +1378,8 @@ body.dark-mode .badge-version {
     position: relative;
     padding-left: 16px;
     color: var(--slate-700);
-    margin-bottom: 10px;
-    line-height: 1.6;
+    margin-bottom: 8px;
+    line-height: 1.5;
     font-size: 14px;
 }
 
@@ -1432,50 +1390,6 @@ body.dark-mode .badge-version {
     left: 0;
     font-weight: bold;
 }
-
-/* Suppress bullet when a pill is present — orange dot handled separately */
-.changelog-list li:has(.cl-pill)::before {
-    content: none;
-}
-.changelog-list li:has(.cl-pill) {
-    padding-left: 16px;
-}
-.changelog-list li:has(.cl-pill)::after {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--brand-orange);
-    position: absolute;
-    left: 1px;
-    top: 7px;
-    flex-shrink: 0;
-}
-
-.cl-pill {
-    display: inline-block;
-    padding: 0;
-    background: none;
-    border-bottom: 1.5px solid currentColor;
-    border-radius: 0;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-right: 7px;
-    vertical-align: middle;
-    line-height: 1.7;
-    white-space: nowrap;
-}
-.cl-pill-new      { color: #16a34a; }
-.cl-pill-app      { color: #2563eb; }
-.cl-pill-fix      { color: #dc2626; }
-.cl-pill-improved { color: #d97706; }
-body.dark-mode .cl-pill-new      { color: #86efac; }
-body.dark-mode .cl-pill-app      { color: #93c5fd; }
-body.dark-mode .cl-pill-fix      { color: #fca5a5; }
-body.dark-mode .cl-pill-improved { color: #fcd34d; }
 
 /* Forms */
 .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -3592,246 +3506,104 @@ body.dark-mode .fav-star-btn.active {
     color: var(--brand-orange, #ff7100);
 }
 
-/* ════════════════════════════════════════════════════════════
-   Driver.js Tour — DSCP popover skin
-   All colours come from CSS variables so dark mode and
-   festive theme modes are inherited automatically.
-   DOM: footer > progress-text(hidden) + navigation-btns(span)
-        navigation-btns > [Skip(ours)] [prev-btn] [next-btn]
-   ════════════════════════════════════════════════════════════ */
-
-/* ── Card ── */
-.dscp-driver-popover.driver-popover {
-    background: var(--card);
-    border-radius: 20px;
-    box-shadow: 0 28px 72px rgba(0, 0, 0, 0.18), 0 4px 16px rgba(0, 0, 0, 0.07);
-    border: 1px solid var(--border);
-    padding: 0;
-    max-width: 460px;
-    min-width: 340px;
-    font-family: inherit;
-    overflow: hidden;
+/* ── Feedback Widget ─────────────────────────────────── */
+.feedback-widget {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: var(--card, #fff);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius, 12px);
+    box-shadow: var(--shadow-sm, 0 1px 4px rgba(0,0,0,.06));
 }
 
-/* Brand-colored top bar */
-.dscp-driver-popover.driver-popover::before {
-    content: '';
-    display: block;
-    height: 5px;
-    background: linear-gradient(90deg, var(--brand-orange) 0%, color-mix(in srgb, var(--brand-orange) 55%, #fff) 100%);
-}
-
-/* ── Title ── */
-.dscp-driver-popover .driver-popover-title {
+.feedback-inner {
     display: flex;
-    align-items: center;
-    gap: 9px;
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    background: linear-gradient(160deg, var(--surface-hover) 0%, var(--card) 55%);
-    border-bottom: 1px solid var(--border);
-    padding: 1.1rem 1.35rem 0.9rem;
-    position: relative;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
 }
 
-.dscp-driver-popover .driver-popover-title > svg {
-    color: var(--brand-orange);
-    flex-shrink: 0;
-}
-
-/* ── Body ── */
-.dscp-driver-popover .driver-popover-description {
-    padding: 0.85rem 1.35rem 0.65rem;
-    font-size: 0.885rem;
-    color: var(--text-secondary);
-    line-height: 1.7;
-}
-
-.dscp-driver-popover .driver-popover-description p {
-    margin: 0 0 0.55rem;
-}
-
-.dscp-driver-popover .driver-popover-description p:last-of-type {
-    margin-bottom: 0;
-}
-
-.dscp-driver-popover .driver-popover-description strong {
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-/* ── Footer shell ── */
-.dscp-driver-popover .driver-popover-footer {
-    display: flex;
-    align-items: center;
-    padding: 0.4rem 1.35rem 1.05rem;
-}
-
-/* Hide Driver.js's own progress text — we inject our own HTML */
-.dscp-driver-popover .driver-popover-progress-text {
-    display: none !important;
-}
-
-/* ── navigation-btns span is the REAL button container ──
-   footerButtons = this span; Skip is prepended into it.
-   Layout: [Skip]  · · · · · · ·  [← Back]  [Next →]        */
-.dscp-driver-popover .driver-popover-navigation-btns {
-    display: flex;
-    align-items: center;
-    gap: 0;
-    flex: 1;
-}
-
-/* Base reset for all three buttons */
-.dscp-driver-popover .driver-popover-navigation-btns button {
-    background: none;
-    border: none;
+.feedback-prompt {
     margin: 0;
-    font-family: inherit;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     font-weight: 600;
+    color: var(--text-secondary, #64748b);
+    letter-spacing: 0.01em;
+}
+
+.feedback-ratings {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.feedback-rating-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 10px;
+    background: var(--bg, #f8fafc);
+    color: var(--text-secondary, #64748b);
     cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 600;
+    transition: all 0.15s ease;
+    min-width: 60px;
+}
+
+.feedback-rating-btn:hover {
+    border-color: var(--brand-orange, #ff7100);
+    color: var(--brand-orange, #ff7100);
+    background: rgba(255, 113, 0, .06);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(255, 113, 0, .15);
+}
+
+.feedback-rating-btn.selected {
+    border-color: var(--brand-orange, #ff7100);
+    background: var(--brand-orange, #ff7100);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(255, 113, 0, .3);
+}
+
+.feedback-rating-btn.selected svg {
+    stroke: #fff;
+}
+
+.feedback-rating-btn span {
     line-height: 1;
-    transition: color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
 }
 
-.dscp-driver-popover .driver-popover-navigation-btns button:active {
-    transform: scale(0.93);
+.feedback-thanks {
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--brand-orange, #ff7100);
 }
 
-/* Skip — left-anchored text link */
-.dscp-tour-skip-btn {
-    color: var(--slate-400) !important;
-    padding: 0.48rem 0.5rem !important;
-    background: none !important;
-    border: none !important;
-    font-family: inherit !important;
-    font-size: 0.78rem !important;
-    font-weight: 500 !important;
-    cursor: pointer !important;
-    line-height: 1 !important;
-    letter-spacing: 0.01em !important;
-    transition: color 0.15s !important;
+body.dark-mode .feedback-widget {
+    background: var(--card, #1e293b);
+    border-color: var(--border, #334155);
 }
 
-.dscp-tour-skip-btn:hover {
-    color: var(--text-secondary) !important;
+body.dark-mode .feedback-rating-btn {
+    background: var(--surface-secondary, #1e293b);
+    border-color: var(--border, #334155);
+    color: var(--text-secondary, #94a3b8);
 }
 
-/* Back — pushed to far right, ghost-style */
-.dscp-driver-popover .driver-popover-prev-btn {
-    color: var(--slate-400) !important;
-    background: none !important;
-    border: none !important;
-    padding: 0.5rem 0.75rem !important;
-    border-radius: 8px !important;
-    margin-left: auto !important;
-    font-family: inherit !important;
-    font-size: 0.82rem !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    transition: color 0.15s, background 0.15s !important;
+body.dark-mode .feedback-rating-btn:hover {
+    background: rgba(255, 113, 0, .12);
+    border-color: var(--brand-orange, #ff7100);
+    color: var(--brand-orange, #ff7100);
 }
 
-.dscp-driver-popover .driver-popover-prev-btn:hover {
-    color: var(--slate-600) !important;
-    background: var(--slate-100) !important;
-}
-
-/* Next / Finish — brand-colored pill */
-.dscp-driver-popover .driver-popover-next-btn {
-    background: linear-gradient(135deg, var(--brand-orange) 0%, color-mix(in srgb, var(--brand-orange) 72%, #fff) 100%) !important;
-    color: #fff !important;
-    border: none !important;
-    border-radius: 99px !important;
-    padding: 0.56rem 1.45rem !important;
-    margin-left: 0.5rem !important;
-    font-family: inherit !important;
-    font-size: 0.85rem !important;
-    font-weight: 600 !important;
-    cursor: pointer !important;
-    text-shadow: none !important;
-    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.22) !important;
-    transition: filter 0.18s, box-shadow 0.18s, transform 0.12s !important;
-}
-
-.dscp-driver-popover .driver-popover-next-btn:hover {
-    filter: brightness(0.88) !important;
-    box-shadow: 0 6px 22px rgba(0, 0, 0, 0.3) !important;
-    color: #fff !important;
-}
-
-/* ── Close × in title ── */
-.dscp-tour-close-btn {
-    position: absolute;
-    right: 1rem;
-    top: 50%;
-    transform: translateY(-50%);
-    background: var(--slate-100);
-    border: none;
-    cursor: pointer;
-    color: var(--slate-400);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 8px;
-    transition: background 0.15s, color 0.15s;
-}
-
-.dscp-tour-close-btn:hover {
-    background: var(--border);
-    color: var(--text-primary);
-}
-
-/* ── Progress bar (injected inside description) ── */
-.dscp-tour-progress {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    margin-top: 1rem;
-    padding-top: 0.8rem;
-    border-top: 1px solid var(--border);
-}
-
-.dscp-tour-progress-label {
-    font-size: 0.68rem;
-    font-weight: 700;
-    color: var(--brand-orange);
-    white-space: nowrap;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    background: color-mix(in srgb, var(--brand-orange) 12%, transparent);
-    padding: 0.2rem 0.48rem;
-    border-radius: 4px;
-}
-
-.dscp-tour-progress-bar {
-    flex: 1;
-    height: 5px;
-    background: var(--slate-100);
-    border-radius: 99px;
-    overflow: hidden;
-}
-
-.dscp-tour-progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--brand-orange), color-mix(in srgb, var(--brand-orange) 60%, #fff));
-    border-radius: 99px;
-    transition: width 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-/* ── Arrows — always match the card background ── */
-.dscp-driver-popover .driver-popover-arrow-side-left .driver-popover-arrow  { border-right-color:  var(--card) !important; }
-.dscp-driver-popover .driver-popover-arrow-side-right .driver-popover-arrow { border-left-color:   var(--card) !important; }
-.dscp-driver-popover .driver-popover-arrow-side-top .driver-popover-arrow   { border-bottom-color: var(--card) !important; }
-.dscp-driver-popover .driver-popover-arrow-side-bottom .driver-popover-arrow{ border-top-color:    var(--card) !important; }
-
-/* ════════════════════════════════════════════════════════════
-   Dark mode — vars above already adapt; only shadow needs lift
-   ════════════════════════════════════════════════════════════ */
-body.dark-mode .dscp-driver-popover.driver-popover {
-    box-shadow: 0 28px 72px rgba(0, 0, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.3);
+body.dark-mode .feedback-rating-btn.selected {
+    background: var(--brand-orange, #ff7100);
+    border-color: var(--brand-orange, #ff7100);
+    color: #fff;
 }
